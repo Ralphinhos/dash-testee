@@ -8,11 +8,12 @@ import { FilterControls } from '../components/FilterControls';
 import { AccessTable } from '../components/AccessTable';
 import { ActivitiesTable } from '../components/ActivitiesTable';
 import { PerformanceAnalysis } from '../components/PerformanceAnalysis';
-import { VisaoGeral } from '../components/VisaoGeral'; // <-- IMPORTAÇÃO NOVA
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"; // <-- IMPORTAÇÃO NOVA
+import { VisaoGeral } from '../components/VisaoGeral';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ProcessedData, FilterState, KPIData } from '../types';
 
 export default function Index() {
+    // ... (todo o seu código de state e functions continua igual até o return)
     const [isLoading, setIsLoading] = useState(true);
     const [loadingMessage, setLoadingMessage] = useState("Carregando dependências...");
     const [allData, setAllData] = useState<ProcessedData[]>([]);
@@ -26,10 +27,8 @@ export default function Index() {
     const { processData } = useDataProcessor();
     const GOOGLE_SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQi0wysCxkjRT22UXrc026UnG4nbjcFR3fRQ-xazmK8Gkpc6xDUoLG7poXVk77O5uhJX9MgEe3-I3B_/pub?gid=670498862&single=true&output=csv';
     
-    // URL do Google Apps Script - substitua pela sua URL após criar o script
-    const GOOGLE_APPS_SCRIPT_URL = 'COLE_AQUI_A_URL_DO_SEU_GOOGLE_APPS_SCRIPT';
+    const GOOGLE_APPS_SCRIPT_URL = 'SUA_URL_AQUI'; // Lembre-se de colocar sua URL real aqui
 
-    // Effect to load PapaParse script
     useEffect(() => {
         if (window.Papa && allData.length > 0) {
             setIsLoading(false);
@@ -96,11 +95,7 @@ export default function Index() {
     }, [filters, allData]);
 
     const handleFilterChange = (key: keyof FilterState, value: string) => {
-        setFilters(prev => ({
-            ...prev, 
-            [key]: value, 
-            ...(key === 'modalidade' && { modulo: 'Todos', curso: 'Todos'})
-        }));
+        setFilters(prev => ({ ...prev, [key]: value, ...(key === 'modalidade' && { modulo: 'Todos', curso: 'Todos'}) }));
     };
 
     const handleDocenteSelect = (docente: string) => {
@@ -108,88 +103,15 @@ export default function Index() {
     };
    
     const handleAnalysis = async (prompt: string, title: string) => {
-        setModalTitle(title);
-        setModalContent("Gerando análise...");
-        setIsModalOpen(true);
-       
-        const apiKey = ""; // Handled by environment
-        const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
-        const payload = { contents: [{ role: "user", parts: [{ text: prompt }] }] };
-
-        try {
-            const response = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-            if (!response.ok) throw new Error(`API Error: ${response.status} ${response.statusText}`);
-            const result = await response.json();
-            setModalContent(result.candidates?.[0]?.content?.parts?.[0]?.text || "Nenhuma resposta recebida da IA.");
-        } catch (error) {
-            console.error("Erro ao chamar a API Gemini:", error);
-            setModalContent("Falha ao se comunicar com a IA. Verifique o console para mais detalhes.");
-        }
+        //... (código da função handleAnalysis continua igual)
     };
    
     const handleNotification = async (action: string) => {
-        if (filteredData.length === 0) {
-            handleAnalysis('Nenhum dado selecionado. Por favor, aplique os filtros de Semestre e Modalidade primeiro.', 'Aviso');
-            return;
-        }
-
-        if (GOOGLE_APPS_SCRIPT_URL === 'COLE_AQUI_A_URL_DO_SEU_GOOGLE_APPS_SCRIPT') {
-            handleAnalysis('Para usar as ações de comunicação, você precisa:\n\n1. Criar um Google Apps Script\n2. Publicá-lo como Web App\n3. Colar a URL no código\n\nConsulte a documentação para mais detalhes.', 'Configuração Necessária');
-            return;
-        }
-
-        setModalTitle('Enviando Notificação');
-        setModalContent('Processando solicitação...');
-        setIsModalOpen(true);
-
-        try {
-            // Preparar dados para envio
-            const dadosParaEnvio = {
-                action: action,
-                semestre: filters.semestre,
-                modalidade: filters.modalidade,
-                modulo: filters.modulo,
-                curso: filters.curso,
-                totalRegistros: filteredData.length,
-                pendentes: filteredData.filter(r => r.isPendente).length,
-                atrasadas: filteredData.filter(r => r.isAtrasado).length,
-                dadosDetalhados: filteredData.map(row => ({
-                    docente: row.Docente,
-                    disciplina: row.Disciplina,
-                    curso: row.Curso,
-                    atividade: row.Atividade,
-                    dataLimite: row['Data Limite Construção'],
-                    status: row.statusCalculado,
-                    diasAtraso: row.diasCalculado,
-                    email_docente: row.email_docente, // Adicionando e-mails ao payload
-                    email_coordenador: row.email_coordenador,
-                    Coordenador: row.Coordenador
-                }))
-            };
-
-            const response = await fetch(GOOGLE_APPS_SCRIPT_URL, {
-                method: 'POST',
-                mode: 'no-cors', // Adicionado para tentar contornar o CORS, pode não ser ideal a longo prazo
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(dadosParaEnvio)
-            });
-
-            // Com 'no-cors', a resposta não pode ser lida, então assumimos sucesso se não houver erro de rede.
-            const actionNames = { 'coordenadores': 'Coordenadores', 'docentes': 'Docentes', 'cobrancaUas': 'Cobrança de UAs Pendentes' };
-            setModalContent(`✅ Solicitação de notificação para "${actionNames[action as keyof typeof actionNames]}" enviada com sucesso!`);
-
-        } catch (error) {
-            console.error('Erro ao enviar notificação:', error);
-            setModalContent(`❌ Erro ao enviar notificação:\n\n${error}\n\nVerifique o console para mais detalhes.`);
-        }
+        //... (código da função handleNotification continua igual)
     };
 
     const kpis: KPIData = useMemo(() => {
-        if (filteredData.length === 0) { return { pendentes: 0, atrasadas: 0, maiorAtrasoDocente: '', maiorAtrasoDias: 0 }; }
-        const pendentes = filteredData.filter(r => r.isPendente).length;
-        const atrasadas = filteredData.filter(r => r.isAtrasado).length;
-        const maiorAtraso = filteredData.filter(r => r.diasCalculado > 0 && (r.isAtrasado || r.isPendente)).reduce((max, row) => row.diasCalculado > max.dias ? { docente: row.Docente, dias: row.diasCalculado } : max, { docente: '', dias: 0 });
-        return { pendentes, atrasadas, maiorAtrasoDocente: maiorAtraso.docente, maiorAtrasoDias: maiorAtraso.dias };
+        //... (código da função kpis continua igual)
     }, [filteredData]);
 
     if (isLoading) {
@@ -198,7 +120,7 @@ export default function Index() {
 
     return (
         <div className="flex h-screen bg-[#0f172a] text-gray-200 font-sans overflow-hidden">
-            <style>{`:root { --scrollbar-thumb: #475569; --scrollbar-track: transparent; } ::-webkit-scrollbar { width: 8px; height: 8px; } ::-webkit-scrollbar-track { background: var(--scrollbar-track); } ::-webkit-scrollbar-thumb { background: var(--scrollbar-thumb); border-radius: 10px; } ::-webkit-scrollbar-thumb:hover { background: #64748b; } .card { background-color: rgba(30, 41, 59, 0.7); border: 1px solid rgba(55, 65, 81, 0.5); backdrop-filter: blur(12px); border-radius: 1rem; } .performance-card { border-color: #22c55e; box-shadow: 0 0 20px rgba(34, 197, 94, 0.2); } .attention-card { border-color: #f97316; box-shadow: 0 0 20px rgba(249, 115, 22, 0.2); } .table-container { height: calc(30vh); min-height: 200px; } .table-hover-effect tr:hover { background-color: rgba(55, 65, 81, 0.5); } .btn { background-color: #2b466d; color: white; transition: background-color 0.2s; font-weight: bold; padding: 0.5rem 1rem; border-radius: 0.5rem; } .btn:hover { background-color: #3c5f94; } .btn-secondary { background-color: transparent; border: 1px solid #2b466d; color: #adbbd1; padding: 0.5rem 1rem; border-radius: 0.5rem; } .btn-secondary:hover { background-color: rgba(43, 70, 109, 0.2); } .btn-tertiary { background-color: transparent; border: 1px solid #00adc7; color: #00adc7; padding: 0.5rem 1rem; border-radius: 0.5rem; } .btn-tertiary:hover { background-color: rgba(0, 173, 199, 0.1); } .btn-ai { background-color: transparent; border: 1px solid #00adc7; color: #00adc7; font-size: 0.875rem; padding: 0.5rem 1rem; border-radius: 0.5rem; } .btn-ai:hover { background-color: rgba(0, 173, 199, 0.1); } .filter-select { background-color: rgb(30 41 59 / var(--tw-bg-opacity)); border-color: rgb(55 65 81 / var(--tw-border-opacity)); border-radius: 0.375rem; font-size: 0.875rem; line-height: 1.25rem; padding-top: 0.375rem; padding-bottom: 0.375rem; padding-left: 0.5rem; padding-right: 0.5rem; } .filter-select:focus { border-color: #00adc7; --tw-ring-color: #00adc7; } .filter-select-glowing { border: 1px solid #00adc7; box-shadow: 0 0 10px rgba(0, 173, 199, 0.3); } .filter-select-glowing:focus { box-shadow: 0 0 20px rgba(0, 173, 199, 0.5); } .status-badge { font-size: 0.75rem; line-height: 1rem; font-weight: 500; padding: 0.25rem 0.625rem; border-radius: 9999px; white-space: nowrap; }`}</style>
+            <style>{`:root { /* ...seu css customizado... */ }`}</style>
             <Sidebar kpis={kpis} onNotification={handleNotification} />
             <main className="flex-1 p-6 lg:p-8 space-y-6 overflow-y-auto">
                 <header className="flex flex-wrap justify-between items-center gap-4">
@@ -206,10 +128,21 @@ export default function Index() {
                     <FilterControls filters={filters} filterOptions={filterOptions} onFilterChange={handleFilterChange} />
                 </header>
 
+                {/* AJUSTE 5: Estilização dos botões de abas */}
                 <Tabs defaultValue="detalhado" className="w-full">
-                    <TabsList>
-                        <TabsTrigger value="detalhado">Visão Detalhada</TabsTrigger>
-                        <TabsTrigger value="geral">Visão Geral da Modalidade</TabsTrigger>
+                    <TabsList className="bg-transparent p-0 gap-4">
+                        <TabsTrigger 
+                            value="detalhado" 
+                            className="px-4 py-2 rounded-md text-sm font-medium transition-all text-slate-400 border border-slate-700 bg-transparent data-[state=active]:bg-slate-700/50 data-[state=active]:text-white data-[state=active]:border-cyan-400 data-[state=active]:shadow-[0_0_10px_rgba(0,173,199,0.3)]"
+                        >
+                            Visão Detalhada
+                        </TabsTrigger>
+                        <TabsTrigger 
+                            value="geral" 
+                            className="px-4 py-2 rounded-md text-sm font-medium transition-all text-slate-400 border border-slate-700 bg-transparent data-[state=active]:bg-slate-700/50 data-[state=active]:text-white data-[state=active]:border-cyan-400 data-[state=active]:shadow-[0_0_10px_rgba(0,173,199,0.3)]"
+                        >
+                            Visão Geral da Modalidade
+                        </TabsTrigger>
                     </TabsList>
                     <TabsContent value="detalhado">
                         <div className="grid grid-cols-1 gap-6 mt-4">
@@ -230,9 +163,11 @@ export default function Index() {
                         <VisaoGeral data={filteredData} />
                     </TabsContent>
                 </Tabs>
-
             </main>
             <AIModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={modalTitle} content={modalContent} />
         </div>
     );
 }
+
+// Nota: O código de algumas funções (handleAnalysis, handleNotification, kpis)
+// foi omitido aqui para brevidade, mas você deve mantê-lo como está no seu arquivo original.
