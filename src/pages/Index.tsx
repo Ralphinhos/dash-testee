@@ -26,7 +26,7 @@ export default function Index() {
     const GOOGLE_SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vR6YENH0zEq3RMaxp82tb3G-e3u0Asw9lOkq07K40JtdnOP-c2lYhnieY7S0vW8HA/pub?gid=1587952717&single=true&output=csv';
     
     // ATENÇÃO: COLOQUE SUA URL REAL AQUI
-    const GOOGLE_APPS_SCRIPT_URL = 'Chttps://script.google.com/macros/s/AKfycbz5xckU7R47YukTGjLzXDNy7AB8EhbexcA05-85INKT0aNKNdBx4nqSnQbKnCLS6zKT/exec';
+    const GOOGLE_APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbz5xckU7R47YukTGjLzXDNy7AB8EhbexcA05-85INKT0aNKNdBx4nqSnQbKnCLS6zKT/exec';
 
     useEffect(() => {
         const script = document.createElement('script');
