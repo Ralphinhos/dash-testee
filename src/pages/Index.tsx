@@ -13,7 +13,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ProcessedData, FilterState, KPIData } from '../types';
 
 export default function Index() {
-    // ... (todo o seu código de state e functions continua igual até o return)
     const [isLoading, setIsLoading] = useState(true);
     const [loadingMessage, setLoadingMessage] = useState("Carregando dependências...");
     const [allData, setAllData] = useState<ProcessedData[]>([]);
@@ -23,10 +22,10 @@ export default function Index() {
     const [modalContent, setModalContent] = useState('');
     const [filters, setFilters] = useState<FilterState>({ semestre: 'Todos', modalidade: 'Todos', modulo: 'Todos', curso: 'Todos' });
     const [selectedDocente, setSelectedDocente] = useState<string | null>(null);
-    
+
     const { processData } = useDataProcessor();
     const GOOGLE_SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQi0wysCxkjRT22UXrc026UnG4nbjcFR3fRQ-xazmK8Gkpc6xDUoLG7poXVk77O5uhJX9MgEe3-I3B_/pub?gid=670498862&single=true&output=csv';
-    
+
     const GOOGLE_APPS_SCRIPT_URL = 'SUA_URL_AQUI'; // Lembre-se de colocar sua URL real aqui
 
     useEffect(() => {
@@ -55,20 +54,20 @@ export default function Index() {
 
         return () => { if(document.body.contains(script)){ document.body.removeChild(script); } }
     }, [allData.length, processData]);
-   
+
     const filterOptions = useMemo(() => {
         const semestres = [...new Set(allData.map(item => item.Semestre).filter(Boolean))].sort();
         const modalidades = [...new Set(allData.map(item => item.Modalidade).filter(Boolean))].sort();
         let modulos: string[] = [];
         let cursos: string[] = [];
-        
+
         if (filters.modalidade && filters.modalidade !== 'Todos') {
             modulos = [...new Set(
                 allData
                     .filter(item => item.Modalidade === filters.modalidade && item['Módulo'])
                     .map(item => item['Módulo'])
             )].sort();
-            
+
             cursos = [...new Set(
                 allData
                     .filter(item => item.Modalidade === filters.modalidade && item.Curso)
@@ -101,17 +100,50 @@ export default function Index() {
     const handleDocenteSelect = (docente: string) => {
         setSelectedDocente(selectedDocente === docente ? null : docente);
     };
-   
+
     const handleAnalysis = async (prompt: string, title: string) => {
-        //... (código da função handleAnalysis continua igual)
-    };
-   
-    const handleNotification = async (action: string) => {
-        //... (código da função handleNotification continua igual)
+        //... seu código original para handleAnalysis
     };
 
+    const handleNotification = async (action: string) => {
+        //... seu código original para handleNotification
+    };
+
+    // --- CÓDIGO CORRIGIDO ---
     const kpis: KPIData = useMemo(() => {
-        //... (código da função kpis continua igual)
+        // Garante que, se não houver dados, os KPIs voltem para um estado padrão.
+        if (!filteredData || filteredData.length === 0) {
+            return {
+                pendentes: 0,
+                atrasadas: 0,
+                maiorAtrasoDocente: '-',
+                maiorAtrasoDias: 0
+            };
+        }
+
+        // Simulação da sua lógica de cálculo (mantenha a sua lógica original aqui)
+        // O importante é que ela processe o `filteredData` que agora sabemos que não é vazio.
+        const stats = filteredData.reduce((acc, item) => {
+            if (item.isPendente) {
+                acc.pendentes++;
+            }
+            if (item.isAtrasado) {
+                acc.atrasadas++;
+                if(item.diasCalculado > acc.maiorAtrasoDias){
+                    acc.maiorAtrasoDias = item.diasCalculado;
+                    acc.maiorAtrasoDocente = item.Docente;
+                }
+            }
+            return acc;
+        }, {
+            pendentes: 0,
+            atrasadas: 0,
+            maiorAtrasoDocente: '-',
+            maiorAtrasoDias: 0
+        });
+
+        return stats;
+
     }, [filteredData]);
 
     if (isLoading) {
@@ -121,24 +153,26 @@ export default function Index() {
     return (
         <div className="flex h-screen bg-[#0f172a] text-gray-200 font-sans overflow-hidden">
             <style>{`:root { /* ...seu css customizado... */ }`}</style>
+            
+            {/* O Sidebar agora recebe `kpis` de forma segura */}
             <Sidebar kpis={kpis} onNotification={handleNotification} />
+
             <main className="flex-1 p-6 lg:p-8 space-y-6 overflow-y-auto">
                 <header className="flex flex-wrap justify-between items-center gap-4">
                     <h2 className="text-2xl font-bold text-white">Acompanhamento de Disciplinas - Docente</h2>
                     <FilterControls filters={filters} filterOptions={filterOptions} onFilterChange={handleFilterChange} />
                 </header>
 
-                {/* AJUSTE 5: Estilização dos botões de abas */}
                 <Tabs defaultValue="detalhado" className="w-full">
                     <TabsList className="bg-transparent p-0 gap-4">
-                        <TabsTrigger 
-                            value="detalhado" 
+                        <TabsTrigger
+                            value="detalhado"
                             className="px-4 py-2 rounded-md text-sm font-medium transition-all text-slate-400 border border-slate-700 bg-transparent data-[state=active]:bg-slate-700/50 data-[state=active]:text-white data-[state=active]:border-cyan-400 data-[state=active]:shadow-[0_0_10px_rgba(0,173,199,0.3)]"
                         >
                             Visão Detalhada
                         </TabsTrigger>
-                        <TabsTrigger 
-                            value="geral" 
+                        <TabsTrigger
+                            value="geral"
                             className="px-4 py-2 rounded-md text-sm font-medium transition-all text-slate-400 border border-slate-700 bg-transparent data-[state=active]:bg-slate-700/50 data-[state=active]:text-white data-[state=active]:border-cyan-400 data-[state=active]:shadow-[0_0_10px_rgba(0,173,199,0.3)]"
                         >
                             Visão Geral da Modalidade
@@ -147,13 +181,13 @@ export default function Index() {
                     <TabsContent value="detalhado">
                         <div className="grid grid-cols-1 gap-6 mt-4">
                            <AccessTable data={filteredData} />
-                            <ActivitiesTable 
-                                data={filteredData} 
+                            <ActivitiesTable
+                                data={filteredData}
                                 onDocenteSelect={handleDocenteSelect}
                                 selectedDocente={selectedDocente}
                             />
-                            <PerformanceAnalysis 
-                                data={filteredData} 
+                            <PerformanceAnalysis
+                                data={filteredData}
                                 onAnalysis={handleAnalysis}
                                 selectedDocente={selectedDocente}
                             />
@@ -168,6 +202,3 @@ export default function Index() {
         </div>
     );
 }
-
-// Nota: O código de algumas funções (handleAnalysis, handleNotification, kpis)
-// foi omitido aqui para brevidade, mas você deve mantê-lo como está no seu arquivo original.
