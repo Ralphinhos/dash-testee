@@ -8,56 +8,14 @@ interface VisaoGeralProps {
     data: ProcessedData[];
 }
 
-// NOVIDADE 1: Componente customizado para quebrar o texto dos nomes dos cursos
-const CustomizedYAxisTick = (props: any) => {
-    const { x, y, payload } = props;
-    const maxLineLength = 40; // Máximo de caracteres por linha
-    const text = payload.value;
-
-    if (text.length > maxLineLength) {
-        // Divide o texto em múltiplas partes se for muito longo
-        const parts = text.split(' ');
-        const lines: string[] = [];
-        let currentLine = '';
-
-        parts.forEach((part: string) => {
-            if ((currentLine + ' ' + part).length > maxLineLength) {
-                lines.push(currentLine);
-                currentLine = part;
-            } else {
-                currentLine += (currentLine ? ' ' : '') + part;
-            }
-        });
-        lines.push(currentLine);
-
-        return (
-            <g transform={`translate(${x},${y})`}>
-                {lines.map((line, index) => (
-                    <text key={index} x={0} y={index * 15} textAnchor="end" fill="#d1d5db" fontSize={12}>
-                        {line}
-                    </text>
-                ))}
-            </g>
-        );
-    }
-
-    return (
-        <g transform={`translate(${x},${y})`}>
-            <text x={0} y={0} textAnchor="end" fill="#d1d5db" fontSize={12}>
-                {text}
-            </text>
-        </g>
-    );
-};
-
-// NOVIDADE 2: Rótulo inteligente que só aparece se houver espaço
+// ALTERAÇÃO 3: Rótulo agora exibe TODOS os valores maiores que 0, sem verificar o tamanho da barra.
 const renderSmartLabel = (props: any) => {
     const { x, y, width, height, value, fill } = props;
     
-    // Só renderiza o rótulo se o valor for maior que 0 e a barra tiver uma largura mínima
-    if (value > 0 && width > 20) { 
-        // Usa cor preta para fundos claros (amarelo) e branca para os outros
+    // A condição "height > 15" foi removida.
+    if (value > 0) { 
         const labelFill = (fill === '#f59e0b') ? '#000000' : '#ffffff';
+        // Ajustado o posicionamento vertical para um centro mais preciso.
         return (
             <text x={x + width / 2} y={y + height / 2} fill={labelFill} textAnchor="middle" dominantBaseline="middle" fontSize={12} fontWeight="bold">
                 {value}
@@ -66,7 +24,6 @@ const renderSmartLabel = (props: any) => {
     }
     return null;
 };
-
 
 export const VisaoGeral: React.FC<VisaoGeralProps> = ({ data }) => {
 
@@ -104,10 +61,6 @@ export const VisaoGeral: React.FC<VisaoGeralProps> = ({ data }) => {
         return null;
     };
     
-    // NOVIDADE 3: Altura do gráfico calculada dinamicamente
-    // 60px por barra + 80px para legendas e margens. Mínimo de 500px.
-    const chartHeight = Math.max(500, dadosDoGrafico.length * 60 + 80);
-
     return (
         <div className="card p-6 mt-4">
             <h3 className="text-lg font-semibold text-white mb-4">
@@ -115,29 +68,39 @@ export const VisaoGeral: React.FC<VisaoGeralProps> = ({ data }) => {
             </h3>
             
             {dadosDoGrafico.length > 0 ? (
-                // A altura agora é dinâmica
-                <div style={{ width: '100%', height: chartHeight }}> 
+                <div style={{ width: '100%', height: '600px' }}> 
                     <ResponsiveContainer>
                         <BarChart
                             data={dadosDoGrafico}
-                            layout="vertical"
-                            margin={{ top: 20, right: 30, left: 40, bottom: 20 }}
+                            margin={{ top: 20, right: 30, left: 20, bottom: 150 }}
                         >
                             <CartesianGrid strokeDasharray="3 3" stroke="rgba(255, 255, 255, 0.1)" />
-                            <XAxis type="number" hide={true} />
                             
-                            <YAxis 
-                                type="category" 
+                            <XAxis 
                                 dataKey="curso" 
-                                width={250} // Largura base para o eixo
-                                tickLine={false}
-                                axisLine={false}
-                                // Usa nosso componente customizado para os nomes
-                                tick={<CustomizedYAxisTick />} 
+                                type="category"
+                                interval={0}
+                                angle={-45}
+                                textAnchor="end"
+                                tick={{ fontSize: 12, fill: '#d1d5db' }}
+                            />
+                            
+                            {/* ALTERAÇÃO 2: Eixo Y (valores numéricos) agora está oculto */}
+                            <YAxis 
+                                type="number"
+                                stroke="#9ca3af"
+                                tick={{ fontSize: 12 }}
+                                hide={true} 
                             />
                             
                             <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(255, 255, 255, 0.05)' }}/>
-                            <Legend wrapperStyle={{ paddingTop: '30px' }} />
+                            
+                            {/* ALTERAÇÃO 1: Legenda movida para o topo para evitar sobreposição */}
+                            <Legend 
+                                verticalAlign="top" 
+                                align="right" 
+                                wrapperStyle={{ top: -10 }} 
+                            />
 
                             <Bar dataKey="entregues" name="Entregues no Prazo" stackId="a" fill="#22c55e">
                                 <LabelList dataKey="entregues" content={renderSmartLabel} />
