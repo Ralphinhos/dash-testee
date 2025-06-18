@@ -1,0 +1,22 @@
+# Ignorar a pasta node_modules
+node_modules/
+
+# Logs
+logs
+*.log
+npm-debug.log*
+
+# Diretórios temporários
+tmp/
+temp/
+
+# Configurações do sistema operacional
+.DS_Store
+Thumbs.db
+
+# Diretórios de build
+dist/
+build/
+
+# Arquivos de ambiente (não envie senhas ou chaves)
+.env
