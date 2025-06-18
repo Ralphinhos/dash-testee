@@ -1,3 +1,5 @@
+// src/components/VisaoGeral.tsx
+
 import React, { useMemo } from 'react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer, CartesianGrid, LabelList } from 'recharts';
 import { ProcessedData } from '../types';
@@ -31,7 +33,7 @@ export const VisaoGeral: React.FC<VisaoGeralProps> = ({ data }) => {
             return (
                 <div className="bg-gray-800 p-3 rounded border border-gray-600 shadow-lg text-sm">
                     <p className="font-bold text-white mb-2">{label}</p>
-                    {payload.slice().reverse().map((entry: any) => ( // Inverte para mostrar Atrasadas > Pendentes > Entregues
+                    {payload.slice().reverse().map((entry: any) => (
                         <p key={entry.dataKey} style={{ color: entry.color }}>
                             {`${entry.name}: ${entry.value}`}
                         </p>
@@ -57,30 +59,22 @@ export const VisaoGeral: React.FC<VisaoGeralProps> = ({ data }) => {
                         <BarChart
                             data={dadosDoGrafico}
                             layout="vertical"
-                            // AJUSTE 1: Aumenta o espaçamento entre as barras
                             barCategoryGap="30%"
                         >
                             <CartesianGrid strokeDasharray="3 3" stroke="rgba(255, 255, 255, 0.1)" />
-                            
-                            {/* AJUSTE 2: Eixo X (numérico) removido */}
                             <XAxis type="number" hide={true} />
-                            
                             <YAxis 
                                 type="category" 
                                 dataKey="curso" 
                                 stroke="#9ca3af" 
                                 width={200}
-                                // AJUSTE 3: Diminui a fonte dos nomes dos cursos
                                 tick={{ fontSize: 12 }} 
                             />
-                            
                             <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(255, 255, 255, 0.05)' }}/>
                             <Legend />
-
                             <Bar dataKey="entregues" name="Entregues no Prazo" stackId="a" fill="#22c55e" />
                             <Bar dataKey="pendentes" name="Pendentes" stackId="a" fill="#f59e0b" />
                             <Bar dataKey="atrasadas" name="Atrasadas" stackId="a" fill="#ef4444">
-                                {/* AJUSTE 4: Rótulo com o total de atividades na barra */}
                                 <LabelList 
                                     dataKey="total" 
                                     position="right" 

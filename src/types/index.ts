@@ -1,3 +1,5 @@
+// src/types/index.ts
+
 // --- TYPESCRIPT DECLARATIONS & TYPES ---
 declare global {
     interface Window {
@@ -16,7 +18,6 @@ export interface RawData {
   'Data Limite Construção': string;
   'Entregue': string;
   'Dias s/ Acesso': string;
-  // Campos adicionados para garantir que não haja erros
   Coordenador: string;
   email_coordenador: string;
   email_docente: string;

@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Loader2 } from 'lucide-react';
 import { useDataProcessor } from '../hooks/useDataProcessor';
 import { LoadingScreen } from '../components/LoadingScreen';
 import { AIModal } from '../components/AIModal';
@@ -22,17 +21,14 @@ export default function Index() {
     const [modalContent, setModalContent] = useState('');
     const [filters, setFilters] = useState<FilterState>({ semestre: 'Todos', modalidade: 'Todos', modulo: 'Todos', curso: 'Todos' });
     const [selectedDocente, setSelectedDocente] = useState<string | null>(null);
-
+    
     const { processData } = useDataProcessor();
-    const GOOGLE_SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQi0wysCxkjRT22UXrc026UnG4nbjcFR3fRQ-xazmK8Gkpc6xDUoLG7poXVk77O5uhJX9MgEe3-I3B_/pub?gid=670498862&single=true&output=csv';
-
-    const GOOGLE_APPS_SCRIPT_URL = 'SUA_URL_AQUI'; // Lembre-se de colocar sua URL real aqui
+    const GOOGLE_SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vR6YENH0zEq3RMaxp82tb3G-e3u0Asw9lOkq07K40JtdnOP-c2lYhnieY7S0vW8HA/pub?gid=1587952717&single=true&output=csv';
+    
+    // ATENÇÃO: COLOQUE SUA URL REAL AQUI
+    const GOOGLE_APPS_SCRIPT_URL = 'Chttps://script.google.com/macros/s/AKfycbz5xckU7R47YukTGjLzXDNy7AB8EhbexcA05-85INKT0aNKNdBx4nqSnQbKnCLS6zKT/exec';
 
     useEffect(() => {
-        if (window.Papa && allData.length > 0) {
-            setIsLoading(false);
-            return;
-        }
         const script = document.createElement('script');
         script.src = "https://cdn.jsdelivr.net/npm/papaparse@5.3.0/papaparse.min.js";
         script.async = true;
@@ -46,33 +42,22 @@ export default function Index() {
                     setAllData(processed);
                     setIsLoading(false);
                 },
-                error: (err: any) => { console.error("Erro ao carregar dados da planilha:", err); setLoadingMessage("Erro ao carregar dados.");}
+                error: (err: any) => { console.error("Erro ao carregar dados:", err); setLoadingMessage("Erro ao carregar dados.");}
             });
         };
-        script.onerror = () => { console.error("Falha ao carregar o script do PapaParse."); setLoadingMessage("Erro ao carregar dependências."); };
+        script.onerror = () => { console.error("Falha ao carregar PapaParse."); setLoadingMessage("Erro ao carregar dependências."); };
         document.body.appendChild(script);
-
         return () => { if(document.body.contains(script)){ document.body.removeChild(script); } }
-    }, [allData.length, processData]);
-
+    }, []);
+   
     const filterOptions = useMemo(() => {
         const semestres = [...new Set(allData.map(item => item.Semestre).filter(Boolean))].sort();
         const modalidades = [...new Set(allData.map(item => item.Modalidade).filter(Boolean))].sort();
         let modulos: string[] = [];
         let cursos: string[] = [];
-
         if (filters.modalidade && filters.modalidade !== 'Todos') {
-            modulos = [...new Set(
-                allData
-                    .filter(item => item.Modalidade === filters.modalidade && item['Módulo'])
-                    .map(item => item['Módulo'])
-            )].sort();
-
-            cursos = [...new Set(
-                allData
-                    .filter(item => item.Modalidade === filters.modalidade && item.Curso)
-                    .map(item => item.Curso)
-            )].sort();
+            modulos = [...new Set(allData.filter(item => item.Modalidade === filters.modalidade && item['Módulo']).map(item => item['Módulo']))].sort();
+            cursos = [...new Set(allData.filter(item => item.Modalidade === filters.modalidade && item.Curso).map(item => item.Curso))].sort();
         }
         return { semestres, modalidades, modulos, cursos };
     }, [allData, filters.modalidade]);
@@ -100,50 +85,42 @@ export default function Index() {
     const handleDocenteSelect = (docente: string) => {
         setSelectedDocente(selectedDocente === docente ? null : docente);
     };
-
-    const handleAnalysis = async (prompt: string, title: string) => {
-        //... seu código original para handleAnalysis
-    };
-
+   
     const handleNotification = async (action: string) => {
-        //... seu código original para handleNotification
-    };
-
-    // --- CÓDIGO CORRIGIDO ---
-    const kpis: KPIData = useMemo(() => {
-        // Garante que, se não houver dados, os KPIs voltem para um estado padrão.
-        if (!filteredData || filteredData.length === 0) {
-            return {
-                pendentes: 0,
-                atrasadas: 0,
-                maiorAtrasoDocente: '-',
-                maiorAtrasoDias: 0
-            };
+        if (filteredData.length === 0) {
+            alert('Nenhum dado selecionado. Por favor, aplique os filtros de Semestre e Modalidade primeiro.');
+            return;
         }
 
-        // Simulação da sua lógica de cálculo (mantenha a sua lógica original aqui)
-        // O importante é que ela processe o `filteredData` que agora sabemos que não é vazio.
-        const stats = filteredData.reduce((acc, item) => {
-            if (item.isPendente) {
-                acc.pendentes++;
-            }
-            if (item.isAtrasado) {
-                acc.atrasadas++;
-                if(item.diasCalculado > acc.maiorAtrasoDias){
-                    acc.maiorAtrasoDias = item.diasCalculado;
-                    acc.maiorAtrasoDocente = item.Docente;
-                }
-            }
-            return acc;
-        }, {
-            pendentes: 0,
-            atrasadas: 0,
-            maiorAtrasoDocente: '-',
-            maiorAtrasoDias: 0
-        });
+        setIsModalOpen(true);
+        setModalTitle('Enviando Notificação');
+        setModalContent('Processando e enviando e-mails...');
 
-        return stats;
+        try {
+            const dadosParaEnvio = { action, dadosDetalhados: filteredData };
+            const response = await fetch(GOOGLE_APPS_SCRIPT_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(dadosParaEnvio)
+            });
+            if (!response.ok) throw new Error(`O servidor respondeu com um erro: ${response.statusText}`);
+            const resultText = await response.text();
+            setModalContent(`✅ ${resultText}`);
+        } catch (error: any) {
+            console.error('Erro ao enviar notificação:', error);
+            setModalContent(`❌ Erro ao enviar notificação:\n\n${error.message}\n\nVerifique o console do navegador e a publicação do seu Google Apps Script.`);
+        }
+    };
 
+    const kpis = useMemo(() => {
+        if (filteredData.length === 0) {
+            return { pendentes: 0, atrasadas: 0, maiorAtrasoDocente: '', maiorAtrasoDias: 0 };
+        }
+        const pendentes = filteredData.filter(r => r.isPendente).length;
+        const atrasadas = filteredData.filter(r => r.isAtrasado).length;
+        const maiorAtraso = filteredData.filter(r => r.diasCalculado > 0 && (r.isAtrasado || r.isPendente))
+            .reduce((max, row) => row.diasCalculado > max.dias ? { docente: row.Docente, dias: row.diasCalculado } : max, { docente: '', dias: 0 });
+        return { pendentes, atrasadas, maiorAtrasoDocente: maiorAtraso.docente, maiorAtrasoDias: maiorAtraso.dias };
     }, [filteredData]);
 
     if (isLoading) {
@@ -152,27 +129,23 @@ export default function Index() {
 
     return (
         <div className="flex h-screen bg-[#0f172a] text-gray-200 font-sans overflow-hidden">
-            <style>{`:root { /* ...seu css customizado... */ }`}</style>
-            
-            {/* O Sidebar agora recebe `kpis` de forma segura */}
+            <style>{`:root { --scrollbar-thumb: #475569; --scrollbar-track: transparent; } ::-webkit-scrollbar { width: 8px; height: 8px; } ::-webkit-scrollbar-track { background: var(--scrollbar-track); } ::-webkit-scrollbar-thumb { background: var(--scrollbar-thumb); border-radius: 10px; } ::-webkit-scrollbar-thumb:hover { background: #64748b; } .card { background-color: rgba(30, 41, 59, 0.7); border: 1px solid rgba(55, 65, 81, 0.5); backdrop-filter: blur(12px); border-radius: 1rem; } .performance-card { border-color: #22c55e; box-shadow: 0 0 20px rgba(34, 197, 94, 0.2); } .attention-card { border-color: #f97316; box-shadow: 0 0 20px rgba(249, 115, 22, 0.2); } .table-container { height: calc(30vh); min-height: 200px; } .table-hover-effect tr:hover { background-color: rgba(55, 65, 81, 0.5); } .btn { background-color: #2b466d; color: white; transition: background-color 0.2s; font-weight: bold; padding: 0.5rem 1rem; border-radius: 0.5rem; } .btn:hover { background-color: #3c5f94; } .btn-secondary { background-color: transparent; border: 1px solid #2b466d; color: #adbbd1; padding: 0.5rem 1rem; border-radius: 0.5rem; } .btn-secondary:hover { background-color: rgba(43, 70, 109, 0.2); } .btn-tertiary { background-color: transparent; border: 1px solid #00adc7; color: #00adc7; padding: 0.5rem 1rem; border-radius: 0.5rem; } .btn-tertiary:hover { background-color: rgba(0, 173, 199, 0.1); } .btn-ai { background-color: transparent; border: 1px solid #00adc7; color: #00adc7; font-size: 0.875rem; padding: 0.5rem 1rem; border-radius: 0.5rem; } .btn-ai:hover { background-color: rgba(0, 173, 199, 0.1); } .filter-select { background-color: rgb(30 41 59 / var(--tw-bg-opacity)); border-color: rgb(55 65 81 / var(--tw-border-opacity)); border-radius: 0.375rem; font-size: 0.875rem; line-height: 1.25rem; padding-top: 0.375rem; padding-bottom: 0.375rem; padding-left: 0.5rem; padding-right: 0.5rem; } .filter-select:focus { border-color: #00adc7; --tw-ring-color: #00adc7; } .filter-select-glowing { border: 1px solid #00adc7; box-shadow: 0 0 10px rgba(0, 173, 199, 0.3); } .filter-select-glowing:focus { box-shadow: 0 0 20px rgba(0, 173, 199, 0.5); } .status-badge { font-size: 0.75rem; line-height: 1rem; font-weight: 500; padding: 0.25rem 0.625rem; border-radius: 9999px; white-space: nowrap; }`}</style>
             <Sidebar kpis={kpis} onNotification={handleNotification} />
-
             <main className="flex-1 p-6 lg:p-8 space-y-6 overflow-y-auto">
                 <header className="flex flex-wrap justify-between items-center gap-4">
                     <h2 className="text-2xl font-bold text-white">Acompanhamento de Disciplinas - Docente</h2>
                     <FilterControls filters={filters} filterOptions={filterOptions} onFilterChange={handleFilterChange} />
                 </header>
-
                 <Tabs defaultValue="detalhado" className="w-full">
                     <TabsList className="bg-transparent p-0 gap-4">
-                        <TabsTrigger
-                            value="detalhado"
+                        <TabsTrigger 
+                            value="detalhado" 
                             className="px-4 py-2 rounded-md text-sm font-medium transition-all text-slate-400 border border-slate-700 bg-transparent data-[state=active]:bg-slate-700/50 data-[state=active]:text-white data-[state=active]:border-cyan-400 data-[state=active]:shadow-[0_0_10px_rgba(0,173,199,0.3)]"
                         >
                             Visão Detalhada
                         </TabsTrigger>
-                        <TabsTrigger
-                            value="geral"
+                        <TabsTrigger 
+                            value="geral" 
                             className="px-4 py-2 rounded-md text-sm font-medium transition-all text-slate-400 border border-slate-700 bg-transparent data-[state=active]:bg-slate-700/50 data-[state=active]:text-white data-[state=active]:border-cyan-400 data-[state=active]:shadow-[0_0_10px_rgba(0,173,199,0.3)]"
                         >
                             Visão Geral da Modalidade
@@ -181,14 +154,14 @@ export default function Index() {
                     <TabsContent value="detalhado">
                         <div className="grid grid-cols-1 gap-6 mt-4">
                            <AccessTable data={filteredData} />
-                            <ActivitiesTable
-                                data={filteredData}
+                            <ActivitiesTable 
+                                data={filteredData} 
                                 onDocenteSelect={handleDocenteSelect}
                                 selectedDocente={selectedDocente}
                             />
-                            <PerformanceAnalysis
-                                data={filteredData}
-                                onAnalysis={handleAnalysis}
+                            <PerformanceAnalysis 
+                                data={filteredData} 
+                                onAnalysis={() => {}} // A função de AI foi removida para simplificar
                                 selectedDocente={selectedDocente}
                             />
                         </div>
