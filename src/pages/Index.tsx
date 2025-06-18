@@ -86,31 +86,31 @@ export default function Index() {
         setSelectedDocente(selectedDocente === docente ? null : docente);
     };
    
-    const handleNotification = async (action: string) => {
-        if (filteredData.length === 0) {
-            alert('Nenhum dado selecionado. Por favor, aplique os filtros de Semestre e Modalidade primeiro.');
-            return;
-        }
+  const handleNotification = async (action: string) => {
+    if (filteredData.length === 0) {
+        alert('Nenhum dado selecionado. Por favor, aplique os filtros de Semestre e Modalidade primeiro.');
+        return;
+    }
 
-        setIsModalOpen(true);
-        setModalTitle('Enviando Notificação');
-        setModalContent('Processando e enviando e-mails...');
+    setIsModalOpen(true);
+    setModalTitle('Enviando Notificação');
+    setModalContent('Processando e enviando e-mails...');
 
-        try {
-            const dadosParaEnvio = { action, dadosDetalhados: filteredData };
-            const response = await fetch(GOOGLE_APPS_SCRIPT_URL, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(dadosParaEnvio)
-            });
-            if (!response.ok) throw new Error(`O servidor respondeu com um erro: ${response.statusText}`);
-            const resultText = await response.text();
-            setModalContent(`✅ ${resultText}`);
-        } catch (error: any) {
-            console.error('Erro ao enviar notificação:', error);
-            setModalContent(`❌ Erro ao enviar notificação:\n\n${error.message}\n\nVerifique o console do navegador e a publicação do seu Google Apps Script.`);
-        }
-    };
+    try {
+        const dadosParaEnvio = encodeURIComponent(JSON.stringify(filteredData));
+        const url = `${GOOGLE_APPS_SCRIPT_URL}?action=${action}&dados=${dadosParaEnvio}`;
+
+        const response = await fetch(url);
+        if (!response.ok) throw new Error(`Erro: ${response.statusText}`);
+
+        const result = await response.json();
+        setModalContent(`✅ ${result.message}`);
+    } catch (error: any) {
+        console.error('Erro ao enviar notificação:', error);
+        setModalContent(`❌ Erro ao enviar notificação:\n\n${error.message}`);
+    }
+};
+
 
     const kpis = useMemo(() => {
         if (filteredData.length === 0) {
