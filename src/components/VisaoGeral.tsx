@@ -3,7 +3,7 @@
 import React, { useMemo } from 'react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer, CartesianGrid, LabelList } from 'recharts';
 import { ProcessedData } from '../types';
-
+s
 interface VisaoGeralProps {
     data: ProcessedData[];
 }
@@ -46,6 +46,19 @@ export const VisaoGeral: React.FC<VisaoGeralProps> = ({ data }) => {
         }
         return null;
     };
+    
+    // ALTERAÇÃO 1: Componente para renderizar os rótulos apenas se o valor for > 0
+    const renderCustomizedLabel = (props: any) => {
+        const { x, y, width, height, value } = props;
+        if (value > 0) {
+            return (
+                <text x={x + width / 2} y={y + height / 2} fill="#fff" textAnchor="middle" dominantBaseline="middle" fontSize={12} fontWeight="bold">
+                    {value}
+                </text>
+            );
+        }
+        return null;
+    };
 
     return (
         <div className="card p-6 mt-4">
@@ -60,26 +73,34 @@ export const VisaoGeral: React.FC<VisaoGeralProps> = ({ data }) => {
                             data={dadosDoGrafico}
                             layout="vertical"
                             barCategoryGap="30%"
+                            margin={{ top: 20, right: 30, left: 20, bottom: 5 }} // Adiciona margem para os rótulos não cortarem
                         >
                             <CartesianGrid strokeDasharray="3 3" stroke="rgba(255, 255, 255, 0.1)" />
                             <XAxis type="number" hide={true} />
+                            
+                            {/* ALTERAÇÃO 2: Aumentado o espaço para os nomes dos cursos */}
                             <YAxis 
                                 type="category" 
                                 dataKey="curso" 
                                 stroke="#9ca3af" 
-                                width={200}
-                                tick={{ fontSize: 12 }} 
+                                width={350} // Aumentado de 200 para 350
+                                tick={{ fontSize: 12, fill: '#d1d5db' }} 
                             />
+                            
                             <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(255, 255, 255, 0.05)' }}/>
-                            <Legend />
-                            <Bar dataKey="entregues" name="Entregues no Prazo" stackId="a" fill="#22c55e" />
-                            <Bar dataKey="pendentes" name="Pendentes" stackId="a" fill="#f59e0b" />
-                            <Bar dataKey="atrasadas" name="Atrasadas" stackId="a" fill="#ef4444">
-                                <LabelList 
-                                    dataKey="total" 
-                                    position="right" 
-                                    style={{ fill: 'white', fontSize: 12, fontWeight: 'bold' }} 
-                                />
+                            <Legend wrapperStyle={{ paddingTop: '20px' }} />
+
+                            {/* ALTERAÇÃO 3: Adicionados rótulos individuais e trocadas as cores/nomes */}
+                            <Bar dataKey="entregues" name="Entregues no Prazo" stackId="a" fill="#22c55e">
+                                <LabelList dataKey="entregues" content={renderCustomizedLabel} />
+                            </Bar>
+
+                            <Bar dataKey="atrasadas" name="Entregue com Atraso" stackId="a" fill="#f59e0b">
+                                <LabelList dataKey="atrasadas" content={renderCustomizedLabel} />
+                            </Bar>
+                            
+                            <Bar dataKey="pendentes" name="Pendentes" stackId="a" fill="#ef4444">
+                                <LabelList dataKey="pendentes" content={renderCustomizedLabel} />
                             </Bar>
                         </BarChart>
                     </ResponsiveContainer>
