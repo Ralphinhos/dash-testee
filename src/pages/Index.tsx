@@ -227,7 +227,7 @@ export default function Index() {
                         </div>
                     </TabsContent>
                     <TabsContent value="geral">
-                        <VisaoGeral data={allData} filtrosAtuais={filters} />
+                        <VisaoGeral data={filteredData} />
                     </TabsContent>
                 </Tabs>
 

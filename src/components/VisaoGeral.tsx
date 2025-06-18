@@ -1,97 +1,89 @@
-import React, { useState, useMemo } from 'react';
-import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import { ProcessedData, FilterState } from '../types';
+import React, { useMemo } from 'react';
+import { BarChart, Bar, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer, CartesianGrid } from 'recharts';
+import { ProcessedData } from '../types';
 
 interface VisaoGeralProps {
     data: ProcessedData[];
-    filtrosAtuais: FilterState;
 }
 
-export const VisaoGeral: React.FC<VisaoGeralProps> = ({ data, filtrosAtuais }) => {
-    const [cursoFiltro, setCursoFiltro] = useState('Todos');
+export const VisaoGeral: React.FC<VisaoGeralProps> = ({ data }) => {
 
-    // Filtra os dados com base na modalidade (do filtro principal) e no curso (deste componente)
-    const dadosParaGrafico = useMemo(() => {
-        if (!filtrosAtuais.modalidade || filtrosAtuais.modalidade === 'Todos') {
+    // Agrega os dados por curso para montar o gráfico
+    const dadosDoGrafico = useMemo(() => {
+        if (!data || data.length === 0) {
             return [];
         }
 
-        return data.filter(item => 
-            item.Modalidade === filtrosAtuais.modalidade &&
-            (cursoFiltro === 'Todos' || item.Curso === cursoFiltro)
-        );
-    }, [data, filtrosAtuais.modalidade, cursoFiltro]);
+        const dadosAgregados = data.reduce((acc, item) => {
+            const curso = item.Curso || 'Não especificado';
 
-    // Calcula os totais para o gráfico
-    const totais = useMemo(() => {
-        const resultado = {
-            entregues: dadosParaGrafico.filter(d => d.isEntregueNoPrazo).length,
-            pendentes: dadosParaGrafico.filter(d => d.isPendente).length,
-            atrasadas: dadosParaGrafico.filter(d => d.isAtrasado).length,
-        };
-        return resultado;
-    }, [dadosParaGrafico]);
+            if (!acc[curso]) {
+                acc[curso] = {
+                    curso: curso,
+                    entregues: 0,
+                    pendentes: 0,
+                    atrasadas: 0,
+                };
+            }
 
-    // Prepara os dados para o componente PieChart
-    const chartData = [
-        { name: 'Entregues no Prazo', value: totais.entregues, color: '#22c55e' },
-        { name: 'Pendentes', value: totais.pendentes, color: '#f59e0b' },
-        { name: 'Atrasadas', value: totais.atrasadas, color: '#ef4444' },
-    ].filter(entry => entry.value > 0); // Mostra apenas se houver valor
-    
-    // Pega as opções de curso disponíveis para a modalidade selecionada
-    const opcoesDeCurso = useMemo(() => {
-        if (!filtrosAtuais.modalidade || filtrosAtuais.modalidade === 'Todos') return [];
-        return [...new Set(data.filter(item => item.Modalidade === filtrosAtuais.modalidade && item.Curso).map(item => item.Curso))].sort();
-    }, [data, filtrosAtuais.modalidade]);
+            if (item.isEntregueNoPrazo) acc[curso].entregues++;
+            else if (item.isPendente) acc[curso].pendentes++;
+            else if (item.isAtrasado) acc[curso].atrasadas++;
 
+            return acc;
+        }, {} as Record<string, { curso: string; entregues: number; pendentes: number; atrasadas: number }>);
+
+        return Object.values(dadosAgregados);
+
+    }, [data]);
+
+    const CustomTooltip = ({ active, payload, label }: any) => {
+        if (active && payload && payload.length) {
+            return (
+                <div className="bg-gray-800 p-3 rounded border border-gray-600 shadow-lg text-sm">
+                    <p className="font-bold text-white mb-2">{label}</p>
+                    {payload.map((entry: any) => (
+                        <p key={entry.dataKey} style={{ color: entry.color }}>
+                            {`${entry.name}: ${entry.value}`}
+                        </p>
+                    ))}
+                    <p className="mt-2 pt-2 border-t border-gray-500 text-gray-300">
+                        Total: {payload.reduce((sum: number, entry: any) => sum + entry.value, 0)} atividades
+                    </p>
+                </div>
+            );
+        }
+        return null;
+    };
 
     return (
         <div className="card p-6 mt-4">
-            <div className="flex flex-wrap justify-between items-center gap-4 mb-4">
-                <h3 className="text-lg font-semibold text-white">
-                    Visão Geral de {filtrosAtuais.modalidade} {cursoFiltro !== 'Todos' ? `- ${cursoFiltro}` : ''}
-                </h3>
-                {/* Filtro de Curso */}
-                <div className="flex items-center gap-2">
-                    <label htmlFor="filtro-curso-geral" className="text-sm font-medium text-gray-400">Filtrar por Curso:</label>
-                    <select 
-                        id="filtro-curso-geral"
-                        value={cursoFiltro} 
-                        onChange={(e) => setCursoFiltro(e.target.value)}
-                        className="filter-select"
-                        disabled={opcoesDeCurso.length === 0}
-                    >
-                        <option value="Todos">Todos os Cursos</option>
-                        {opcoesDeCurso.map(curso => <option key={curso} value={curso}>{curso}</option>)}
-                    </select>
-                </div>
-            </div>
-
-            {dadosParaGrafico.length > 0 ? (
-                <div style={{ width: '100%', height: 350 }}>
+            <h3 className="text-lg font-semibold text-white mb-4">
+                Desempenho por Curso
+            </h3>
+            
+            {dadosDoGrafico.length > 0 ? (
+                <div style={{ width: '100%', height: 400 }}>
                     <ResponsiveContainer>
-                        <PieChart>
-                            <Pie data={chartData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={120} labelLine={false} label={({ cx, cy, midAngle, innerRadius, outerRadius, percent }) => {
-                                const radius = innerRadius + (outerRadius - innerRadius) * 0.5;
-                                const x = cx + radius * Math.cos(-midAngle * (Math.PI / 180));
-                                const y = cy + radius * Math.sin(-midAngle * (Math.PI / 180));
-                                return (
-                                    <text x={x} y={y} fill="white" textAnchor={x > cx ? 'start' : 'end'} dominantBaseline="central">
-                                        {`${(percent * 100).toFixed(0)}%`}
-                                    </text>
-                                );
-                            }}>
-                                {chartData.map((entry, index) => <Cell key={`cell-${index}`} fill={entry.color} />)}
-                            </Pie>
-                            <Tooltip formatter={(value) => `${value} atividade(s)`} />
+                        <BarChart
+                            data={dadosDoGrafico}
+                            layout="vertical" // Gráfico de barras horizontais, melhor para nomes longos de curso
+                            margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+                        >
+                            <CartesianGrid strokeDasharray="3 3" stroke="rgba(255, 255, 255, 0.1)" />
+                            <XAxis type="number" stroke="#9ca3af" />
+                            <YAxis type="category" dataKey="curso" stroke="#9ca3af" width={150} />
+                            <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(255, 255, 255, 0.05)' }}/>
                             <Legend />
-                        </PieChart>
+                            <Bar dataKey="entregues" name="Entregues no Prazo" stackId="a" fill="#22c55e" />
+                            <Bar dataKey="pendentes" name="Pendentes" stackId="a" fill="#f59e0b" />
+                            <Bar dataKey="atrasadas" name="Atrasadas" stackId="a" fill="#ef4444" />
+                        </BarChart>
                     </ResponsiveContainer>
                 </div>
             ) : (
                 <p className="text-gray-400 text-center py-10">
-                    Selecione uma modalidade no filtro principal para visualizar o gráfico.
+                    Selecione filtros de Semestre e Modalidade para visualizar os dados.
                 </p>
             )}
         </div>
