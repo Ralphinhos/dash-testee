@@ -1,0 +1,63 @@
+
+import React, { useState, FC } from 'react';
+import { X, Copy, Sparkles, Loader2 } from 'lucide-react';
+
+interface AIModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  title: string;
+  content: string;
+}
+
+export const AIModal: FC<AIModalProps> = ({ isOpen, onClose, title, content }) => {
+  const [copied, setCopied] = useState(false);
+
+  if (!isOpen) return null;
+
+  const handleCopy = async () => {
+    if(!content || content === "Gerando análise...") return;
+    try {
+      await navigator.clipboard.writeText(content);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      console.error('Erro ao copiar texto:', err);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-70 z-50 flex justify-center items-center p-4">
+      <div className="bg-gray-900 border border-gray-700 rounded-2xl shadow-xl w-full max-w-2xl max-h-[90vh] flex flex-col">
+        <div className="flex justify-between items-center p-4 border-b border-gray-700">
+          <h3 className="text-xl font-bold text-white flex items-center gap-2">
+            <Sparkles className="w-5 h-5 text-cyan-400" />
+            {title}
+          </h3>
+          <button onClick={onClose} className="text-gray-400 hover:text-white text-2xl transition-colors">
+            <X className="w-6 h-6" />
+          </button>
+        </div>
+        <div className="p-6 overflow-y-auto flex-1">
+          {content === "Gerando análise..." ? (
+            <div className="flex items-center justify-center">
+              <Loader2 className="h-5 w-5 mr-3 animate-spin" />
+              {content}
+            </div>
+          ) : (
+            <pre className="whitespace-pre-wrap text-gray-200 leading-relaxed font-sans">{content}</pre>
+          )}
+        </div>
+        <div className="p-4 border-t border-gray-700 text-right">
+          <button 
+            onClick={handleCopy} 
+            className="bg-[#2b466d] hover:bg-[#3c5f94] text-white font-bold py-2 px-4 rounded-lg flex items-center gap-2 transition-colors disabled:opacity-50" 
+            disabled={content === "Gerando análise..."}
+          >
+            <Copy className="w-4 h-4" />
+            {copied ? 'Copiado!' : 'Copiar Texto'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
