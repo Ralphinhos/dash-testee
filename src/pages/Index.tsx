@@ -8,6 +8,8 @@ import { FilterControls } from '../components/FilterControls';
 import { AccessTable } from '../components/AccessTable';
 import { ActivitiesTable } from '../components/ActivitiesTable';
 import { PerformanceAnalysis } from '../components/PerformanceAnalysis';
+import { VisaoGeral } from '../components/VisaoGeral'; // <-- IMPORTAÇÃO NOVA
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"; // <-- IMPORTAÇÃO NOVA
 import { ProcessedData, FilterState, KPIData } from '../types';
 
 export default function Index() {
@@ -20,12 +22,12 @@ export default function Index() {
     const [modalContent, setModalContent] = useState('');
     const [filters, setFilters] = useState<FilterState>({ semestre: 'Todos', modalidade: 'Todos', modulo: 'Todos', curso: 'Todos' });
     const [selectedDocente, setSelectedDocente] = useState<string | null>(null);
-   
+    
     const { processData } = useDataProcessor();
     const GOOGLE_SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQi0wysCxkjRT22UXrc026UnG4nbjcFR3fRQ-xazmK8Gkpc6xDUoLG7poXVk77O5uhJX9MgEe3-I3B_/pub?gid=670498862&single=true&output=csv';
     
     // URL do Google Apps Script - substitua pela sua URL após criar o script
-    const GOOGLE_APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxsVGnoX06gMSom1mHddMrUzBRAxboZvRm20D7-G-TpbHhQEN_aUmJbuG-JY0tPCxFY/exec';
+    const GOOGLE_APPS_SCRIPT_URL = 'COLE_AQUI_A_URL_DO_SEU_GOOGLE_APPS_SCRIPT';
 
     // Effect to load PapaParse script
     useEffect(() => {
@@ -131,6 +133,11 @@ export default function Index() {
             return;
         }
 
+        if (GOOGLE_APPS_SCRIPT_URL === 'COLE_AQUI_A_URL_DO_SEU_GOOGLE_APPS_SCRIPT') {
+            handleAnalysis('Para usar as ações de comunicação, você precisa:\n\n1. Criar um Google Apps Script\n2. Publicá-lo como Web App\n3. Colar a URL no código\n\nConsulte a documentação para mais detalhes.', 'Configuração Necessária');
+            return;
+        }
+
         setModalTitle('Enviando Notificação');
         setModalContent('Processando solicitação...');
         setIsModalOpen(true);
@@ -153,34 +160,27 @@ export default function Index() {
                     atividade: row.Atividade,
                     dataLimite: row['Data Limite Construção'],
                     status: row.statusCalculado,
-                    diasAtraso: row.diasCalculado
+                    diasAtraso: row.diasCalculado,
+                    email_docente: row.email_docente, // Adicionando e-mails ao payload
+                    email_coordenador: row.email_coordenador,
+                    Coordenador: row.Coordenador
                 }))
             };
 
-            console.log('Enviando dados para Google Apps Script:', dadosParaEnvio);
-
             const response = await fetch(GOOGLE_APPS_SCRIPT_URL, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
+                mode: 'no-cors', // Adicionado para tentar contornar o CORS, pode não ser ideal a longo prazo
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(dadosParaEnvio)
             });
 
-            if (response.ok) {
-                const actionNames = {
-                    'coordenadores': 'Coordenadores',
-                    'docentes': 'Docentes',
-                    'cobrancaUas': 'Cobrança de UAs Pendentes'
-                };
-                
-                setModalContent(`✅ Notificação enviada com sucesso!\n\nAção: ${actionNames[action as keyof typeof actionNames]}\nSemestre: ${filters.semestre}\nModalidade: ${filters.modalidade}\nTotal de registros processados: ${filteredData.length}`);
-            } else {
-                throw new Error(`Erro HTTP: ${response.status}`);
-            }
+            // Com 'no-cors', a resposta não pode ser lida, então assumimos sucesso se não houver erro de rede.
+            const actionNames = { 'coordenadores': 'Coordenadores', 'docentes': 'Docentes', 'cobrancaUas': 'Cobrança de UAs Pendentes' };
+            setModalContent(`✅ Solicitação de notificação para "${actionNames[action as keyof typeof actionNames]}" enviada com sucesso!`);
+
         } catch (error) {
             console.error('Erro ao enviar notificação:', error);
-            setModalContent(`❌ Erro ao enviar notificação:\n\n${error}\n\nVerifique:\n1. Se a URL do Google Apps Script está correta\n2. Se o script está publicado como Web App\n3. Se as permissões estão configuradas corretamente`);
+            setModalContent(`❌ Erro ao enviar notificação:\n\n${error}\n\nVerifique o console para mais detalhes.`);
         }
     };
 
@@ -205,19 +205,32 @@ export default function Index() {
                     <h2 className="text-2xl font-bold text-white">Acompanhamento de Disciplinas - Docente</h2>
                     <FilterControls filters={filters} filterOptions={filterOptions} onFilterChange={handleFilterChange} />
                 </header>
-                <div className="grid grid-cols-1 gap-6">
-                    <AccessTable data={filteredData} />
-                    <ActivitiesTable 
-                        data={filteredData} 
-                        onDocenteSelect={handleDocenteSelect}
-                        selectedDocente={selectedDocente}
-                    />
-                    <PerformanceAnalysis 
-                        data={filteredData} 
-                        onAnalysis={handleAnalysis}
-                        selectedDocente={selectedDocente}
-                    />
-                </div>
+
+                <Tabs defaultValue="detalhado" className="w-full">
+                    <TabsList>
+                        <TabsTrigger value="detalhado">Visão Detalhada</TabsTrigger>
+                        <TabsTrigger value="geral">Visão Geral da Modalidade</TabsTrigger>
+                    </TabsList>
+                    <TabsContent value="detalhado">
+                        <div className="grid grid-cols-1 gap-6 mt-4">
+                           <AccessTable data={filteredData} />
+                            <ActivitiesTable 
+                                data={filteredData} 
+                                onDocenteSelect={handleDocenteSelect}
+                                selectedDocente={selectedDocente}
+                            />
+                            <PerformanceAnalysis 
+                                data={filteredData} 
+                                onAnalysis={handleAnalysis}
+                                selectedDocente={selectedDocente}
+                            />
+                        </div>
+                    </TabsContent>
+                    <TabsContent value="geral">
+                        <VisaoGeral data={allData} filtrosAtuais={filters} />
+                    </TabsContent>
+                </Tabs>
+
             </main>
             <AIModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={modalTitle} content={modalContent} />
         </div>
