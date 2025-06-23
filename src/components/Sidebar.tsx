@@ -17,7 +17,7 @@ export const Sidebar: FC<SidebarProps> = ({ onNotification, kpis }) => {
   return (
     <aside className="w-1/4 min-w-[320px] bg-[#020617] border-r border-gray-800 p-6 flex flex-col space-y-6 overflow-y-auto">
       <div className="flex items-center justify-center mb-4">
-          <img src="https://i.ibb.co/hJHMVMHk/Logo-UNIFENAS-min-brnaca.png" alt="Logo UNIFENAS" className="h-32" />
+          <img src="logo_branca" alt="Logo UNIFENAS" className="h-20 w-auto" />
       </div>
       <div className="card bg-[rgba(30,41,59,0.7)] p-4">
         <p className="text-sm text-gray-400">Total de Atividades Pendentes</p>
