@@ -94,11 +94,24 @@ export default function Index() {
     setModalTitle('Enviando Notificação');
     setModalContent('Processando e enviando e-mails...');
 
-    try {
-        const dadosParaEnvio = encodeURIComponent(JSON.stringify(filteredData));
-        const url = `${GOOGLE_APPS_SCRIPT_URL}?action=${action}&dados=${dadosParaEnvio}`;
+   try {
+        // A URL agora não contém os dados
+        const url = GOOGLE_APPS_SCRIPT_URL; 
 
-        const response = await fetch(url);
+        const response = await fetch(url, {
+            method: 'POST', // 1. Especifica o método como POST
+            mode: 'cors',   // 2. Define o modo como CORS
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            // 3. Envia os dados no corpo da requisição
+            body: JSON.stringify({ 
+                action: action, 
+                dadosDetalhados: filteredData 
+            }),
+        });
+
+
         if (!response.ok) throw new Error(`Erro: ${response.statusText}`);
 
         const result = await response.json();
