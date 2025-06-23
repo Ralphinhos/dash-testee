@@ -23,10 +23,8 @@ export default function Index() {
     const [selectedDocente, setSelectedDocente] = useState<string | null>(null);
     
     const { processData } = useDataProcessor();
-    const GOOGLE_SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vR6YENH0zEq3RMaxp82tb3G-e3u0Asw9lOkq07K40JtdnOP-c2lYhnieY7S0vW8HA/pub?gid=1587952717&single=true&output=csv';
-    
-    // ATENÇÃO: COLOQUE SUA URL REAL AQUI
-    const GOOGLE_APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwlXPcJCpbtMPqbIjlkbLTAwRc7GrCCuc75K5qgcDOPlWx9mWDLiul5ZP-dex0EFbj8/exec';
+        const GOOGLE_SHEET_URL = import.meta.env.VITE_GOOGLE_SHEET_URL;
+        const GOOGLE_APPS_SCRIPT_URL = import.meta.env.VITE_GOOGLE_APPS_SCRIPT_URL;
 
     useEffect(() => {
         const script = document.createElement('script');
@@ -148,7 +146,7 @@ export default function Index() {
                             value="geral" 
                             className="px-4 py-2 rounded-md text-sm font-medium transition-all text-slate-400 border border-slate-700 bg-transparent data-[state=active]:bg-slate-700/50 data-[state=active]:text-white data-[state=active]:border-cyan-400 data-[state=active]:shadow-[0_0_10px_rgba(0,173,199,0.3)]"
                         >
-                            Visão Geral da Modalidade
+                            Visão Geral
                         </TabsTrigger>
                     </TabsList>
                     <TabsContent value="detalhado">
