@@ -33,17 +33,24 @@ export default function Index() {
         script.async = true;
         script.onload = () => {
             setLoadingMessage("Carregando dados da planilha...");
+            console.log("[Index.tsx] PapaParse carregado. Buscando GOOGLE_SHEET_URL:", GOOGLE_SHEET_URL);
+
             window.Papa.parse(GOOGLE_SHEET_URL, { 
                 download: true, header: true, skipEmptyLines: true,
                 complete: (results: any) => {
+                    console.log("[Index.tsx] Dados da planilha recebidos. Linhas:", results.data.length);
+                    // console.log("[Index.tsx] Primeiras 5 linhas raw:", results.data.slice(0,5)); // Descomente para ver os dados brutos
                     const rawData = results.data;
                     
                     const processedCoordinatorsMap: Record<string, { fullName: string, courses: string[], password?: string }> = {};
-                    rawData.forEach((row: any) => {
+                    rawData.forEach((row: any, rowIndex: number) => {
                         const loginUsername = row['Login']?.trim(); 
                         const coordinatorFullName = row['Coordenador']?.trim(); 
                         const course = row['Curso']?.trim();
                         const password = row['Senha']?.trim(); 
+
+                        // Log para cada linha processada para coordenadores (pode ser muito, use com cautela)
+                        // if(rowIndex < 10) console.log(`[Index.tsx] Processando linha ${rowIndex} para Coordenador: Login='${loginUsername}', Nome='${coordinatorFullName}', Senha='${password ? "sim" : "não"}', Curso='${course}'`);
 
                         if (loginUsername && coordinatorFullName) { 
                             if (!processedCoordinatorsMap[loginUsername]) {
@@ -74,30 +81,42 @@ export default function Index() {
                             password: data.password
                         }));
                     
-                    setCoordinators(coordinatorsArray);
-                    localStorage.setItem('coordinatorsData', JSON.stringify(coordinatorsArray)); 
+                    console.log("[Index.tsx] Coordenadores processados Array:", coordinatorsArray);
+                    setCoordinators(coordinatorsArray); // Estado local, não usado diretamente por Login.tsx
+                    
+                    if (coordinatorsArray.length > 0) {
+                        localStorage.setItem('coordinatorsData', JSON.stringify(coordinatorsArray)); 
+                        console.log("[Index.tsx] 'coordinatorsData' SALVO no localStorage com", coordinatorsArray.length, "coordenadores.");
+                    } else {
+                        console.warn("[Index.tsx] NENHUM coordenador processado. 'coordinatorsData' NÃO será salvo no localStorage.");
+                        localStorage.removeItem('coordinatorsData'); // Garante que não haja dados antigos/inválidos
+                    }
 
                     const mainApplicationData = rawData.filter((r: any) => r.Docente && r.Docente.trim());
                     const processedMainData = processData(mainApplicationData);
                     setAllData(processedMainData);
+                    console.log("[Index.tsx] Dados principais da aplicação processados.");
                     
                     setIsLoading(false);
                 },
                 error: (err: any) => { 
-                    console.error("Erro ao carregar dados da planilha:", err); 
+                    console.error("[Index.tsx] Erro no PapaParse ao carregar/processar dados da planilha:", err);
                     setLoadingMessage("Erro ao carregar dados da planilha. Verifique o console.");
                     setIsLoading(false); 
                 }
             });
         };
         script.onerror = () => { 
-            console.error("Falha ao carregar PapaParse."); 
+            console.error("[Index.tsx] Falha CRÍTICA ao carregar PapaParse."); 
             setLoadingMessage("Erro crítico ao carregar dependências. Verifique o console."); 
             setIsLoading(false); 
         };
         document.body.appendChild(script);
-        return () => { if(document.body.contains(script)){ document.body.removeChild(script); } }
-    }, [processData]); 
+        return () => { 
+            console.log("[Index.tsx] Limpando script PapaParse.");
+            if(document.body.contains(script)){ document.body.removeChild(script); } 
+        }
+    }, [processData]);
    
     const filterOptions = useMemo(() => {
         const dataToFilter = filteredData.length > 0 ? filteredData : allData; 
