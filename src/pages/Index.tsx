@@ -69,60 +69,63 @@ export default function Index() {
         // Não é mais necessário adicionar/remover o script PapaParse aqui.
     }, [processData]); 
    
+    // Memoize os dados base do coordenador
+    const dataForCoordinator = useMemo(() => {
+        const loggedInCoordinatorFullName = localStorage.getItem('loggedInCoordinator');
+        const coordinatorCoursesStr = localStorage.getItem('coordinatorCourses');
+        if (!loggedInCoordinatorFullName || !coordinatorCoursesStr) {
+            // Se não houver coordenador logado ou cursos, retorna allData 
+            // (PrivateRoute deveria ter prevenido isso para Index, mas é uma salvaguarda)
+            // Ou, se a intenção é NUNCA mostrar dados se não houver coordenador, retorne []
+            // Vamos assumir que PrivateRoute funciona e sempre haverá coordenador aqui.
+            return allData; 
+        }
+        const coordinatorCourses = JSON.parse(coordinatorCoursesStr);
+        if (coordinatorCourses.length === 0) return []; // Coordenador logado mas sem cursos
+
+        return allData.filter(row => coordinatorCourses.includes(row.Curso));
+    }, [allData]);
+
+    // useEffect para aplicar filtros da UI sobre os dados do coordenador
+    useEffect(() => {
+        const noUiFiltersApplied = filters.semestre === 'Todos' &&
+                                 filters.modalidade === 'Todos' &&
+                                 filters.modulo === 'Todos' &&
+                                 filters.curso === 'Todos';
+
+        if (noUiFiltersApplied) {
+            setFilteredData(dataForCoordinator); // Mostra todos os dados do coordenador
+        } else {
+            const appliedFiltersResult = dataForCoordinator.filter(row =>
+                (filters.semestre === 'Todos' || row.Semestre === filters.semestre) &&
+                (filters.modalidade === 'Todos' || row.Modalidade === filters.modalidade) &&
+                (filters.modulo === 'Todos' || row['Módulo'] === filters.modulo) &&
+                (filters.curso === 'Todos' || row.Curso === filters.curso)
+            );
+            setFilteredData(appliedFiltersResult);
+        }
+        setSelectedDocente(null);
+    }, [filters, dataForCoordinator]);
+
+    // filterOptions agora deriva dos dados específicos do coordenador
     const filterOptions = useMemo(() => {
-        // Os filtros devem operar sobre os dados que já podem estar filtrados pelo coordenador (filteredData)
-        // ou sobre todos os dados se nenhum filtro de coordenador/principal ainda foi aplicado (allData).
-        const baseDataForFilters = filteredData.length > 0 ? filteredData : allData; 
-        const semestres = [...new Set(baseDataForFilters.map(item => item.Semestre).filter(Boolean))].sort();
-        const modalidades = [...new Set(allData.map(item => item.Modalidade).filter(Boolean))].sort();
+        const semestres = [...new Set(dataForCoordinator.map(item => item.Semestre).filter(Boolean))].sort();
+        const modalidades = [...new Set(dataForCoordinator.map(item => item.Modalidade).filter(Boolean))].sort();
+        
         let modulos: string[] = [];
         let cursos: string[] = [];
-        if (filters.modalidade && filters.modalidade !== 'Todos') {
-            modulos = [...new Set(allData.filter(item => item.Modalidade === filters.modalidade && item['Módulo']).map(item => item['Módulo']))].sort();
-            cursos = [...new Set(allData.filter(item => item.Modalidade === filters.modalidade && item.Curso).map(item => item.Curso))].sort();
-        }
-        return { semestres, modalidades, modulos, cursos };
-    }, [allData, filters.modalidade]);
 
-    useEffect(() => {
-        // Recupera informações do coordenador logado
-        const loggedInCoordinatorName = localStorage.getItem('loggedInCoordinator');
-        const coordinatorCoursesStr = localStorage.getItem('coordinatorCourses');
-        const coordinatorCourses = coordinatorCoursesStr ? JSON.parse(coordinatorCoursesStr) : [];
+        // Se uma modalidade específica for selecionada, filtre módulos e cursos baseados nessa modalidade DENTRO dos dados do coordenador
+        const baseParaModulosECursos = filters.modalidade === 'Todos' 
+            ? dataForCoordinator 
+            : dataForCoordinator.filter(item => item.Modalidade === filters.modalidade);
 
-        let dataForFiltering = allData;
-
-        // 1. Filtra por cursos do coordenador, se houver um coordenador logado
-        if (loggedInCoordinatorName && coordinatorCourses.length > 0) {
-            dataForFiltering = allData.filter(row => coordinatorCourses.includes(row.Curso));
-        } else if (loggedInCoordinatorName && coordinatorCourses.length === 0) {
-            // Coordenador logado mas sem cursos associados (ou erro nos dados), mostra nada.
-            dataForFiltering = [];
-        }
-        // Se nenhum coordenador estiver logado, dataForFiltering continua sendo allData (sem filtro de coordenador)
-
-        // 2. Aplica os filtros de interface (semestre, modalidade, etc.)
-        if (filters.semestre === 'Todos' || filters.modalidade === 'Todos') {
-          // Se os filtros principais não estiverem selecionados, mostra os dados já filtrados pelo coordenador (ou todos se nenhum coordenador)
-          // Exceto se NENHUM coordenador estiver logado, aí não mostra nada até selecionar os filtros.
-          if (!loggedInCoordinatorName) {
-              setFilteredData([]);
-          } else {
-              setFilteredData(dataForFiltering);
-          }
-          setSelectedDocente(null);
-          return;
-        }
+        modulos = [...new Set(baseParaModulosECursos.map(item => item['Módulo']).filter(Boolean))].sort();
+        // A lista de cursos no filtro deve ser apenas os cursos do coordenador que pertencem à modalidade selecionada (se houver)
+        cursos = [...new Set(baseParaModulosECursos.map(item => item.Curso).filter(Boolean))].sort();
         
-        const appliedFilters = dataForFiltering.filter(row =>
-          row.Semestre === filters.semestre &&
-          row.Modalidade === filters.modalidade &&
-          (filters.modulo === 'Todos' || row['Módulo'] === filters.modulo) &&
-          (filters.curso === 'Todos' || row.Curso === filters.curso) // O filtro de curso aqui pode ser redundante se já filtrado por coordenador, mas mantém consistência.
-        );
-        setFilteredData(appliedFilters);
-        setSelectedDocente(null);
-    }, [filters, allData]); // Adicionado allData como dependência para re-filtrar quando os dados dos coordenadores mudarem o allData inicial.
+        return { semestres, modalidades, modulos, cursos };
+    }, [dataForCoordinator, filters.modalidade]);
 
     const handleFilterChange = (key: keyof FilterState, value: string) => {
         setFilters(prev => ({ ...prev, [key]: value, ...(key === 'modalidade' && { modulo: 'Todos', curso: 'Todos'}) }));
