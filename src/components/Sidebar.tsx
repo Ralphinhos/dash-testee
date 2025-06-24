@@ -44,9 +44,6 @@ export const Sidebar: FC<SidebarProps> = ({ onNotification, kpis }) => {
           <button onClick={() => onNotification('cobrancaUas')} className="btn-tertiary w-full">✨ Cobrar UAs Pendentes</button>
         </div>
       </div>
-      <footer className="mt-auto text-center text-xs text-gray-600">
-        <p>Desenvolvido por Raphael de Oliveira</p>
-      </footer>
     </aside>
   );
 };
