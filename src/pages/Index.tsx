@@ -9,12 +9,13 @@ import { ActivitiesTable } from '../components/ActivitiesTable';
 import { PerformanceAnalysis } from '../components/PerformanceAnalysis';
 import { VisaoGeral } from '../components/VisaoGeral';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ProcessedData, FilterState, KPIData } from '../types';
+import { ProcessedData, FilterState, KPIData, Coordinator } from '../types'; // Adicionado Coordinator a types
 
 export default function Index() {
     const [isLoading, setIsLoading] = useState(true);
     const [loadingMessage, setLoadingMessage] = useState("Carregando dependências...");
     const [allData, setAllData] = useState<ProcessedData[]>([]);
+    const [coordinators, setCoordinators] = useState<Coordinator[]>([]);
     const [filteredData, setFilteredData] = useState<ProcessedData[]>([]);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [modalTitle, setModalTitle] = useState('');
@@ -23,24 +24,62 @@ export default function Index() {
     const [selectedDocente, setSelectedDocente] = useState<string | null>(null);
     
     const { processData } = useDataProcessor();
-        const GOOGLE_SHEET_URL = import.meta.env.VITE_GOOGLE_SHEET_URL;
-        const GOOGLE_APPS_SCRIPT_URL = import.meta.env.VITE_GOOGLE_APPS_SCRIPT_URL;
+    const GOOGLE_SHEET_URL = import.meta.env.VITE_GOOGLE_SHEET_URL;
+    const GOOGLE_APPS_SCRIPT_URL = import.meta.env.VITE_GOOGLE_APPS_SCRIPT_URL;
+    const COORDINATORS_SHEET_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vR6YENH0zEq3RMaxp82tb3G-e3u0Asw9lOkq07K40JtdnOP-c2lYhnieY7S0vW8HA/pub?gid=1587952717&single=true&output=csv";
 
     useEffect(() => {
         const script = document.createElement('script');
         script.src = "https://cdn.jsdelivr.net/npm/papaparse@5.3.0/papaparse.min.js";
         script.async = true;
         script.onload = () => {
-             setLoadingMessage("Carregando dados da planilha...");
-             window.Papa.parse(GOOGLE_SHEET_URL, {
+            setLoadingMessage("Carregando dados dos coordenadores...");
+            window.Papa.parse(COORDINATORS_SHEET_URL, {
                 download: true, header: true, skipEmptyLines: true,
                 complete: (results: any) => {
-                    const rawData = results.data;
-                    const processed = processData(rawData.filter((r: any) => r.Docente && r.Docente.trim()));
-                    setAllData(processed);
-                    setIsLoading(false);
+                    const rawCoordinatorsData = results.data;
+                    const processedCoordinatorsMap: Record<string, { courses: string[], password?: string }> = {};
+
+                    rawCoordinatorsData.forEach((currentRow: any) => {
+                        const coordinatorName = currentRow['Nome do Coordenador'];
+                        const course = currentRow['Curso'];
+                        const password = currentRow['Senha']; // Lendo a nova coluna 'Senha'
+
+                        if (coordinatorName) {
+                            if (!processedCoordinatorsMap[coordinatorName]) {
+                                processedCoordinatorsMap[coordinatorName] = { courses: [], password: password };
+                            } else if (password && !processedCoordinatorsMap[coordinatorName].password) {
+                                // Adiciona a senha se ainda não estiver definida (caso o coordenador apareça em múltiplas linhas e a senha só em uma)
+                                processedCoordinatorsMap[coordinatorName].password = password;
+                            }
+                            if (course) {
+                                processedCoordinatorsMap[coordinatorName].courses.push(course);
+                            }
+                        }
+                    });
+
+                    const coordinatorsArray: Coordinator[] = Object.entries(processedCoordinatorsMap).map(([name, data]) => ({
+                        name,
+                        courses: [...new Set(data.courses)], // Garante cursos únicos
+                        password: data.password
+                    }));
+
+                    setCoordinators(coordinatorsArray);
+                    localStorage.setItem('coordinatorsData', JSON.stringify(coordinatorsArray));
+
+                    setLoadingMessage("Carregando dados da planilha principal...");
+                    window.Papa.parse(GOOGLE_SHEET_URL, {
+                        download: true, header: true, skipEmptyLines: true,
+                        complete: (results: any) => {
+                            const rawData = results.data;
+                            const processed = processData(rawData.filter((r: any) => r.Docente && r.Docente.trim()));
+                            setAllData(processed);
+                            setIsLoading(false);
+                        },
+                        error: (err: any) => { console.error("Erro ao carregar dados principais:", err); setLoadingMessage("Erro ao carregar dados principais.");}
+                    });
                 },
-                error: (err: any) => { console.error("Erro ao carregar dados:", err); setLoadingMessage("Erro ao carregar dados.");}
+                error: (err: any) => { console.error("Erro ao carregar dados dos coordenadores:", err); setLoadingMessage("Erro ao carregar dados dos coordenadores.");}
             });
         };
         script.onerror = () => { console.error("Falha ao carregar PapaParse."); setLoadingMessage("Erro ao carregar dependências."); };
@@ -49,7 +88,8 @@ export default function Index() {
     }, []);
    
     const filterOptions = useMemo(() => {
-        const semestres = [...new Set(allData.map(item => item.Semestre).filter(Boolean))].sort();
+        const dataToFilter = filteredData.length > 0 ? filteredData : allData; // Usa filteredData se já filtrado por coordenador
+        const semestres = [...new Set(dataToFilter.map(item => item.Semestre).filter(Boolean))].sort();
         const modalidades = [...new Set(allData.map(item => item.Modalidade).filter(Boolean))].sort();
         let modulos: string[] = [];
         let cursos: string[] = [];
@@ -61,20 +101,44 @@ export default function Index() {
     }, [allData, filters.modalidade]);
 
     useEffect(() => {
+        // Recupera informações do coordenador logado
+        const loggedInCoordinatorName = localStorage.getItem('loggedInCoordinator');
+        const coordinatorCoursesStr = localStorage.getItem('coordinatorCourses');
+        const coordinatorCourses = coordinatorCoursesStr ? JSON.parse(coordinatorCoursesStr) : [];
+
+        let dataForFiltering = allData;
+
+        // 1. Filtra por cursos do coordenador, se houver um coordenador logado
+        if (loggedInCoordinatorName && coordinatorCourses.length > 0) {
+            dataForFiltering = allData.filter(row => coordinatorCourses.includes(row.Curso));
+        } else if (loggedInCoordinatorName && coordinatorCourses.length === 0) {
+            // Coordenador logado mas sem cursos associados (ou erro nos dados), mostra nada.
+            dataForFiltering = [];
+        }
+        // Se nenhum coordenador estiver logado, dataForFiltering continua sendo allData (sem filtro de coordenador)
+
+        // 2. Aplica os filtros de interface (semestre, modalidade, etc.)
         if (filters.semestre === 'Todos' || filters.modalidade === 'Todos') {
-          setFilteredData([]);
+          // Se os filtros principais não estiverem selecionados, mostra os dados já filtrados pelo coordenador (ou todos se nenhum coordenador)
+          // Exceto se NENHUM coordenador estiver logado, aí não mostra nada até selecionar os filtros.
+          if (!loggedInCoordinatorName) {
+              setFilteredData([]);
+          } else {
+              setFilteredData(dataForFiltering);
+          }
           setSelectedDocente(null);
           return;
         }
-        const filtered = allData.filter(row =>
+
+        const appliedFilters = dataForFiltering.filter(row =>
           row.Semestre === filters.semestre &&
           row.Modalidade === filters.modalidade &&
           (filters.modulo === 'Todos' || row['Módulo'] === filters.modulo) &&
-          (filters.curso === 'Todos' || row.Curso === filters.curso)
+          (filters.curso === 'Todos' || row.Curso === filters.curso) // O filtro de curso aqui pode ser redundante se já filtrado por coordenador, mas mantém consistência.
         );
-        setFilteredData(filtered);
+        setFilteredData(appliedFilters);
         setSelectedDocente(null);
-    }, [filters, allData]);
+    }, [filters, allData]); // Adicionado allData como dependência para re-filtrar quando os dados dos coordenadores mudarem o allData inicial.
 
     const handleFilterChange = (key: keyof FilterState, value: string) => {
         setFilters(prev => ({ ...prev, [key]: value, ...(key === 'modalidade' && { modulo: 'Todos', curso: 'Todos'}) }));
