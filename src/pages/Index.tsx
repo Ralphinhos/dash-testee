@@ -84,7 +84,9 @@ export default function Index() {
         setSelectedDocente(selectedDocente === docente ? null : docente);
     };
    
-  const handleNotification = async (action: string) => {
+ // Substitua a função handleNotification no Index.tsx por esta versão corrigida:
+
+const handleNotification = async (action: string) => {
     if (filteredData.length === 0) {
         alert('Nenhum dado selecionado. Por favor, aplique os filtros de Semestre e Modalidade primeiro.');
         return;
@@ -94,34 +96,34 @@ export default function Index() {
     setModalTitle('Enviando Notificação');
     setModalContent('Processando e enviando e-mails...');
 
-   try {
-        // A URL agora não contém os dados
-        const url = GOOGLE_APPS_SCRIPT_URL; 
+    try {
+        // Preparar os dados para envio
+        const dadosParaEnvio = {
+            action: action,
+            dadosDetalhados: filteredData
+        };
 
-        const response = await fetch(url, {
-            method: 'POST', // 1. Especifica o método como POST
-            mode: 'cors',   // 2. Define o modo como CORS
+        // Fazer requisição POST em vez de GET
+        const response = await fetch(GOOGLE_APPS_SCRIPT_URL, {
+            method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
             },
-            // 3. Envia os dados no corpo da requisição
-            body: JSON.stringify({ 
-                action: action, 
-                dadosDetalhados: filteredData 
-            }),
+            body: JSON.stringify(dadosParaEnvio)
         });
 
-
-        if (!response.ok) throw new Error(`Erro: ${response.statusText}`);
+        if (!response.ok) {
+            throw new Error(`Erro HTTP: ${response.status} - ${response.statusText}`);
+        }
 
         const result = await response.json();
         setModalContent(`✅ ${result.message}`);
+        
     } catch (error: any) {
         console.error('Erro ao enviar notificação:', error);
         setModalContent(`❌ Erro ao enviar notificação:\n\n${error.message}`);
     }
 };
-
 
     const kpis = useMemo(() => {
         if (filteredData.length === 0) {
