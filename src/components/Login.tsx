@@ -23,15 +23,16 @@ export const Login: React.FC = () => {
   }, []);
 
   const handleLogin = () => {
-    setError('');
-    const coordinator = coordinators.find(c => c.name.toLowerCase() === username.toLowerCase());
+    setError(''); 
+    const trimmedUsername = username.trim().toLowerCase();
+    // Deve ser coordinator.username para bater com a interface Coordinator
+    const coordinator = coordinators.find(c => c.username.toLowerCase() === trimmedUsername);
 
     if (coordinator) {
-      // Verifica a senha da planilha (case-sensitive)
-      // Certifique-se de que a coluna 'Senha' na planilha não tenha espaços extras.
       if (coordinator.password && password === coordinator.password) {
         localStorage.setItem('isLoggedIn', 'true');
-        localStorage.setItem('loggedInCoordinator', coordinator.name);
+        // Armazena o fullName para exibição
+        localStorage.setItem('loggedInCoordinator', coordinator.fullName); 
         localStorage.setItem('coordinatorCourses', JSON.stringify(coordinator.courses));
         navigate('/');
       } else if (!coordinator.password) {
@@ -41,7 +42,7 @@ export const Login: React.FC = () => {
         setError('Senha inválida.');
       }
     } else {
-      setError('Nome de usuário (Coordenador) não encontrado.');
+      setError('Usuário (Login) não encontrado.');
     }
   };
 
@@ -60,7 +61,7 @@ export const Login: React.FC = () => {
           />
           <input
             type="password"
-            placeholder="Senha (Nome do Coordenador)"
+            placeholder="Senha"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             className="w-full p-3 bg-[#1e293b] rounded-md text-gray-200 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-cyan-500"
