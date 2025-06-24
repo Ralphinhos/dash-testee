@@ -1,5 +1,6 @@
 
 import React, { FC } from 'react';
+import { useNavigate } from 'react-router-dom'; // Importe useNavigate
 import { KPIData } from '../types';
 
 interface SidebarProps {
@@ -8,11 +9,18 @@ interface SidebarProps {
 }
 
 export const Sidebar: FC<SidebarProps> = ({ onNotification, kpis }) => {
-    const shortenName = (name: string) => {
-        if (typeof name !== 'string' || !name) return '';
-        const parts = name.trim().split(/\s+/);
-        return parts.length > 2 ? `${parts[0]} ${parts[parts.length - 1]}` : name;
-    };
+  const navigate = useNavigate(); // Hook para navegação
+
+  const handleLogout = () => {
+    localStorage.removeItem('isLoggedIn');
+    navigate('/login');
+  };
+
+  const shortenName = (name: string) => {
+    if (typeof name !== 'string' || !name) return '';
+    const parts = name.trim().split(/\s+/);
+    return parts.length > 2 ? `${parts[0]} ${parts[parts.length - 1]}` : name;
+  };
 
   return (
     <aside className="w-1/4 min-w-[320px] bg-[#020617] border-r border-gray-800 p-6 flex flex-col space-y-6 overflow-y-auto">
@@ -38,12 +46,19 @@ export const Sidebar: FC<SidebarProps> = ({ onNotification, kpis }) => {
       </div>
       <div className="card bg-[rgba(30,41,59,0.7)] p-4 flex-grow flex flex-col">
         <h3 className="text-md font-semibold text-white mb-3">Ações de Comunicação</h3>
-        <div className="space-y-4">
-          <button onClick={() => onNotification('coordenadores')} className="btn bg-[#2b466d] w-full">Notificar Coordenadores</button>
-          <button onClick={() => onNotification('docentes')} className="btn-secondary w-full">Notificar Docentes</button>
-          <button onClick={() => onNotification('cobrancaUas')} className="btn-tertiary w-full">✨ Cobrar UAs Pendentes</button>
+        <div className="space-y-3"> {/* Reduzido o espaço para acomodar o botão de logout */}
+          <button onClick={() => onNotification('coordenadores')} className="btn bg-[#2b466d] w-full text-sm py-2">Notificar Coordenadores</button>
+          <button onClick={() => onNotification('docentes')} className="btn-secondary w-full text-sm py-2">Notificar Docentes</button>
+          <button onClick={() => onNotification('cobrancaUas')} className="btn-tertiary w-full text-sm py-2">✨ Cobrar UAs Pendentes</button>
         </div>
       </div>
+      {/* Botão de Logout */}
+      <button
+        onClick={handleLogout}
+        className="mt-auto btn bg-red-600 hover:bg-red-700 w-full text-sm py-2"
+      >
+        Sair
+      </button>
     </aside>
   );
 };
