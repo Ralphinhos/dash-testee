@@ -18,7 +18,7 @@ export const Sidebar: FC<SidebarProps> = ({ onNotification, kpis }) => {
     <aside className="w-1/4 min-w-[320px] bg-[#020617] border-r border-gray-800 p-6 flex flex-col space-y-6 overflow-y-auto">
       <div className="flex items-center justify-center mb-4">
         <img
-          src="logo_branca"
+          src="/logo_branca.png"
           alt="logo_unifenas"
           className="h-20 w-auto"
         />
