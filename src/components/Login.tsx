@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Coordinator } from '../types'; // Import Coordinator type
+import { Coordinator } from '../types'; 
+import { User, Lock } from 'lucide-react'; // Importar ícones
 
 export const Login: React.FC = () => {
   const [username, setUsername] = useState('');
@@ -10,85 +11,134 @@ export const Login: React.FC = () => {
   const [coordinators, setCoordinators] = useState<Coordinator[]>([]);
 
   useEffect(() => {
+    // console.log("[Login.tsx] Tentando carregar coordinatorsData do localStorage."); // Log pode ser removido se não mais necessário para depuração
     const storedCoordinators = localStorage.getItem('coordinatorsData');
     if (storedCoordinators) {
       try {
         const parsedCoordinators = JSON.parse(storedCoordinators);
-        // Validação adicional para garantir que é um array
         if (Array.isArray(parsedCoordinators)) {
           setCoordinators(parsedCoordinators);
+          // console.log("[Login.tsx] coordinatorsData carregado e parseado com sucesso:", parsedCoordinators); // Log pode ser removido
         } else {
-          console.error("Dados de coordenadores no localStorage não são um array:", parsedCoordinators);
-          setError("Erro crítico: Formato inválido dos dados de configuração (não é um array).");
-          localStorage.removeItem('coordinatorsData'); // Limpa dados inválidos
+          console.error("[Login.tsx] Erro: coordinatorsData do localStorage não é um array:", parsedCoordinators);
+          setError("Erro crítico: Formato inválido dos dados de configuração (não é array).");
         }
       } catch (e) {
-        console.error("Erro ao fazer parse dos dados dos coordenadores do localStorage:", e);
-        setError("Erro crítico ao carregar dados de configuração (JSON inválido). Verifique o console e limpe o localStorage se necessário.");
-        // Opcionalmente, limpar o item problemático para tentar uma recarga limpa na próxima vez:
-        localStorage.removeItem('coordinatorsData');
+        console.error("[Login.tsx] Erro ao fazer parse de coordinatorsData do localStorage:", e);
+        setError("Erro crítico ao carregar dados de configuração (JSON inválido).");
       }
     } else {
-      console.warn("Dados dos coordenadores não encontrados no localStorage. A aplicação pode não funcionar corretamente até que os dados sejam carregados em Index.tsx.");
-      // Não definir erro aqui necessariamente, pois Index.tsx pode estar prestes a populá-lo.
-      // A página de login ainda deve ser exibida.
+      console.warn("[Login.tsx] 'coordinatorsData' não encontrado no localStorage. Aguardando App.tsx popular.");
+      setError("Configuração de coordenadores ainda não carregada. Se persistir, recarregue.");
     }
   }, []);
 
+  useEffect(() => {
+    const handleStorageChange = () => {
+        // console.log("[Login.tsx] localStorage mudou, tentando recarregar coordinatorsData."); // Log pode ser removido
+        const storedCoordinators = localStorage.getItem('coordinatorsData');
+        if (storedCoordinators) {
+            try {
+                const parsedCoordinators = JSON.parse(storedCoordinators);
+                if (Array.isArray(parsedCoordinators)) {
+                    setCoordinators(parsedCoordinators);
+                    setError(''); 
+                    // console.log("[Login.tsx] coordinatorsData recarregado via storage event."); // Log pode ser removido
+                }
+            } catch (e) {
+                console.error("[Login.tsx] Erro no parse durante storage event:", e);
+            }
+        }
+    };
+    window.addEventListener('storage', handleStorageChange);
+    return () => {
+        window.removeEventListener('storage', handleStorageChange);
+    };
+  }, []);
+
   const handleLogin = () => {
-    setError('');
-    // Busca pelo 'username' (formato: ana.tomaz) que deve ser case-insensitive na comparação do input,
-    // mas o dado original em `coordinator.username` já deve estar no formato correto.
+    setError(''); 
     const trimmedUsername = username.trim().toLowerCase();
     const coordinator = coordinators.find(c => c.username.toLowerCase() === trimmedUsername);
 
     if (coordinator) {
-      // Comparação de senha é case-sensitive
       if (coordinator.password && password === coordinator.password) {
         localStorage.setItem('isLoggedIn', 'true');
-        // Armazena o fullName para exibição, mas o username (login) foi usado para a busca
-        localStorage.setItem('loggedInCoordinator', coordinator.fullName);
+        localStorage.setItem('loggedInCoordinator', coordinator.fullName); 
         localStorage.setItem('coordinatorCourses', JSON.stringify(coordinator.courses));
         navigate('/');
       } else if (!coordinator.password) {
-        setError('Configuração de senha para este coordenador não encontrada. Contate o administrador.');
+        setError('Configuração de senha para este coordenador não encontrada.');
       }
       else {
         setError('Senha inválida.');
       }
     } else {
-      setError('Usuário (Login) não encontrado.');
+      if (coordinators.length === 0 && !error.startsWith("Erro crítico")) {
+        setError('Dados de configuração de coordenadores não disponíveis. Tente novamente em instantes.');
+      } else if (coordinators.length > 0) { 
+        setError('Usuário (Login) não encontrado.');
+      }
+    }
+  };
+
+  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault(); 
+    const isButtonDisabled = coordinators.length === 0 && !error.startsWith("Erro crítico");
+    if (!isButtonDisabled) {
+        handleLogin();
     }
   };
 
   return (
     <div className="flex items-center justify-center h-screen bg-[#0f172a] text-gray-200">
       <div className="p-8 bg-[#020617] rounded-lg shadow-xl w-96">
-        <h2 className="text-2xl font-bold text-center text-white mb-6">Login Coordenador</h2>
-        {error && <p className="text-red-500 text-center mb-4">{error}</p>}
-        <div className="space-y-4">
-          <input
-            type="text"
-            placeholder="Login (ex: nome.sobrenome)" // Placeholder atualizado
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
-            className="w-full p-3 bg-[#1e293b] rounded-md text-gray-200 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-cyan-500"
-          />
-          <input
-            type="password"
-            placeholder="Senha" // Placeholder da senha simplificado
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className="w-full p-3 bg-[#1e293b] rounded-md text-gray-200 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-cyan-500"
-          />
+        <div className="flex justify-center mb-8"> {/* Contêiner para a logo */}
+          <img src="/logo_branca.png" alt="Logo Unifenas" className="h-20 w-auto" /> {/* Logo adicionada */}
+        </div>
+        
+        {error && <p className="text-red-500 text-center mb-4 text-sm">{error}</p>}
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="relative"> {/* Contêiner para input e ícone */}
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <User className="h-5 w-5 text-gray-400" />
+            </div>
+            <input
+              id="username-input"
+              type="text"
+              placeholder="Login (ex: nome.sobrenome)"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              className="w-full p-3 pl-10 bg-[#1e293b] rounded-md text-gray-200 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-cyan-500" // Adicionado pl-10 para padding à esquerda do ícone
+              autoFocus
+            />
+          </div>
+          <div className="relative"> {/* Contêiner para input e ícone */}
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <Lock className="h-5 w-5 text-gray-400" />
+            </div>
+            <input
+              id="password-input"
+              type="password"
+              placeholder="Senha"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="w-full p-3 pl-10 bg-[#1e293b] rounded-md text-gray-200 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-cyan-500" // Adicionado pl-10
+            />
+          </div>
           <button
-            onClick={handleLogin}
-            disabled={coordinators.length === 0} // Desabilita o botão se os coordenadores não carregaram
-            className="w-full p-3 bg-cyan-600 hover:bg-cyan-700 rounded-md text-white font-semibold transition-colors disabled:bg-gray-500"
+            type="submit"
+            disabled={coordinators.length === 0 && !error.startsWith("Erro crítico")} 
+            className="w-full p-3 bg-cyan-600 hover:bg-cyan-700 rounded-md text-white font-semibold transition-colors disabled:bg-gray-500 disabled:opacity-70"
           >
             Entrar
           </button>
-        </div>
+        </form>
+        {error.startsWith("Erro crítico") && 
+            <p className="mt-4 text-xs text-amber-500 text-center">
+              Por favor, tente limpar o cache e recarregar a página, ou contate o suporte se o problema persistir.
+            </p> 
+        }
       </div>
     </div>
   );
