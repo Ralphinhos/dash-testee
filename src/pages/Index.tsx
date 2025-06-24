@@ -26,119 +26,106 @@ export default function Index() {
     const { processData } = useDataProcessor();
     const GOOGLE_SHEET_URL = import.meta.env.VITE_GOOGLE_SHEET_URL;
     const GOOGLE_APPS_SCRIPT_URL = import.meta.env.VITE_GOOGLE_APPS_SCRIPT_URL;
-    const COORDINATORS_SHEET_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vR6YENH0zEq3RMaxp82tb3G-e3u0Asw9lOkq07K40JtdnOP-c2lYhnieY7S0vW8HA/pub?gid=1587952717&single=true&output=csv";
+
+    // Removida a lógica de carregamento de PapaParse e dados de coordenadores daqui,
+    // pois foi movida para App.tsx para garantir que 'coordinatorsData' esteja no localStorage
+    // antes que Login.tsx ou Index.tsx precisem dele.
 
     useEffect(() => {
-        const script = document.createElement('script');
-        script.src = "https://cdn.jsdelivr.net/npm/papaparse@5.3.0/papaparse.min.js";
-        script.async = true;
-        script.onload = () => {
-            setLoadingMessage("Carregando dados dos coordenadores...");
-            window.Papa.parse(COORDINATORS_SHEET_URL, {
-                download: true, header: true, skipEmptyLines: true,
-                complete: (results: any) => {
-                    const rawCoordinatorsData = results.data;
-                    const processedCoordinatorsMap: Record<string, { courses: string[], password?: string }> = {};
+        // Este useEffect agora foca em carregar os dados principais da aplicação (disciplinas, etc.)
+        // Ele assume que PapaParse já foi carregado por App.tsx e que 'coordinatorsData' pode já estar no localStorage.
 
-                    rawCoordinatorsData.forEach((currentRow: any) => {
-                        const coordinatorName = currentRow['Nome do Coordenador'];
-                        const course = currentRow['Curso'];
-                        const password = currentRow['Senha']; // Lendo a nova coluna 'Senha'
+        // Verifica se PapaParse está disponível (deve ter sido carregado por App.tsx)
+        if (!window.Papa) {
+            setLoadingMessage("Aguardando dependências principais (PapaParse)...");
+            // Poderia ter um timeout ou um listener para quando PapaParse estiver pronto,
+            // mas App.tsx deve lidar com o erro crítico se PapaParse não carregar.
+            // Se App.tsx falhar em carregar PapaParse, Index.tsx não deveria nem ser renderizado.
+            console.warn("[Index.tsx] PapaParse não encontrado. App.tsx deveria ter carregado.");
+            // setIsLoading(false); // Considerar se deve parar o loading ou esperar
+            return;
+        }
 
-                        if (coordinatorName) {
-                            if (!processedCoordinatorsMap[coordinatorName]) {
-                                processedCoordinatorsMap[coordinatorName] = { courses: [], password: password };
-                            } else if (password && !processedCoordinatorsMap[coordinatorName].password) {
-                                // Adiciona a senha se ainda não estiver definida (caso o coordenador apareça em múltiplas linhas e a senha só em uma)
-                                processedCoordinatorsMap[coordinatorName].password = password;
-                            }
-                            if (course) {
-                                processedCoordinatorsMap[coordinatorName].courses.push(course);
-                            }
-                        }
-                    });
+        setLoadingMessage("Carregando dados da aplicação...");
+        console.log("[Index.tsx] Buscando dados principais da aplicação da planilha...");
 
-                    const coordinatorsArray: Coordinator[] = Object.entries(processedCoordinatorsMap).map(([name, data]) => ({
-                        name,
-                        courses: [...new Set(data.courses)], // Garante cursos únicos
-                        password: data.password
-                    }));
+        window.Papa.parse(GOOGLE_SHEET_URL, {
+            download: true, header: true, skipEmptyLines: true,
+            complete: (results: any) => {
+                console.log("[Index.tsx] Dados principais da planilha recebidos.");
+                const rawData = results.data;
+                const mainApplicationData = rawData.filter((r: any) => r.Docente && r.Docente.trim());
+                const processedMainData = processData(mainApplicationData);
+                setAllData(processedMainData);
+                setIsLoading(false);
+                console.log("[Index.tsx] Dados principais da aplicação processados e definidos.");
+            },
+            error: (err: any) => {
+                console.error("[Index.tsx] Erro ao carregar dados principais da aplicação:", err);
+                setLoadingMessage("Erro ao carregar dados da aplicação. Verifique o console.");
+                setIsLoading(false);
+            }
+        });
+        // Não é mais necessário adicionar/remover o script PapaParse aqui.
+    }, [processData]);
 
-                    setCoordinators(coordinatorsArray);
-                    localStorage.setItem('coordinatorsData', JSON.stringify(coordinatorsArray));
+    // Memoize os dados base do coordenador
+    const dataForCoordinator = useMemo(() => {
+        const loggedInCoordinatorFullName = localStorage.getItem('loggedInCoordinator');
+        const coordinatorCoursesStr = localStorage.getItem('coordinatorCourses');
+        if (!loggedInCoordinatorFullName || !coordinatorCoursesStr) {
+            // Se não houver coordenador logado ou cursos, retorna allData
+            // (PrivateRoute deveria ter prevenido isso para Index, mas é uma salvaguarda)
+            // Ou, se a intenção é NUNCA mostrar dados se não houver coordenador, retorne []
+            // Vamos assumir que PrivateRoute funciona e sempre haverá coordenador aqui.
+            return allData;
+        }
+        const coordinatorCourses = JSON.parse(coordinatorCoursesStr);
+        if (coordinatorCourses.length === 0) return []; // Coordenador logado mas sem cursos
 
-                    setLoadingMessage("Carregando dados da planilha principal...");
-                    window.Papa.parse(GOOGLE_SHEET_URL, {
-                        download: true, header: true, skipEmptyLines: true,
-                        complete: (results: any) => {
-                            const rawData = results.data;
-                            const processed = processData(rawData.filter((r: any) => r.Docente && r.Docente.trim()));
-                            setAllData(processed);
-                            setIsLoading(false);
-                        },
-                        error: (err: any) => { console.error("Erro ao carregar dados principais:", err); setLoadingMessage("Erro ao carregar dados principais.");}
-                    });
-                },
-                error: (err: any) => { console.error("Erro ao carregar dados dos coordenadores:", err); setLoadingMessage("Erro ao carregar dados dos coordenadores.");}
-            });
-        };
-        script.onerror = () => { console.error("Falha ao carregar PapaParse."); setLoadingMessage("Erro ao carregar dependências."); };
-        document.body.appendChild(script);
-        return () => { if(document.body.contains(script)){ document.body.removeChild(script); } }
-    }, []);
-   
+        return allData.filter(row => coordinatorCourses.includes(row.Curso));
+    }, [allData]);
+
+    // useEffect para aplicar filtros da UI sobre os dados do coordenador
+    useEffect(() => {
+        const noUiFiltersApplied = filters.semestre === 'Todos' &&
+                                 filters.modalidade === 'Todos' &&
+                                 filters.modulo === 'Todos' &&
+                                 filters.curso === 'Todos';
+
+        if (noUiFiltersApplied) {
+            setFilteredData(dataForCoordinator); // Mostra todos os dados do coordenador
+        } else {
+            const appliedFiltersResult = dataForCoordinator.filter(row =>
+                (filters.semestre === 'Todos' || row.Semestre === filters.semestre) &&
+                (filters.modalidade === 'Todos' || row.Modalidade === filters.modalidade) &&
+                (filters.modulo === 'Todos' || row['Módulo'] === filters.modulo) &&
+                (filters.curso === 'Todos' || row.Curso === filters.curso)
+            );
+            setFilteredData(appliedFiltersResult);
+        }
+        setSelectedDocente(null);
+    }, [filters, dataForCoordinator]);
+
+    // filterOptions agora deriva dos dados específicos do coordenador
     const filterOptions = useMemo(() => {
-        const dataToFilter = filteredData.length > 0 ? filteredData : allData; // Usa filteredData se já filtrado por coordenador
-        const semestres = [...new Set(dataToFilter.map(item => item.Semestre).filter(Boolean))].sort();
-        const modalidades = [...new Set(allData.map(item => item.Modalidade).filter(Boolean))].sort();
+        const semestres = [...new Set(dataForCoordinator.map(item => item.Semestre).filter(Boolean))].sort();
+        const modalidades = [...new Set(dataForCoordinator.map(item => item.Modalidade).filter(Boolean))].sort();
+
         let modulos: string[] = [];
         let cursos: string[] = [];
-        if (filters.modalidade && filters.modalidade !== 'Todos') {
-            modulos = [...new Set(allData.filter(item => item.Modalidade === filters.modalidade && item['Módulo']).map(item => item['Módulo']))].sort();
-            cursos = [...new Set(allData.filter(item => item.Modalidade === filters.modalidade && item.Curso).map(item => item.Curso))].sort();
-        }
+
+        // Se uma modalidade específica for selecionada, filtre módulos e cursos baseados nessa modalidade DENTRO dos dados do coordenador
+        const baseParaModulosECursos = filters.modalidade === 'Todos'
+            ? dataForCoordinator
+            : dataForCoordinator.filter(item => item.Modalidade === filters.modalidade);
+
+        modulos = [...new Set(baseParaModulosECursos.map(item => item['Módulo']).filter(Boolean))].sort();
+        // A lista de cursos no filtro deve ser apenas os cursos do coordenador que pertencem à modalidade selecionada (se houver)
+        cursos = [...new Set(baseParaModulosECursos.map(item => item.Curso).filter(Boolean))].sort();
+
         return { semestres, modalidades, modulos, cursos };
-    }, [allData, filters.modalidade]);
-
-    useEffect(() => {
-        // Recupera informações do coordenador logado
-        const loggedInCoordinatorName = localStorage.getItem('loggedInCoordinator');
-        const coordinatorCoursesStr = localStorage.getItem('coordinatorCourses');
-        const coordinatorCourses = coordinatorCoursesStr ? JSON.parse(coordinatorCoursesStr) : [];
-
-        let dataForFiltering = allData;
-
-        // 1. Filtra por cursos do coordenador, se houver um coordenador logado
-        if (loggedInCoordinatorName && coordinatorCourses.length > 0) {
-            dataForFiltering = allData.filter(row => coordinatorCourses.includes(row.Curso));
-        } else if (loggedInCoordinatorName && coordinatorCourses.length === 0) {
-            // Coordenador logado mas sem cursos associados (ou erro nos dados), mostra nada.
-            dataForFiltering = [];
-        }
-        // Se nenhum coordenador estiver logado, dataForFiltering continua sendo allData (sem filtro de coordenador)
-
-        // 2. Aplica os filtros de interface (semestre, modalidade, etc.)
-        if (filters.semestre === 'Todos' || filters.modalidade === 'Todos') {
-          // Se os filtros principais não estiverem selecionados, mostra os dados já filtrados pelo coordenador (ou todos se nenhum coordenador)
-          // Exceto se NENHUM coordenador estiver logado, aí não mostra nada até selecionar os filtros.
-          if (!loggedInCoordinatorName) {
-              setFilteredData([]);
-          } else {
-              setFilteredData(dataForFiltering);
-          }
-          setSelectedDocente(null);
-          return;
-        }
-
-        const appliedFilters = dataForFiltering.filter(row =>
-          row.Semestre === filters.semestre &&
-          row.Modalidade === filters.modalidade &&
-          (filters.modulo === 'Todos' || row['Módulo'] === filters.modulo) &&
-          (filters.curso === 'Todos' || row.Curso === filters.curso) // O filtro de curso aqui pode ser redundante se já filtrado por coordenador, mas mantém consistência.
-        );
-        setFilteredData(appliedFilters);
-        setSelectedDocente(null);
-    }, [filters, allData]); // Adicionado allData como dependência para re-filtrar quando os dados dos coordenadores mudarem o allData inicial.
+    }, [dataForCoordinator, filters.modalidade]);
 
     const handleFilterChange = (key: keyof FilterState, value: string) => {
         setFilters(prev => ({ ...prev, [key]: value, ...(key === 'modalidade' && { modulo: 'Todos', curso: 'Todos'}) }));
