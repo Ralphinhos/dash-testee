@@ -9,7 +9,7 @@ import { ActivitiesTable } from '../components/ActivitiesTable';
 import { PerformanceAnalysis } from '../components/PerformanceAnalysis';
 import { VisaoGeral } from '../components/VisaoGeral';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ProcessedData, FilterState, KPIData, Coordinator } from '../types';
+import { ProcessedData, FilterState, KPIData, Coordinator } from '../types'; // Adicionado Coordinator a types
 
 export default function Index() {
     const [isLoading, setIsLoading] = useState(true);
@@ -27,173 +27,113 @@ export default function Index() {
     const GOOGLE_SHEET_URL = import.meta.env.VITE_GOOGLE_SHEET_URL;
     const GOOGLE_APPS_SCRIPT_URL = import.meta.env.VITE_GOOGLE_APPS_SCRIPT_URL;
 
+    // Removida a lógica de carregamento de PapaParse e dados de coordenadores daqui,
+    // pois foi movida para App.tsx para garantir que 'coordinatorsData' esteja no localStorage
+    // antes que Login.tsx ou Index.tsx precisem dele.
+
     useEffect(() => {
-        const script = document.createElement('script');
-        script.src = "https://cdn.jsdelivr.net/npm/papaparse@5.3.0/papaparse.min.js";
-        script.async = true;
-        script.onload = () => {
-            setLoadingMessage("Carregando dados da planilha...");
-            console.log("[Index.tsx] PapaParse carregado. Buscando GOOGLE_SHEET_URL:", GOOGLE_SHEET_URL);
-
-            window.Papa.parse(GOOGLE_SHEET_URL, { 
-                download: true, header: true, skipEmptyLines: true,
-                complete: (results: any) => {
-                    console.log("[Index.tsx] Dados da planilha recebidos. Linhas:", results.data.length);
-                    // console.log("[Index.tsx] Primeiras 5 linhas raw:", results.data.slice(0,5)); // Descomente para ver os dados brutos
-                    const rawData = results.data;
-                    
-                    const processedCoordinatorsMap: Record<string, { fullName: string, courses: string[], password?: string }> = {};
-                    rawData.forEach((row: any, rowIndex: number) => {
-                        const loginUsername = row['Login']?.trim(); 
-                        const coordinatorFullName = row['Coordenador']?.trim(); 
-                        const course = row['Curso']?.trim();
-                        const password = row['Senha']?.trim(); 
-
-                        // Log para cada linha processada para coordenadores (pode ser muito, use com cautela)
-                        // if(rowIndex < 10) console.log(`[Index.tsx] Processando linha ${rowIndex} para Coordenador: Login='${loginUsername}', Nome='${coordinatorFullName}', Senha='${password ? "sim" : "não"}', Curso='${course}'`);
-
-                        if (loginUsername && coordinatorFullName) { 
-                            if (!processedCoordinatorsMap[loginUsername]) {
-                                processedCoordinatorsMap[loginUsername] = { 
-                                    fullName: coordinatorFullName, 
-                                    courses: [], 
-                                    password: password 
-                                };
-                            } else {
-                                if (password && !processedCoordinatorsMap[loginUsername].password) {
-                                    processedCoordinatorsMap[loginUsername].password = password;
-                                }
-                                if (coordinatorFullName && !processedCoordinatorsMap[loginUsername].fullName) {
-                                     processedCoordinatorsMap[loginUsername].fullName = coordinatorFullName;   
-                                }
-                            }
-                            if (course && !processedCoordinatorsMap[loginUsername].courses.includes(course)) {
-                                processedCoordinatorsMap[loginUsername].courses.push(course);
-                            }
-                        }
-                    });
-
-                    const coordinatorsArray: Coordinator[] = Object.entries(processedCoordinatorsMap)
-                        .map(([username, data]) => ({
-                            username,
-                            fullName: data.fullName,
-                            courses: data.courses,
-                            password: data.password
-                        }));
-                    
-                    console.log("[Index.tsx] Coordenadores processados Array:", coordinatorsArray);
-                    setCoordinators(coordinatorsArray); // Estado local, não usado diretamente por Login.tsx
-                    
-                    if (coordinatorsArray.length > 0) {
-                        localStorage.setItem('coordinatorsData', JSON.stringify(coordinatorsArray)); 
-                        console.log("[Index.tsx] 'coordinatorsData' SALVO no localStorage com", coordinatorsArray.length, "coordenadores.");
-                    } else {
-                        console.warn("[Index.tsx] NENHUM coordenador processado. 'coordinatorsData' NÃO será salvo no localStorage.");
-                        localStorage.removeItem('coordinatorsData'); // Garante que não haja dados antigos/inválidos
-                    }
-
-                    const mainApplicationData = rawData.filter((r: any) => r.Docente && r.Docente.trim());
-                    const processedMainData = processData(mainApplicationData);
-                    setAllData(processedMainData);
-                    console.log("[Index.tsx] Dados principais da aplicação processados.");
-                    
-                    setIsLoading(false);
-                },
-                error: (err: any) => { 
-                    console.error("[Index.tsx] Erro no PapaParse ao carregar/processar dados da planilha:", err);
-                    setLoadingMessage("Erro ao carregar dados da planilha. Verifique o console.");
-                    setIsLoading(false); 
-                }
-            });
-        };
-        script.onerror = () => { 
-            console.error("[Index.tsx] Falha CRÍTICA ao carregar PapaParse."); 
-            setLoadingMessage("Erro crítico ao carregar dependências. Verifique o console."); 
-            setIsLoading(false); 
-        };
-        document.body.appendChild(script);
-        return () => { 
-            console.log("[Index.tsx] Limpando script PapaParse.");
-            if(document.body.contains(script)){ document.body.removeChild(script); } 
+        // Este useEffect agora foca em carregar os dados principais da aplicação (disciplinas, etc.)
+        // Ele assume que PapaParse já foi carregado por App.tsx e que 'coordinatorsData' pode já estar no localStorage.
+        
+        // Verifica se PapaParse está disponível (deve ter sido carregado por App.tsx)
+        if (!window.Papa) {
+            setLoadingMessage("Aguardando dependências principais (PapaParse)...");
+            // Poderia ter um timeout ou um listener para quando PapaParse estiver pronto,
+            // mas App.tsx deve lidar com o erro crítico se PapaParse não carregar.
+            // Se App.tsx falhar em carregar PapaParse, Index.tsx não deveria nem ser renderizado.
+            console.warn("[Index.tsx] PapaParse não encontrado. App.tsx deveria ter carregado.");
+            // setIsLoading(false); // Considerar se deve parar o loading ou esperar
+            return;
         }
-    }, [processData]);
+        
+        setLoadingMessage("Carregando dados da aplicação...");
+        console.log("[Index.tsx] Buscando dados principais da aplicação da planilha...");
+
+        window.Papa.parse(GOOGLE_SHEET_URL, {
+            download: true, header: true, skipEmptyLines: true,
+            complete: (results: any) => {
+                console.log("[Index.tsx] Dados principais da planilha recebidos.");
+                const rawData = results.data;
+                const mainApplicationData = rawData.filter((r: any) => r.Docente && r.Docente.trim());
+                const processedMainData = processData(mainApplicationData);
+                setAllData(processedMainData);
+                setIsLoading(false);
+                console.log("[Index.tsx] Dados principais da aplicação processados e definidos.");
+            },
+            error: (err: any) => { 
+                console.error("[Index.tsx] Erro ao carregar dados principais da aplicação:", err); 
+                setLoadingMessage("Erro ao carregar dados da aplicação. Verifique o console.");
+                setIsLoading(false);
+            }
+        });
+        // Não é mais necessário adicionar/remover o script PapaParse aqui.
+    }, [processData]); 
    
     const filterOptions = useMemo(() => {
-        const dataToFilter = filteredData.length > 0 ? filteredData : allData; 
-        const semestres = [...new Set(dataToFilter.map(item => item.Semestre).filter(Boolean))].sort();
-        const modalidades = [...new Set(dataToFilter.map(item => item.Modalidade).filter(Boolean))].sort();
+        // Os filtros devem operar sobre os dados que já podem estar filtrados pelo coordenador (filteredData)
+        // ou sobre todos os dados se nenhum filtro de coordenador/principal ainda foi aplicado (allData).
+        const baseDataForFilters = filteredData.length > 0 ? filteredData : allData; 
+        const semestres = [...new Set(baseDataForFilters.map(item => item.Semestre).filter(Boolean))].sort();
+        const modalidades = [...new Set(allData.map(item => item.Modalidade).filter(Boolean))].sort();
         let modulos: string[] = [];
         let cursos: string[] = [];
-        
-        const baseParaModulosECursos = filters.modalidade === 'Todos' ? dataToFilter : dataToFilter.filter(item => item.Modalidade === filters.modalidade);
-
         if (filters.modalidade && filters.modalidade !== 'Todos') {
-            modulos = [...new Set(baseParaModulosECursos.map(item => item['Módulo']).filter(Boolean))].sort();
-            cursos = [...new Set(baseParaModulosECursos.map(item => item.Curso).filter(Boolean))].sort();
-        } else {
-            modulos = [...new Set(dataToFilter.map(item => item['Módulo']).filter(Boolean))].sort();
-            cursos = [...new Set(dataToFilter.map(item => item.Curso).filter(Boolean))].sort();
+            modulos = [...new Set(allData.filter(item => item.Modalidade === filters.modalidade && item['Módulo']).map(item => item['Módulo']))].sort();
+            cursos = [...new Set(allData.filter(item => item.Modalidade === filters.modalidade && item.Curso).map(item => item.Curso))].sort();
         }
         return { semestres, modalidades, modulos, cursos };
-    }, [filteredData, allData, filters.modalidade]);
+    }, [allData, filters.modalidade]);
 
     useEffect(() => {
-        const loggedInCoordinatorFullName = localStorage.getItem('loggedInCoordinator'); // Agora armazena fullName
+        // Recupera informações do coordenador logado
+        const loggedInCoordinatorName = localStorage.getItem('loggedInCoordinator');
         const coordinatorCoursesStr = localStorage.getItem('coordinatorCourses');
         const coordinatorCourses = coordinatorCoursesStr ? JSON.parse(coordinatorCoursesStr) : [];
 
         let dataForFiltering = allData;
 
-        // Se um coordenador está logado (identificado por loggedInCoordinatorFullName), filtramos os dados por seus cursos
-        if (loggedInCoordinatorFullName && coordinatorCourses.length > 0) {
+        // 1. Filtra por cursos do coordenador, se houver um coordenador logado
+        if (loggedInCoordinatorName && coordinatorCourses.length > 0) {
             dataForFiltering = allData.filter(row => coordinatorCourses.includes(row.Curso));
-        } else if (loggedInCoordinatorFullName && coordinatorCourses.length === 0) {
-            dataForFiltering = []; // Coordenador logado mas sem cursos associados
+        } else if (loggedInCoordinatorName && coordinatorCourses.length === 0) {
+            // Coordenador logado mas sem cursos associados (ou erro nos dados), mostra nada.
+            dataForFiltering = [];
         }
-        // Se nenhum coordenador estiver logado, dataForFiltering permanece como allData, 
-        // e a exibição dependerá dos filtros de semestre/modalidade.
+        // Se nenhum coordenador estiver logado, dataForFiltering continua sendo allData (sem filtro de coordenador)
 
-        // Lógica para exibir dados apenas se filtros principais estiverem selecionados OU se um coordenador estiver logado
-        const hasActiveCoordinatorSession = !!loggedInCoordinatorFullName;
-        const hasSelectedPrimaryFilters = filters.semestre !== 'Todos' && filters.modalidade !== 'Todos';
-
-        if (!hasActiveCoordinatorSession && !hasSelectedPrimaryFilters) {
-            // Nenhum coordenador logado E nenhum filtro principal selecionado = não mostrar nada
-            setFilteredData([]);
-            setSelectedDocente(null);
-            return;
-        } 
-
-        if (hasActiveCoordinatorSession && filters.semestre === 'Todos' && filters.modalidade === 'Todos' && filters.modulo === 'Todos' && filters.curso === 'Todos'){
-            // Coordenador logado, mas nenhum filtro adicional aplicado = mostrar todos os dados do coordenador
-            setFilteredData(dataForFiltering);
-            setSelectedDocente(null);
-            return;
+        // 2. Aplica os filtros de interface (semestre, modalidade, etc.)
+        if (filters.semestre === 'Todos' || filters.modalidade === 'Todos') {
+          // Se os filtros principais não estiverem selecionados, mostra os dados já filtrados pelo coordenador (ou todos se nenhum coordenador)
+          // Exceto se NENHUM coordenador estiver logado, aí não mostra nada até selecionar os filtros.
+          if (!loggedInCoordinatorName) {
+              setFilteredData([]);
+          } else {
+              setFilteredData(dataForFiltering);
+          }
+          setSelectedDocente(null);
+          return;
         }
         
         const appliedFilters = dataForFiltering.filter(row =>
-          (filters.semestre === 'Todos' || row.Semestre === filters.semestre) &&
-          (filters.modalidade === 'Todos' || row.Modalidade === filters.modalidade) &&
+          row.Semestre === filters.semestre &&
+          row.Modalidade === filters.modalidade &&
           (filters.modulo === 'Todos' || row['Módulo'] === filters.modulo) &&
-          (filters.curso === 'Todos' || row.Curso === filters.curso) 
+          (filters.curso === 'Todos' || row.Curso === filters.curso) // O filtro de curso aqui pode ser redundante se já filtrado por coordenador, mas mantém consistência.
         );
         setFilteredData(appliedFilters);
         setSelectedDocente(null);
-    }, [filters, allData]); // allData precisa estar aqui para re-filtrar quando os dados dos coordenadores mudarem o allData inicial
+    }, [filters, allData]); // Adicionado allData como dependência para re-filtrar quando os dados dos coordenadores mudarem o allData inicial.
 
     const handleFilterChange = (key: keyof FilterState, value: string) => {
-        setFilters(prev => ({ 
-            ...prev, 
-            [key]: value, 
-            ...(key === 'modalidade' && { modulo: 'Todos', curso: 'Todos'}),
-            ...(key === 'semestre' && { modalidade: 'Todos', modulo: 'Todos', curso: 'Todos'})
-        }));
+        setFilters(prev => ({ ...prev, [key]: value, ...(key === 'modalidade' && { modulo: 'Todos', curso: 'Todos'}) }));
     };
 
     const handleDocenteSelect = (docente: string) => {
         setSelectedDocente(selectedDocente === docente ? null : docente);
     };
    
+ // Substitua a função handleNotification no Index.tsx por esta versão corrigida:
+
 const handleNotification = async (action: string) => {
     if (filteredData.length === 0) {
         alert('Nenhum dado selecionado. Por favor, aplique os filtros de Semestre e Modalidade primeiro.');
@@ -205,11 +145,13 @@ const handleNotification = async (action: string) => {
     setModalContent('Processando e enviando e-mails...');
 
     try {
+        // Preparar os dados para envio
         const dadosParaEnvio = {
             action: action,
             dadosDetalhados: filteredData
         };
 
+        // Fazer requisição POST em vez de GET
         const response = await fetch(GOOGLE_APPS_SCRIPT_URL, {
             method: 'POST',
             headers: {
@@ -252,7 +194,7 @@ const handleNotification = async (action: string) => {
             <Sidebar kpis={kpis} onNotification={handleNotification} />
             <main className="flex-1 p-6 lg:p-8 space-y-6 overflow-y-auto">
                 <header className="flex flex-wrap justify-between items-center gap-4">
-                    <h2 className="text-2xl font-bold text-white">Acompanhamento de Disciplinas</h2>
+                    <h2 className="text-2xl font-bold text-white">Acompanhamento de Disciplinas - Docente</h2>
                     <FilterControls filters={filters} filterOptions={filterOptions} onFilterChange={handleFilterChange} />
                 </header>
                 <Tabs defaultValue="detalhado" className="w-full">
@@ -280,7 +222,7 @@ const handleNotification = async (action: string) => {
                             />
                             <PerformanceAnalysis 
                                 data={filteredData} 
-                                onAnalysis={() => {}} 
+                                onAnalysis={() => {}} // A função de AI foi removida para simplificar
                                 selectedDocente={selectedDocente}
                             />
                         </div>
