@@ -1,54 +1,93 @@
-
+import { useCallback } from 'react';
 import { RawData, ProcessedData } from '../types';
 
-export const useDataProcessor = () => {
-  const parseDate = (dateStr: string): Date | null => {
-    if (!dateStr || !/^\d{2}\/\d{2}\/\d{4}$/.test(dateStr)) return null;
-    const [day, month, year] = dateStr.split('/');
-    return new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
-  };
+// Função utilitária parseDate movida para fora do hook para estabilidade de referência
+const parseDate = (dateStr: string): Date | null => {
+  if (!dateStr || typeof dateStr !== 'string' || !/^\d{2}\/\d{2}\/\d{4}$/.test(dateStr)) {
+    return null;
+  }
+  const [day, month, year] = dateStr.split('/');
+  const numMonth = parseInt(month, 10) - 1; 
+  const numDay = parseInt(day, 10);
+  const numYear = parseInt(year, 10);
 
-  const processData = (data: RawData[]): ProcessedData[] => {
+  if (numMonth < 0 || numMonth > 11 || numDay < 1 || numDay > 31 || numYear < 1900 || numYear > 2100) {
+    return null;
+  }
+  const dateObj = new Date(numYear, numMonth, numDay);
+  if (dateObj.getFullYear() !== numYear || dateObj.getMonth() !== numMonth || dateObj.getDate() !== numDay) {
+    return null;
+  }
+  return dateObj;
+};
+
+export const useDataProcessor = () => {
+  const processData = useCallback((data: RawData[]): ProcessedData[] => {
+    // console.log("[useDataProcessor] processData EXECUTADO com", data.length, "linhas."); // Descomente para depurar
     const hoje = new Date();
     hoje.setHours(0, 0, 0, 0);
 
-    return data.map(row => {
-      const dataLimite = parseDate(row['Data Limite Construção']);
-      const dataEntrega = parseDate(row['Entregue']);
+    return data.map((row) => {
+      // **CONFIRME OS NOMES DESTAS COLUNAS NA SUA PLANILHA**
+      // Estes são os nomes que você usou no seu código original, mas confirme se são os corretos para a planilha principal
+      const dataLimiteConstrucaoStr = row['Data Limite Construção']; 
+      const dataEntregaStr = row['Entregue']; 
+      
+      const dataLimite = parseDate(dataLimiteConstrucaoStr);
+      const dataEntrega = parseDate(dataEntregaStr);
      
-      let statusCalculado = 'Pendente';
-      let diasCalculado = 0;
+      let statusCalculado = ''; // Será definido pela lógica abaixo
+      let diasCalculado = 0; 
       let isPendente = false;
       let isAtrasado = false;
       let isEntregueNoPrazo = false;
 
-      if (dataEntrega) {
+      if (dataEntrega) { 
+        isPendente = false; 
         if (dataLimite && dataEntrega > dataLimite) {
           isAtrasado = true;
+          isEntregueNoPrazo = false;
           diasCalculado = Math.ceil((dataEntrega.getTime() - dataLimite.getTime()) / (1000 * 60 * 60 * 24));
           statusCalculado = `Entregue com ${diasCalculado} dia(s) de atraso`;
         } else {
+          isAtrasado = false;
           isEntregueNoPrazo = true;
           statusCalculado = 'Entregue no prazo';
+          if (dataLimite) {
+             diasCalculado = Math.ceil((dataEntrega.getTime() - dataLimite.getTime()) / (1000 * 60 * 60 * 24));
+             // diasCalculado será <= 0 se entregue no prazo ou adiantado
+          }
         }
-      } else if (dataLimite) {
+      } else if (dataLimite) { 
         isPendente = true;
+        isAtrasado = false; 
+        isEntregueNoPrazo = false;
         if (hoje > dataLimite) {
+          isAtrasado = true; // Pendente E Atrasado
           diasCalculado = Math.ceil((hoje.getTime() - dataLimite.getTime()) / (1000 * 60 * 60 * 24));
           statusCalculado = `Pendente há ${diasCalculado} dia(s)`;
+        } else {
+          statusCalculado = 'Pendente'; // Pendente mas dentro do prazo
         }
+      } else {
+        // Sem data de entrega e sem data limite
+        isPendente = true; 
+        isAtrasado = false;
+        isEntregueNoPrazo = false;
+        statusCalculado = 'Pendente (sem data limite)'; // Ou apenas 'Pendente'
+        diasCalculado = 0; 
       }
-
+      
       return {
-        ...row,
+        ...row, 
         statusCalculado,
         diasCalculado,
         isPendente,
         isAtrasado,
         isEntregueNoPrazo
-      };
+      } as ProcessedData;
     });
-  };
+  }, []); 
 
   return { processData };
 };
