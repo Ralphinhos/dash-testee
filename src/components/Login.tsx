@@ -10,29 +10,44 @@ export const Login: React.FC = () => {
   const [coordinators, setCoordinators] = useState<Coordinator[]>([]);
 
   useEffect(() => {
-    // Carrega os dados dos coordenadores do localStorage
     const storedCoordinators = localStorage.getItem('coordinatorsData');
     if (storedCoordinators) {
-      setCoordinators(JSON.parse(storedCoordinators));
+      try {
+        const parsedCoordinators = JSON.parse(storedCoordinators);
+        // Validação adicional para garantir que é um array
+        if (Array.isArray(parsedCoordinators)) {
+          setCoordinators(parsedCoordinators);
+        } else {
+          console.error("Dados de coordenadores no localStorage não são um array:", parsedCoordinators);
+          setError("Erro crítico: Formato inválido dos dados de configuração (não é um array).");
+          localStorage.removeItem('coordinatorsData'); // Limpa dados inválidos
+        }
+      } catch (e) {
+        console.error("Erro ao fazer parse dos dados dos coordenadores do localStorage:", e);
+        setError("Erro crítico ao carregar dados de configuração (JSON inválido). Verifique o console e limpe o localStorage se necessário.");
+        // Opcionalmente, limpar o item problemático para tentar uma recarga limpa na próxima vez:
+        localStorage.removeItem('coordinatorsData');
+      }
     } else {
-      // Idealmente, deveria haver um fallback ou um recarregamento dos dados aqui
-      // Por ora, vamos apenas logar um erro se não encontrar.
-      console.error("Dados dos coordenadores não encontrados no localStorage.");
-      setError("Erro ao carregar dados de configuração. Tente recarregar a página.");
+      console.warn("Dados dos coordenadores não encontrados no localStorage. A aplicação pode não funcionar corretamente até que os dados sejam carregados em Index.tsx.");
+      // Não definir erro aqui necessariamente, pois Index.tsx pode estar prestes a populá-lo.
+      // A página de login ainda deve ser exibida.
     }
   }, []);
 
   const handleLogin = () => {
-    setError(''); 
+    setError('');
+    // Busca pelo 'username' (formato: ana.tomaz) que deve ser case-insensitive na comparação do input,
+    // mas o dado original em `coordinator.username` já deve estar no formato correto.
     const trimmedUsername = username.trim().toLowerCase();
-    // Deve ser coordinator.username para bater com a interface Coordinator
     const coordinator = coordinators.find(c => c.username.toLowerCase() === trimmedUsername);
 
     if (coordinator) {
+      // Comparação de senha é case-sensitive
       if (coordinator.password && password === coordinator.password) {
         localStorage.setItem('isLoggedIn', 'true');
-        // Armazena o fullName para exibição
-        localStorage.setItem('loggedInCoordinator', coordinator.fullName); 
+        // Armazena o fullName para exibição, mas o username (login) foi usado para a busca
+        localStorage.setItem('loggedInCoordinator', coordinator.fullName);
         localStorage.setItem('coordinatorCourses', JSON.stringify(coordinator.courses));
         navigate('/');
       } else if (!coordinator.password) {
@@ -49,19 +64,19 @@ export const Login: React.FC = () => {
   return (
     <div className="flex items-center justify-center h-screen bg-[#0f172a] text-gray-200">
       <div className="p-8 bg-[#020617] rounded-lg shadow-xl w-96">
-        <h2 className="text-2xl font-bold text-center text-white mb-6">Login</h2>
+        <h2 className="text-2xl font-bold text-center text-white mb-6">Login Coordenador</h2>
         {error && <p className="text-red-500 text-center mb-4">{error}</p>}
         <div className="space-y-4">
           <input
             type="text"
-            placeholder="Nome do Coordenador"
+            placeholder="Login (ex: nome.sobrenome)" // Placeholder atualizado
             value={username}
             onChange={(e) => setUsername(e.target.value)}
             className="w-full p-3 bg-[#1e293b] rounded-md text-gray-200 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-cyan-500"
           />
           <input
             type="password"
-            placeholder="Senha"
+            placeholder="Senha" // Placeholder da senha simplificado
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             className="w-full p-3 bg-[#1e293b] rounded-md text-gray-200 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-cyan-500"

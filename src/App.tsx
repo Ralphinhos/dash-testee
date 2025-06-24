@@ -37,7 +37,7 @@ const App = () => {
           console.log("[App.tsx] Dados da planilha recebidos para processamento de coordenadores.");
           const rawData = results.data;
           const processedCoordinatorsMap: Record<string, { fullName: string, courses: string[], password?: string }> = {};
-          
+
           rawData.forEach((row: any) => {
             const loginUsername = row['Login']?.trim();
             const coordinatorFullName = row['Coordenador']?.trim();
@@ -68,7 +68,7 @@ const App = () => {
               courses: data.courses,
               password: data.password
             }));
-          
+
           if (coordinatorsArray.length > 0) {
             localStorage.setItem('coordinatorsData', JSON.stringify(coordinatorsArray));
             console.log("[App.tsx] 'coordinatorsData' salvo no localStorage.");

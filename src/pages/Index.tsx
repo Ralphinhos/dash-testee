@@ -34,7 +34,7 @@ export default function Index() {
     useEffect(() => {
         // Este useEffect agora foca em carregar os dados principais da aplicação (disciplinas, etc.)
         // Ele assume que PapaParse já foi carregado por App.tsx e que 'coordinatorsData' pode já estar no localStorage.
-        
+
         // Verifica se PapaParse está disponível (deve ter sido carregado por App.tsx)
         if (!window.Papa) {
             setLoadingMessage("Aguardando dependências principais (PapaParse)...");
@@ -45,7 +45,7 @@ export default function Index() {
             // setIsLoading(false); // Considerar se deve parar o loading ou esperar
             return;
         }
-        
+
         setLoadingMessage("Carregando dados da aplicação...");
         console.log("[Index.tsx] Buscando dados principais da aplicação da planilha...");
 
@@ -60,25 +60,25 @@ export default function Index() {
                 setIsLoading(false);
                 console.log("[Index.tsx] Dados principais da aplicação processados e definidos.");
             },
-            error: (err: any) => { 
-                console.error("[Index.tsx] Erro ao carregar dados principais da aplicação:", err); 
+            error: (err: any) => {
+                console.error("[Index.tsx] Erro ao carregar dados principais da aplicação:", err);
                 setLoadingMessage("Erro ao carregar dados da aplicação. Verifique o console.");
                 setIsLoading(false);
             }
         });
         // Não é mais necessário adicionar/remover o script PapaParse aqui.
-    }, [processData]); 
-   
+    }, [processData]);
+
     // Memoize os dados base do coordenador
     const dataForCoordinator = useMemo(() => {
         const loggedInCoordinatorFullName = localStorage.getItem('loggedInCoordinator');
         const coordinatorCoursesStr = localStorage.getItem('coordinatorCourses');
         if (!loggedInCoordinatorFullName || !coordinatorCoursesStr) {
-            // Se não houver coordenador logado ou cursos, retorna allData 
+            // Se não houver coordenador logado ou cursos, retorna allData
             // (PrivateRoute deveria ter prevenido isso para Index, mas é uma salvaguarda)
             // Ou, se a intenção é NUNCA mostrar dados se não houver coordenador, retorne []
             // Vamos assumir que PrivateRoute funciona e sempre haverá coordenador aqui.
-            return allData; 
+            return allData;
         }
         const coordinatorCourses = JSON.parse(coordinatorCoursesStr);
         if (coordinatorCourses.length === 0) return []; // Coordenador logado mas sem cursos
@@ -111,19 +111,19 @@ export default function Index() {
     const filterOptions = useMemo(() => {
         const semestres = [...new Set(dataForCoordinator.map(item => item.Semestre).filter(Boolean))].sort();
         const modalidades = [...new Set(dataForCoordinator.map(item => item.Modalidade).filter(Boolean))].sort();
-        
+
         let modulos: string[] = [];
         let cursos: string[] = [];
 
         // Se uma modalidade específica for selecionada, filtre módulos e cursos baseados nessa modalidade DENTRO dos dados do coordenador
-        const baseParaModulosECursos = filters.modalidade === 'Todos' 
-            ? dataForCoordinator 
+        const baseParaModulosECursos = filters.modalidade === 'Todos'
+            ? dataForCoordinator
             : dataForCoordinator.filter(item => item.Modalidade === filters.modalidade);
 
         modulos = [...new Set(baseParaModulosECursos.map(item => item['Módulo']).filter(Boolean))].sort();
         // A lista de cursos no filtro deve ser apenas os cursos do coordenador que pertencem à modalidade selecionada (se houver)
         cursos = [...new Set(baseParaModulosECursos.map(item => item.Curso).filter(Boolean))].sort();
-        
+
         return { semestres, modalidades, modulos, cursos };
     }, [dataForCoordinator, filters.modalidade]);
 

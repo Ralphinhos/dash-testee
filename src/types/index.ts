@@ -39,12 +39,12 @@ export interface KPIData {
 }
 
   // Definição para os dados do Coordenador
- export interface Coordinator {
-  username: string; // Login formatado, ex: ana.tomaz
-  fullName: string; // Nome completo, ex: Ana Clara Tomaz
-  courses: string[];
-  password?: string;
-}
+  export interface Coordinator {
+    username: string; // e.g., ana.tomaz (da coluna 'Login')
+    fullName: string; // e.g., Ana Clara Tomaz (da coluna 'Coordenador')
+    courses: string[];
+    password?: string;
+  }
 
 export interface DocenteStats {
     docente: string;
