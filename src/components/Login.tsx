@@ -49,7 +49,7 @@ export const Login: React.FC = () => {
   return (
     <div className="flex items-center justify-center h-screen bg-[#0f172a] text-gray-200">
       <div className="p-8 bg-[#020617] rounded-lg shadow-xl w-96">
-        <h2 className="text-2xl font-bold text-center text-white mb-6">Login Coordenador</h2>
+        <h2 className="text-2xl font-bold text-center text-white mb-6">Login</h2>
         {error && <p className="text-red-500 text-center mb-4">{error}</p>}
         <div className="space-y-4">
           <input
