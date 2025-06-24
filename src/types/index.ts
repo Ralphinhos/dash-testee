@@ -38,6 +38,13 @@ export interface KPIData {
   maiorAtrasoDias: number;
 }
 
+  // Definição para os dados do Coordenador
+  export interface Coordinator {
+    name: string;
+    courses: string[];
+    password?: string; // Senha agora é parte dos dados do coordenador
+  }
+
 export interface DocenteStats {
     docente: string;
     stats: {

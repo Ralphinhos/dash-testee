@@ -1,6 +1,6 @@
 
-import React, { FC } from 'react';
-import { useNavigate } from 'react-router-dom'; // Importe useNavigate
+import React, { FC, useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { KPIData } from '../types';
 
 interface SidebarProps {
@@ -9,10 +9,18 @@ interface SidebarProps {
 }
 
 export const Sidebar: FC<SidebarProps> = ({ onNotification, kpis }) => {
-  const navigate = useNavigate(); // Hook para navegação
+  const navigate = useNavigate();
+  const [loggedInCoordinatorName, setLoggedInCoordinatorName] = useState<string | null>(null);
+
+  useEffect(() => {
+    const name = localStorage.getItem('loggedInCoordinator');
+    setLoggedInCoordinatorName(name);
+  }, []);
 
   const handleLogout = () => {
     localStorage.removeItem('isLoggedIn');
+    localStorage.removeItem('loggedInCoordinator');
+    localStorage.removeItem('coordinatorCourses');
     navigate('/login');
   };
 
@@ -31,6 +39,14 @@ export const Sidebar: FC<SidebarProps> = ({ onNotification, kpis }) => {
           className="h-20 w-auto"
         />
       </div>
+
+      {loggedInCoordinatorName && (
+        <div className="card bg-[rgba(30,41,59,0.5)] p-3 text-center mb-2">
+          <p className="text-sm text-cyan-400">Coordenador(a):</p>
+          <p className="text-md font-semibold text-white">{shortenName(loggedInCoordinatorName)}</p>
+        </div>
+      )}
+
       <div className="card bg-[rgba(30,41,59,0.7)] p-4">
         <p className="text-sm text-gray-400">Total de Atividades Pendentes</p>
         <p className="text-3xl font-bold text-[#ef4444]">{kpis.pendentes ?? '-'}</p>
@@ -46,13 +62,13 @@ export const Sidebar: FC<SidebarProps> = ({ onNotification, kpis }) => {
       </div>
       <div className="card bg-[rgba(30,41,59,0.7)] p-4 flex-grow flex flex-col">
         <h3 className="text-md font-semibold text-white mb-3">Ações de Comunicação</h3>
-        <div className="space-y-3"> {/* Reduzido o espaço para acomodar o botão de logout */}
+        <div className="space-y-3">
           <button onClick={() => onNotification('coordenadores')} className="btn bg-[#2b466d] w-full text-sm py-2">Notificar Coordenadores</button>
           <button onClick={() => onNotification('docentes')} className="btn-secondary w-full text-sm py-2">Notificar Docentes</button>
           <button onClick={() => onNotification('cobrancaUas')} className="btn-tertiary w-full text-sm py-2">✨ Cobrar UAs Pendentes</button>
         </div>
       </div>
-      {/* Botão de Logout */}
+
       <button
         onClick={handleLogout}
         className="mt-auto btn bg-red-600 hover:bg-red-700 w-full text-sm py-2"
