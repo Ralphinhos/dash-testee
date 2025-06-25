@@ -76,65 +76,62 @@ export default function Index() {
         });
     }, [processData]); // A dependência processData vem de useDataProcessor, que usa useCallback, então é estável.
 
-    // --- BLOCO DE HOOKS COMENTADOS PARA TESTE ---
-    // const dataForCoordinator = useMemo(() => {
-    //     const loggedInCoordinatorUsername = localStorage.getItem('loggedInCoordinatorUsername');
-    //     const coordinatorCoursesStr = localStorage.getItem('coordinatorCourses');
-    //     if (!loggedInCoordinatorUsername || !coordinatorCoursesStr) return [];
-    //     let coordinatorCourses: string[] = [];
-    //     try { coordinatorCourses = JSON.parse(coordinatorCoursesStr); } catch (e) { return []; }
-    //     if (coordinatorCourses.length === 0) return [];
-    //     return allData.filter(row => 
-    //         row.Login === loggedInCoordinatorUsername && coordinatorCourses.includes(row.Curso)
-    //     );
-    // }, [allData]);
+    // --- BLOCO DE HOOKS RESTAURADO ---
+    const dataForCoordinator = useMemo(() => {
+        const loggedInCoordinatorUsername = localStorage.getItem('loggedInCoordinatorUsername');
+        const coordinatorCoursesStr = localStorage.getItem('coordinatorCourses');
+        if (!loggedInCoordinatorUsername || !coordinatorCoursesStr) return [];
+        let coordinatorCourses: string[] = [];
+        try { coordinatorCourses = JSON.parse(coordinatorCoursesStr); } catch (e) { return []; }
+        if (coordinatorCourses.length === 0) return [];
+        return allData.filter(row => 
+            row.Login === loggedInCoordinatorUsername && coordinatorCourses.includes(row.Curso)
+        );
+    }, [allData]);
 
-    // useEffect(() => {
-    //     const noUiFiltersApplied = filters.semestre === 'Todos' &&
-    //                              filters.modalidade === 'Todos' &&
-    //                              filters.modulo === 'Todos' &&
-    //                              filters.curso === 'Todos';
-    //     if (noUiFiltersApplied) {
-    //         setFilteredData(dataForCoordinator);
-    //     } else {
-    //         const appliedFiltersResult = dataForCoordinator.filter(row =>
-    //             (filters.semestre === 'Todos' || row.Semestre === filters.semestre) &&
-    //             (filters.modalidade === 'Todos' || row.Modalidade === filters.modalidade) &&
-    //             (filters.modulo === 'Todos' || row['Módulo'] === filters.modulo) &&
-    //             (filters.curso === 'Todos' || row.Curso === filters.curso)
-    //         );
-    //         setFilteredData(appliedFiltersResult);
-    //     }
-    //     setSelectedDocente(null);
-    // }, [filters, dataForCoordinator]);
+    useEffect(() => {
+        const noUiFiltersApplied = filters.semestre === 'Todos' &&
+                                 filters.modalidade === 'Todos' &&
+                                 filters.modulo === 'Todos' &&
+                                 filters.curso === 'Todos';
+        if (noUiFiltersApplied) {
+            setFilteredData(dataForCoordinator);
+        } else {
+            const appliedFiltersResult = dataForCoordinator.filter(row =>
+                (filters.semestre === 'Todos' || row.Semestre === filters.semestre) &&
+                (filters.modalidade === 'Todos' || row.Modalidade === filters.modalidade) &&
+                (filters.modulo === 'Todos' || row['Módulo'] === filters.modulo) &&
+                (filters.curso === 'Todos' || row.Curso === filters.curso)
+            );
+            setFilteredData(appliedFiltersResult);
+        }
+        setSelectedDocente(null);
+    }, [filters, dataForCoordinator]);
 
-    // const filterOptions = useMemo(() => {
-    //     const semestres = [...new Set(dataForCoordinator.map(item => item.Semestre).filter(Boolean))].sort();
-    //     const modalidades = [...new Set(dataForCoordinator.map(item => item.Modalidade).filter(Boolean))].sort();
-    //     let modulos: string[] = [];
-    //     let cursos: string[] = [];
-    //     const baseParaModulosECursos = filters.modalidade === 'Todos'
-    //         ? dataForCoordinator
-    //         : dataForCoordinator.filter(item => item.Modalidade === filters.modalidade);
-    //     modulos = [...new Set(baseParaModulosECursos.map(item => item['Módulo']).filter(Boolean))].sort();
-    //     cursos = [...new Set(baseParaModulosECursos.map(item => item.Curso).filter(Boolean))].sort();
-    //     return { semestres, modalidades, modulos, cursos };
-    // }, [dataForCoordinator, filters.modalidade]);
+    const filterOptions = useMemo(() => {
+        const semestres = [...new Set(dataForCoordinator.map(item => item.Semestre).filter(Boolean))].sort();
+        const modalidades = [...new Set(dataForCoordinator.map(item => item.Modalidade).filter(Boolean))].sort();
+        let modulos: string[] = [];
+        let cursos: string[] = [];
+        const baseParaModulosECursos = filters.modalidade === 'Todos'
+            ? dataForCoordinator
+            : dataForCoordinator.filter(item => item.Modalidade === filters.modalidade);
+        modulos = [...new Set(baseParaModulosECursos.map(item => item['Módulo']).filter(Boolean))].sort();
+        cursos = [...new Set(baseParaModulosECursos.map(item => item.Curso).filter(Boolean))].sort();
+        return { semestres, modalidades, modulos, cursos };
+    }, [dataForCoordinator, filters.modalidade]);
 
-    // const kpis = useMemo(() => {
-    //     if (filteredData.length === 0) return { pendentes: 0, atrasadas: 0, maiorAtrasoDocente: '', maiorAtrasoDias: 0 };
-    //     const pendentes = filteredData.filter(r => r.isPendente).length;
-    //     const atrasadas = filteredData.filter(r => r.isAtrasado).length;
-    //     const maiorAtraso = filteredData.filter(r => r.diasCalculado > 0 && (r.isAtrasado || r.isPendente))
-    //         .reduce((max, row) => row.diasCalculado > max.dias ? { docente: row.Docente, dias: row.diasCalculado } : max, { docente: '', dias: 0 });
-    //     return { pendentes, atrasadas, maiorAtrasoDocente: maiorAtraso.docente, maiorAtrasoDias: maiorAtraso.dias };
-    // }, [filteredData]);
-    // --- FIM DO BLOCO DE HOOKS COMENTADOS ---
+    const kpis = useMemo(() => {
+        if (filteredData.length === 0) return { pendentes: 0, atrasadas: 0, maiorAtrasoDocente: '', maiorAtrasoDias: 0 };
+        const pendentes = filteredData.filter(r => r.isPendente).length;
+        const atrasadas = filteredData.filter(r => r.isAtrasado).length;
+        const maiorAtraso = filteredData.filter(r => r.diasCalculado > 0 && (r.isAtrasado || r.isPendente))
+            .reduce((max, row) => row.diasCalculado > max.dias ? { docente: row.Docente, dias: row.diasCalculado } : max, { docente: '', dias: 0 });
+        return { pendentes, atrasadas, maiorAtrasoDocente: maiorAtraso.docente, maiorAtrasoDias: maiorAtraso.dias };
+    }, [filteredData]);
+    // --- FIM DO BLOCO DE HOOKS RESTAURADO ---
 
-    // Mocks para as constantes que dependem dos hooks comentados:
-    const dataForCoordinator: ProcessedData[] = useMemo(() => [], []); // Mock para evitar erro de não declaração
-    const filterOptions = useMemo(() => ({ semestres: [], modalidades: [], modulos: [], cursos: [] }), []); // Mock
-    const kpis: KPIData = useMemo(() => ({ pendentes: 0, atrasadas: 0, maiorAtrasoDocente: '', maiorAtrasoDias: 0 }), []); // Mock
+    // Mocks removidos
 
     const handleFilterChange = (key: keyof FilterState, value: string) => {
         setFilters(prev => ({ ...prev, [key]: value, ...(key === 'modalidade' && { modulo: 'Todos', curso: 'Todos'}) }));
