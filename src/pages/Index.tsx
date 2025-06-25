@@ -95,7 +95,7 @@ export default function Index() {
                                  filters.modulo === 'Todos' &&
                                  filters.curso === 'Todos';
         if (noUiFiltersApplied) {
-            setFilteredData(dataForCoordinator);
+            setFilteredData([]); // Alterado para não exibir dados até que um filtro seja aplicado
         } else {
             const appliedFiltersResult = dataForCoordinator.filter(row =>
                 (filters.semestre === 'Todos' || row.Semestre === filters.semestre) &&

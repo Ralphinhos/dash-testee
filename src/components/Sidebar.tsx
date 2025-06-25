@@ -4,17 +4,32 @@ import { useNavigate } from 'react-router-dom';
 import { KPIData } from '../types';
 
 interface SidebarProps {
-  onNotification: (action: string) => void;
+  // onNotification: (action: string) => void; // Removido, pois as ações de comunicação serão removidas
   kpis: KPIData;
 }
 
-export const Sidebar: FC<SidebarProps> = ({ onNotification, kpis }) => {
+// export const Sidebar: FC<SidebarProps> = ({ onNotification, kpis }) => { // onNotification removido das props
+export const Sidebar: FC<SidebarProps> = ({ kpis }) => {
   const navigate = useNavigate();
   const [loggedInCoordinatorName, setLoggedInCoordinatorName] = useState<string | null>(null);
+  const [coordinatorCourses, setCoordinatorCourses] = useState<string[]>([]);
 
   useEffect(() => {
     const name = localStorage.getItem('loggedInCoordinator');
     setLoggedInCoordinatorName(name);
+
+    const coursesStr = localStorage.getItem('coordinatorCourses');
+    if (coursesStr) {
+      try {
+        const coursesArray = JSON.parse(coursesStr);
+        if (Array.isArray(coursesArray)) {
+          setCoordinatorCourses(coursesArray);
+        }
+      } catch (error) {
+        console.error("Erro ao parsear cursos do coordenador:", error);
+        setCoordinatorCourses([]);
+      }
+    }
   }, []);
 
   const shortenName = (name: string) => {
@@ -64,29 +79,21 @@ export const Sidebar: FC<SidebarProps> = ({ onNotification, kpis }) => {
         <p className="text-xl font-bold text-orange-400">{kpis.maiorAtrasoDias > 0 ? `${kpis.maiorAtrasoDias} dia(s)` : '-'}</p> {/* text-2xl para text-xl */}
       </div>
 
-      <div className={actionsCardClasses}>
-        <h3 className="text-sm font-semibold text-white mb-2 text-center">Ações de Comunicação</h3> {/* text-md para text-sm, mb-3 para mb-2 */}
-        <div className="space-y-2"> {/* space-y-3 para space-y-2 */}
-          <button 
-            onClick={() => onNotification('coordenadores')} 
-            className="w-full text-sm py-2 px-4 bg-[#2b466d] text-white font-semibold rounded-md hover:bg-[#3c5f94] transition-colors"
-          >
-            Notificar Coordenadores
-          </button>
-          <button 
-            onClick={() => onNotification('docentes')} 
-            className="w-full text-sm py-2 px-4 bg-transparent border border-[#2b466d] text-[#adbbd1] hover:bg-[rgba(43,70,109,0.2)] font-semibold rounded-md transition-colors"
-          >
-            Notificar Docentes
-          </button>
-          <button 
-            onClick={() => onNotification('cobrancaUas')} 
-            className="w-full text-sm py-2 px-4 bg-transparent border border-[#00adc7] text-[#00adc7] hover:bg-[rgba(0,173,199,0.1)] font-semibold rounded-md transition-colors"
-          >
-            ✨ Cobrar UAs Pendentes
-          </button>
+      {/* Seção de Ações de Comunicação REMOVIDA */}
+
+      {/* Novo Card: Cursos do Coordenador */}
+      {coordinatorCourses.length > 0 && (
+        <div className={actionsCardClasses.replace('flex-grow', '')}> {/* Reutilizando actionsCardClasses para consistência, removendo flex-grow se não for necessário */}
+          <h3 className="text-sm font-semibold text-white mb-2 text-center">Meus Cursos</h3>
+          <div className="space-y-1 max-h-32 overflow-y-auto"> {/* Adicionado max-h e overflow-y-auto para o caso de muitos cursos */}
+            {coordinatorCourses.map(course => (
+              <p key={course} className="text-xs text-gray-300 bg-slate-700 p-1 rounded-md text-center">
+                {course}
+              </p>
+            ))}
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Botão Sair removido daqui */}
     </aside>
