@@ -66,7 +66,7 @@ export const VisaoGeral: React.FC<VisaoGeralProps> = ({ data }) => {
 
     const cardClasses = "bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg shadow-sm dark:shadow-md p-6 mt-4";
     const titleClasses = "text-lg font-semibold text-slate-700 dark:text-white mb-4";
-    const placeholderTextClasses = "text-slate-500 dark:text-gray-400 text-center py-10";
+    const placeholderTextClasses = "text-slate-600 dark:text-gray-400 text-center py-10"; // Ajustado
     
     const xAxisTickFill = theme === 'dark' ? '#d1d5db' : '#4b5563';
     const yAxisStroke = theme === 'dark' ? '#9ca3af' : '#6b7280';

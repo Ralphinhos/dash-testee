@@ -256,19 +256,25 @@ const handleNotification = async (action: string) => {
             `}</style>
             <Sidebar kpis={kpis} onNotification={handleNotification} />
             {/* Conteúdo principal com fundo e texto que mudam com o tema */}
-            <main className="flex-1 p-6 lg:p-8 space-y-6 overflow-y-auto bg-gray-100 dark:bg-[#020617] text-slate-800 dark:text-gray-200">
-                <header className="flex flex-wrap justify-between items-center gap-4">
-                    <h2 className="text-2xl font-bold text-slate-800 dark:text-white">Acompanhamento de Disciplinas - Docente</h2>
-                    <div className="flex items-center gap-2 md:gap-4"> {/* Ajustado gap para responsividade */}
+            <main className="flex-1 p-6 lg:p-8 space-y-6 overflow-y-auto bg-gray-100 dark:bg-[#0f172a] text-slate-800 dark:text-gray-200"> {/* Cor do tema escuro ajustada */}
+                <header className="space-y-4">
+                    {/* Linha 1: Título e Controles (Tema, Sair) */}
+                    <div className="flex justify-between items-center gap-4">
+                        <h2 className="text-2xl font-bold text-slate-800 dark:text-white">Acompanhamento de Disciplinas - Docente</h2>
+                        <div className="flex items-center gap-2 md:gap-4">
+                            <ThemeSwitcher />
+                            <button
+                                onClick={handleLogout}
+                                title="Sair"
+                                className="p-2 rounded-md text-slate-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-slate-700 transition-colors"
+                            >
+                                <LogOut size={20} />
+                            </button>
+                        </div>
+                    </div>
+                    {/* Linha 2: Filtros */}
+                    <div>
                         <FilterControls filters={filters} filterOptions={filterOptions} onFilterChange={handleFilterChange} />
-                        <ThemeSwitcher />
-                        <button
-                            onClick={handleLogout}
-                            title="Sair"
-                            className="p-2 rounded-md text-slate-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-slate-700 transition-colors"
-                        >
-                            <LogOut size={20} />
-                        </button>
                     </div>
                 </header>
                 <Tabs defaultValue="detalhado" className="w-full">
@@ -281,8 +287,8 @@ const handleNotification = async (action: string) => {
                                        hover:bg-slate-100 dark:hover:bg-slate-800
                                        data-[state=active]:bg-cyan-500 dark:data-[state=active]:bg-cyan-600 
                                        data-[state=active]:text-white dark:data-[state=active]:text-white 
-                                       data-[state=active]:border-cyan-500 dark:data-[state=active]:border-cyan-600 
-                                       data-[state=active]:shadow-md dark:data-[state=active]:shadow-[0_0_10px_rgba(0,173,199,0.3)]"
+                                       data-[state=active]:border-cyan-500 dark:data-[state=active]:border-cyan-600"
+                                       // Removido: data-[state=active]:shadow-md dark:data-[state=active]:shadow-[0_0_10px_rgba(0,173,199,0.3)]
                         >
                             Visão Detalhada
                         </TabsTrigger>
@@ -293,8 +299,8 @@ const handleNotification = async (action: string) => {
                                        hover:bg-slate-100 dark:hover:bg-slate-800
                                        data-[state=active]:bg-cyan-500 dark:data-[state=active]:bg-cyan-600 
                                        data-[state=active]:text-white dark:data-[state=active]:text-white 
-                                       data-[state=active]:border-cyan-500 dark:data-[state=active]:border-cyan-600 
-                                       data-[state=active]:shadow-md dark:data-[state=active]:shadow-[0_0_10px_rgba(0,173,199,0.3)]"
+                                       data-[state=active]:border-cyan-500 dark:data-[state=active]:border-cyan-600"
+                                       // Removido: data-[state=active]:shadow-md dark:data-[state=active]:shadow-[0_0_10px_rgba(0,173,199,0.3)]
                         >
                             Visão Geral
                         </TabsTrigger>

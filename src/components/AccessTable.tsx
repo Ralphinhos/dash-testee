@@ -52,9 +52,10 @@ export const AccessTable: FC<AccessTableProps> = ({ data }) => {
     };
 
     const cardClasses = "bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg shadow-sm dark:shadow-md p-6";
-    const thClasses = "p-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider text-left";
+    const thClasses = "p-3 text-xs font-medium text-gray-600 dark:text-gray-400 uppercase tracking-wider text-left"; // Ajustado para text-gray-600
     const tdClasses = "p-3 text-slate-700 dark:text-gray-300";
     const trHoverClasses = "hover:bg-gray-50 dark:hover:bg-slate-700/50 transition-colors";
+    const placeholderTextClasses = "text-center p-8 text-slate-600 dark:text-gray-400"; // Definido para placeholder
 
     return (
         <div className={cardClasses}>
@@ -70,7 +71,7 @@ export const AccessTable: FC<AccessTableProps> = ({ data }) => {
                             <th className={`${thClasses} text-center`}>
                                 <button 
                                     onClick={toggleSort}
-                                    className="flex items-center justify-center gap-1 w-full hover:text-cyan-600 dark:hover:text-cyan-400 transition-colors"
+                                    className="flex items-center justify-center gap-1 w-full hover:text-cyan-600 dark:hover:text-cyan-400 transition-colors text-gray-600 dark:text-gray-400" // Adicionado cor ao botão
                                 >
                                     Status
                                     {sortOrder === 'desc' ? 
@@ -84,7 +85,7 @@ export const AccessTable: FC<AccessTableProps> = ({ data }) => {
                     <tbody className="divide-y divide-gray-200 dark:divide-slate-700">
                         {sortedAccessData.length === 0 ? (
                             <tr>
-                                <td colSpan={5} className="text-center p-8 text-slate-500 dark:text-gray-400">
+                                <td colSpan={5} className={placeholderTextClasses}>
                                     Nenhum docente encontrado.
                                 </td>
                             </tr>

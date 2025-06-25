@@ -48,14 +48,19 @@ export const ActivitiesTable: FC<ActivitiesTableProps> = ({ data, onDocenteSelec
     }
 
     const getStatusBadge = (statusCalculado: string) => {
-        if (statusCalculado.includes('Pendente')) return <span className="status-badge bg-red-500/20 text-red-300">{statusCalculado}</span>;
-        if (statusCalculado.includes('atraso')) return <span className="status-badge bg-amber-500/20 text-amber-300">{statusCalculado.replace('Entregue com ', '')}</span>;
-        return <span>-</span>;
+        // Aplicando o mesmo padrão de AccessTable.tsx para os badges de status
+        if (statusCalculado.includes('Pendente')) {
+            return <span className="status-badge bg-red-100 text-red-700 dark:bg-red-500/20 dark:text-red-300">{statusCalculado}</span>;
+        }
+        if (statusCalculado.includes('atraso')) {
+            return <span className="status-badge bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-300">{statusCalculado.replace('Entregue com ', '')}</span>;
+        }
+        return <span className="text-slate-500 dark:text-gray-400">-</span>; // Para o caso de não haver status
     };
 
     const cardClasses = "bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg shadow-sm dark:shadow-md p-6";
     const titleClasses = "text-lg font-semibold text-slate-700 dark:text-white mb-4";
-    const placeholderTextClasses = "text-center p-8 text-slate-500 dark:text-gray-400";
+    const placeholderTextClasses = "text-center p-8 text-slate-600 dark:text-gray-400"; // Ajustado para text-slate-600
 
     const docenteButtonBase = "w-full p-3 rounded-lg text-left transition-colors";
     const docenteButtonNormal = "bg-gray-100 hover:bg-gray-200 border border-gray-200 dark:bg-slate-700/50 dark:hover:bg-slate-600/50 dark:border-slate-600";
@@ -65,9 +70,9 @@ export const ActivitiesTable: FC<ActivitiesTableProps> = ({ data, onDocenteSelec
     const badgeAtrasadasClasses = "bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-300 px-2 py-1 rounded text-xs";
     const badgePendentesClasses = "bg-red-100 text-red-700 dark:bg-red-500/20 dark:text-red-300 px-2 py-1 rounded text-xs";
 
-    const activityItemClasses = "p-3 rounded-lg bg-gray-50 border border-gray-200 dark:bg-slate-700/40 dark:border-slate-600";
+    const activityItemClasses = "p-3 rounded-lg bg-gray-50 dark:bg-slate-700/40 border border-gray-200 dark:border-slate-600";
     const activityTitleClasses = "font-medium text-slate-700 dark:text-white mb-1";
-    const activitySubtitleClasses = "text-sm text-slate-500 dark:text-gray-400 mb-2";
+    const activitySubtitleClasses = "text-sm text-slate-600 dark:text-gray-400 mb-2"; // Ajustado para text-slate-600
     const activityDateClasses = "text-sm text-slate-600 dark:text-gray-300";
 
 

@@ -150,7 +150,7 @@ export const PerformanceAnalysis: FC<PerformanceAnalysisProps> = ({ data, onAnal
     const cardAttentionClasses = `${cardBaseClasses} bg-white dark:bg-slate-800 border border-amber-500 dark:border-amber-400 shadow-lg shadow-amber-500/10 dark:shadow-amber-400/10`;
     
     const titleClasses = "text-lg font-semibold text-slate-700 dark:text-white mb-4";
-    const placeholderTextClasses = "text-slate-500 dark:text-gray-400 text-center py-10";
+    const placeholderTextClasses = "text-slate-600 dark:text-gray-400 text-center py-10"; // Ajustado
     
     const btnAiClasses = "bg-transparent border border-cyan-500 text-cyan-500 hover:bg-cyan-500/10 "+
                          "dark:border-cyan-400 dark:text-cyan-400 dark:hover:bg-cyan-400/10 "+
@@ -166,11 +166,11 @@ export const PerformanceAnalysis: FC<PerformanceAnalysisProps> = ({ data, onAnal
     const perfCardProgressBarBg = "bg-gray-200 dark:bg-slate-700";
 
     const pieChartTitle = "font-bold text-slate-700 dark:text-white";
-    const pieChartSubtitle = "text-sm text-slate-500 dark:text-gray-400";
+    const pieChartSubtitle = "text-sm text-slate-600 dark:text-gray-400"; // Ajustado
     const pieLegendText = "text-slate-600 dark:text-gray-300";
     const pieLegendValue = "text-slate-700 dark:text-white font-medium";
     
-    const detailLabel = "text-slate-500 dark:text-gray-400";
+    const detailLabel = "text-slate-600 dark:text-gray-400"; // Ajustado
 
 
     return (
