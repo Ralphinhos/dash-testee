@@ -10,8 +10,12 @@ import { PerformanceAnalysis } from '../components/PerformanceAnalysis';
 import { VisaoGeral } from '../components/VisaoGeral';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ProcessedData, FilterState, KPIData, Coordinator } from '../types'; // Adicionado Coordinator a types
+import { useNavigate } from 'react-router-dom'; // Importar useNavigate
+import { LogOut, Sun, Moon } from 'lucide-react'; // Importar ícones
+import { ThemeSwitcher } from '../components/ThemeSwitcher'; // Importar ThemeSwitcher
 
 export default function Index() {
+    const navigate = useNavigate(); // Hook para navegação
     const [isLoading, setIsLoading] = useState(true);
     const [loadingMessage, setLoadingMessage] = useState("Carregando dependências...");
     const [allData, setAllData] = useState<ProcessedData[]>([]);
@@ -214,26 +218,83 @@ const handleNotification = async (action: string) => {
         return <LoadingScreen message={loadingMessage} />;
     }
 
+    const handleLogout = () => {
+        localStorage.removeItem('isLoggedIn');
+        localStorage.removeItem('loggedInCoordinator');
+        localStorage.removeItem('coordinatorCourses');
+        localStorage.removeItem('loggedInCoordinatorUsername'); // Adicionado para limpar o username
+        navigate('/login');
+    };
+
     return (
-        <div className="flex h-screen bg-[#0f172a] text-gray-200 font-sans overflow-hidden">
-            <style>{`:root { --scrollbar-thumb: #475569; --scrollbar-track: transparent; } ::-webkit-scrollbar { width: 8px; height: 8px; } ::-webkit-scrollbar-track { background: var(--scrollbar-track); } ::-webkit-scrollbar-thumb { background: var(--scrollbar-thumb); border-radius: 10px; } ::-webkit-scrollbar-thumb:hover { background: #64748b; } .card { background-color: rgba(30, 41, 59, 0.7); border: 1px solid rgba(55, 65, 81, 0.5); backdrop-filter: blur(12px); border-radius: 1rem; } .performance-card { border-color: #22c55e; box-shadow: 0 0 20px rgba(34, 197, 94, 0.2); } .attention-card { border-color: #f97316; box-shadow: 0 0 20px rgba(249, 115, 22, 0.2); } .table-container { height: calc(30vh); min-height: 200px; } .table-hover-effect tr:hover { background-color: rgba(55, 65, 81, 0.5); } .btn { background-color: #2b466d; color: white; transition: background-color 0.2s; font-weight: bold; padding: 0.5rem 1rem; border-radius: 0.5rem; } .btn:hover { background-color: #3c5f94; } .btn-secondary { background-color: transparent; border: 1px solid #2b466d; color: #adbbd1; padding: 0.5rem 1rem; border-radius: 0.5rem; } .btn-secondary:hover { background-color: rgba(43, 70, 109, 0.2); } .btn-tertiary { background-color: transparent; border: 1px solid #00adc7; color: #00adc7; padding: 0.5rem 1rem; border-radius: 0.5rem; } .btn-tertiary:hover { background-color: rgba(0, 173, 199, 0.1); } .btn-ai { background-color: transparent; border: 1px solid #00adc7; color: #00adc7; font-size: 0.875rem; padding: 0.5rem 1rem; border-radius: 0.5rem; } .btn-ai:hover { background-color: rgba(0, 173, 199, 0.1); } .filter-select { background-color: rgb(30 41 59 / var(--tw-bg-opacity)); border-color: rgb(55 65 81 / var(--tw-border-opacity)); border-radius: 0.375rem; font-size: 0.875rem; line-height: 1.25rem; padding-top: 0.375rem; padding-bottom: 0.375rem; padding-left: 0.5rem; padding-right: 0.5rem; } .filter-select:focus { border-color: #00adc7; --tw-ring-color: #00adc7; } .filter-select-glowing { border: 1px solid #00adc7; box-shadow: 0 0 10px rgba(0, 173, 199, 0.3); } .filter-select-glowing:focus { box-shadow: 0 0 20px rgba(0, 173, 199, 0.5); } .status-badge { font-size: 0.75rem; line-height: 1rem; font-weight: 500; padding: 0.25rem 0.625rem; border-radius: 9999px; white-space: nowrap; }`}</style>
+        // O div principal mantém seu fundo escuro, pois a Sidebar é sempre escura.
+        // A classe 'dark' no elemento <html> controlará os estilos dark: nos filhos.
+        <div className="flex h-screen bg-[#0f172a] font-sans overflow-hidden">
+            <style>{`
+                :root { 
+                    --scrollbar-thumb: #475569; 
+                    --scrollbar-track: transparent; 
+                }
+                html.dark {
+                    --scrollbar-thumb: #374151; // Exemplo de cor de scrollbar para tema escuro
+                }
+                ::-webkit-scrollbar { width: 8px; height: 8px; }
+                ::-webkit-scrollbar-track { background: var(--scrollbar-track); }
+                ::-webkit-scrollbar-thumb { background: var(--scrollbar-thumb); border-radius: 10px; }
+                ::-webkit-scrollbar-thumb:hover { background: #64748b; }
+                html.dark ::-webkit-scrollbar-thumb:hover { background: #4b5563; }
+
+                /* Estilos de .card, .btn, etc., serão aplicados com classes Tailwind diretamente nos elementos */
+                /* ou definidos em index.css se forem globais e precisarem de variantes dark */
+
+                .table-container { height: calc(30vh); min-height: 200px; }
+                /* .table-hover-effect tr:hover agora será com classes Tailwind */
+                
+                /* .filter-select-glowing será ajustado ou substituído por classes Tailwind */
+
+                .status-badge { font-size: 0.75rem; line-height: 1rem; font-weight: 500; padding: 0.25rem 0.625rem; border-radius: 9999px; white-space: nowrap; }
+            `}</style>
             <Sidebar kpis={kpis} onNotification={handleNotification} />
-            <main className="flex-1 p-6 lg:p-8 space-y-6 overflow-y-auto">
+            {/* Conteúdo principal com fundo e texto que mudam com o tema */}
+            <main className="flex-1 p-6 lg:p-8 space-y-6 overflow-y-auto bg-gray-100 dark:bg-[#020617] text-slate-800 dark:text-gray-200">
                 <header className="flex flex-wrap justify-between items-center gap-4">
-                    <h2 className="text-2xl font-bold text-white">Acompanhamento de Disciplinas - Docente</h2>
-                    <FilterControls filters={filters} filterOptions={filterOptions} onFilterChange={handleFilterChange} />
+                    <h2 className="text-2xl font-bold text-slate-800 dark:text-white">Acompanhamento de Disciplinas - Docente</h2>
+                    <div className="flex items-center gap-2 md:gap-4"> {/* Ajustado gap para responsividade */}
+                        <FilterControls filters={filters} filterOptions={filterOptions} onFilterChange={handleFilterChange} />
+                        <ThemeSwitcher />
+                        <button
+                            onClick={handleLogout}
+                            title="Sair"
+                            className="p-2 rounded-md text-slate-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-slate-700 transition-colors"
+                        >
+                            <LogOut size={20} />
+                        </button>
+                    </div>
                 </header>
                 <Tabs defaultValue="detalhado" className="w-full">
                     <TabsList className="bg-transparent p-0 gap-4">
+                        {/* TabsTrigger precisarão de estilos para tema claro/escuro */}
                         <TabsTrigger 
                             value="detalhado" 
-                            className="px-4 py-2 rounded-md text-sm font-medium transition-all text-slate-400 border border-slate-700 bg-transparent data-[state=active]:bg-slate-700/50 data-[state=active]:text-white data-[state=active]:border-cyan-400 data-[state=active]:shadow-[0_0_10px_rgba(0,173,199,0.3)]"
+                            className="px-4 py-2 rounded-md text-sm font-medium transition-all 
+                                       text-slate-500 dark:text-slate-400 border border-slate-300 dark:border-slate-700 
+                                       hover:bg-slate-100 dark:hover:bg-slate-800
+                                       data-[state=active]:bg-cyan-500 dark:data-[state=active]:bg-cyan-600 
+                                       data-[state=active]:text-white dark:data-[state=active]:text-white 
+                                       data-[state=active]:border-cyan-500 dark:data-[state=active]:border-cyan-600 
+                                       data-[state=active]:shadow-md dark:data-[state=active]:shadow-[0_0_10px_rgba(0,173,199,0.3)]"
                         >
                             Visão Detalhada
                         </TabsTrigger>
                         <TabsTrigger 
                             value="geral" 
-                            className="px-4 py-2 rounded-md text-sm font-medium transition-all text-slate-400 border border-slate-700 bg-transparent data-[state=active]:bg-slate-700/50 data-[state=active]:text-white data-[state=active]:border-cyan-400 data-[state=active]:shadow-[0_0_10px_rgba(0,173,199,0.3)]"
+                            className="px-4 py-2 rounded-md text-sm font-medium transition-all 
+                                       text-slate-500 dark:text-slate-400 border border-slate-300 dark:border-slate-700 
+                                       hover:bg-slate-100 dark:hover:bg-slate-800
+                                       data-[state=active]:bg-cyan-500 dark:data-[state=active]:bg-cyan-600 
+                                       data-[state=active]:text-white dark:data-[state=active]:text-white 
+                                       data-[state=active]:border-cyan-500 dark:data-[state=active]:border-cyan-600 
+                                       data-[state=active]:shadow-md dark:data-[state=active]:shadow-[0_0_10px_rgba(0,173,199,0.3)]"
                         >
                             Visão Geral
                         </TabsTrigger>

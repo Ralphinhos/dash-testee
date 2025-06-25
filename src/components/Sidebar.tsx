@@ -17,13 +17,6 @@ export const Sidebar: FC<SidebarProps> = ({ onNotification, kpis }) => {
     setLoggedInCoordinatorName(name);
   }, []);
 
-  const handleLogout = () => {
-    localStorage.removeItem('isLoggedIn');
-    localStorage.removeItem('loggedInCoordinator');
-    localStorage.removeItem('coordinatorCourses');
-    navigate('/login');
-  };
-
   const shortenName = (name: string) => {
     if (typeof name !== 'string' || !name) return '';
     const parts = name.trim().split(/\s+/);
@@ -63,18 +56,28 @@ export const Sidebar: FC<SidebarProps> = ({ onNotification, kpis }) => {
       <div className="card bg-[rgba(30,41,59,0.7)] p-4 flex-grow flex flex-col">
         <h3 className="text-md font-semibold text-white mb-3">Ações de Comunicação</h3>
         <div className="space-y-3">
-          <button onClick={() => onNotification('coordenadores')} className="btn bg-[#2b466d] w-full text-sm py-2">Notificar Coordenadores</button>
-          <button onClick={() => onNotification('docentes')} className="btn-secondary w-full text-sm py-2">Notificar Docentes</button>
-          <button onClick={() => onNotification('cobrancaUas')} className="btn-tertiary w-full text-sm py-2">✨ Cobrar UAs Pendentes</button>
+          <button 
+            onClick={() => onNotification('coordenadores')} 
+            className="w-full text-sm py-2 px-4 bg-[#2b466d] text-white font-semibold rounded-md hover:bg-[#3c5f94] transition-colors"
+          >
+            Notificar Coordenadores
+          </button>
+          <button 
+            onClick={() => onNotification('docentes')} 
+            className="w-full text-sm py-2 px-4 bg-transparent border border-[#2b466d] text-[#adbbd1] hover:bg-[rgba(43,70,109,0.2)] font-semibold rounded-md transition-colors"
+          >
+            Notificar Docentes
+          </button>
+          <button 
+            onClick={() => onNotification('cobrancaUas')} 
+            className="w-full text-sm py-2 px-4 bg-transparent border border-[#00adc7] text-[#00adc7] hover:bg-[rgba(0,173,199,0.1)] font-semibold rounded-md transition-colors"
+          >
+            ✨ Cobrar UAs Pendentes
+          </button>
         </div>
       </div>
 
-      <button
-        onClick={handleLogout}
-        className="mt-auto btn bg-red-600 hover:bg-red-700 w-full text-sm py-2"
-      >
-        Sair
-      </button>
+      {/* Botão Sair removido daqui */}
     </aside>
   );
 };

@@ -3,19 +3,20 @@
 import React, { useMemo } from 'react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer, CartesianGrid, LabelList } from 'recharts';
 import { ProcessedData } from '../types';
+import { useTheme } from '../contexts/ThemeContext'; // Importar useTheme
 
 interface VisaoGeralProps {
     data: ProcessedData[];
 }
 
 // ALTERAÇÃO 3: Rótulo agora exibe TODOS os valores maiores que 0, sem verificar o tamanho da barra.
-const renderSmartLabel = (props: any) => {
+const renderSmartLabel = (props: any) => { // Adaptação de cor de label não é necessária aqui se as cores das barras são fixas e contrastantes
     const { x, y, width, height, value, fill } = props;
     
-    // A condição "height > 15" foi removida.
     if (value > 0) { 
-        const labelFill = (fill === '#f59e0b') ? '#000000' : '#ffffff';
-        // Ajustado o posicionamento vertical para um centro mais preciso.
+        // A cor do label é definida baseada no preenchimento da barra para melhor contraste.
+        // Se a barra for âmbar, o texto é preto, senão branco. Isso deve funcionar bem em ambos os temas.
+        const labelFill = (fill === '#f59e0b') ? '#000000' : '#ffffff'; 
         return (
             <text x={x + width / 2} y={y + height / 2} fill={labelFill} textAnchor="middle" dominantBaseline="middle" fontSize={12} fontWeight="bold">
                 {value}
@@ -45,14 +46,14 @@ export const VisaoGeral: React.FC<VisaoGeralProps> = ({ data }) => {
     const CustomTooltip = ({ active, payload, label }: any) => {
         if (active && payload && payload.length) {
             return (
-                <div className="bg-gray-800 p-3 rounded border border-gray-600 shadow-lg text-sm">
-                    <p className="font-bold text-white mb-2">{label}</p>
+                <div className="bg-white dark:bg-slate-800 p-3 rounded border border-gray-300 dark:border-slate-600 shadow-lg text-sm">
+                    <p className="font-bold text-slate-700 dark:text-white mb-2">{label}</p>
                     {payload.slice().reverse().map((entry: any) => (
-                        <p key={entry.dataKey} style={{ color: entry.color }}>
+                        <p key={entry.dataKey} style={{ color: entry.color }} className="text-slate-600 dark:text-gray-300">
                             {`${entry.name}: ${entry.value}`}
                         </p>
                     ))}
-                    <p className="mt-2 pt-2 border-t border-gray-500 text-gray-300">
+                    <p className="mt-2 pt-2 border-t border-gray-300 dark:border-slate-500 text-slate-500 dark:text-gray-300">
                         Total: {payload.reduce((sum: number, entry: any) => sum + entry.value, 0)} atividades
                     </p>
                 </div>
@@ -60,10 +61,26 @@ export const VisaoGeral: React.FC<VisaoGeralProps> = ({ data }) => {
         }
         return null;
     };
+
+    const { theme } = useTheme(); // Obter o tema atual
+
+    const cardClasses = "bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg shadow-sm dark:shadow-md p-6 mt-4";
+    const titleClasses = "text-lg font-semibold text-slate-700 dark:text-white mb-4";
+    const placeholderTextClasses = "text-slate-500 dark:text-gray-400 text-center py-10";
     
+    const xAxisTickFill = theme === 'dark' ? '#d1d5db' : '#4b5563';
+    const yAxisStroke = theme === 'dark' ? '#9ca3af' : '#6b7280';
+    const cartesianGridStroke = theme === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.08)';
+    const tooltipCursorFill = theme === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.03)';
+    const legendWrapperStyle = { 
+        top: -10, 
+        color: theme === 'dark' ? '#e2e8f0' : '#334155' // slate-200 e slate-700
+    };
+
+
     return (
-        <div className="card p-6 mt-4">
-            <h3 className="text-lg font-semibold text-white mb-4">
+        <div className={cardClasses}>
+            <h3 className={titleClasses}>
                 Desempenho por Curso
             </h3>
             
@@ -74,7 +91,7 @@ export const VisaoGeral: React.FC<VisaoGeralProps> = ({ data }) => {
                             data={dadosDoGrafico}
                             margin={{ top: 20, right: 30, left: 20, bottom: 150 }}
                         >
-                            <CartesianGrid strokeDasharray="3 3" stroke="rgba(255, 255, 255, 0.1)" />
+                            <CartesianGrid strokeDasharray="3 3" stroke={cartesianGridStroke} />
                             
                             <XAxis 
                                 dataKey="curso" 
@@ -82,24 +99,22 @@ export const VisaoGeral: React.FC<VisaoGeralProps> = ({ data }) => {
                                 interval={0}
                                 angle={-45}
                                 textAnchor="end"
-                                tick={{ fontSize: 12, fill: '#d1d5db' }}
+                                tick={{ fontSize: 12, fill: xAxisTickFill }}
                             />
                             
-                            {/* ALTERAÇÃO 2: Eixo Y (valores numéricos) agora está oculto */}
                             <YAxis 
                                 type="number"
-                                stroke="#9ca3af"
+                                stroke={yAxisStroke}
                                 tick={{ fontSize: 12 }}
                                 hide={true} 
                             />
                             
-                            <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(255, 255, 255, 0.05)' }}/>
+                            <Tooltip content={<CustomTooltip />} cursor={{ fill: tooltipCursorFill }}/>
                             
-                            {/* ALTERAÇÃO 1: Legenda movida para o topo para evitar sobreposição */}
                             <Legend 
                                 verticalAlign="top" 
                                 align="right" 
-                                wrapperStyle={{ top: -10 }} 
+                                wrapperStyle={legendWrapperStyle} 
                             />
 
                             <Bar dataKey="entregues" name="Entregues no Prazo" stackId="a" fill="#22c55e">
@@ -117,7 +132,7 @@ export const VisaoGeral: React.FC<VisaoGeralProps> = ({ data }) => {
                     </ResponsiveContainer>
                 </div>
             ) : (
-                <p className="text-gray-400 text-center py-10">
+                <p className={placeholderTextClasses}>
                     Selecione filtros de Semestre e Modalidade para visualizar os dados.
                 </p>
             )}

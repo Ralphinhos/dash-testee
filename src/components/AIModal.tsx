@@ -26,31 +26,34 @@ export const AIModal: FC<AIModalProps> = ({ isOpen, onClose, title, content }) =
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-70 z-50 flex justify-center items-center p-4">
-      <div className="bg-gray-900 border border-gray-700 rounded-2xl shadow-xl w-full max-w-2xl max-h-[90vh] flex flex-col">
-        <div className="flex justify-between items-center p-4 border-b border-gray-700">
-          <h3 className="text-xl font-bold text-white flex items-center gap-2">
-            <Sparkles className="w-5 h-5 text-cyan-400" />
+    <div className="fixed inset-0 bg-black bg-opacity-70 z-50 flex justify-center items-center p-4 backdrop-blur-sm">
+      <div className="bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-700 rounded-2xl shadow-xl w-full max-w-2xl max-h-[90vh] flex flex-col">
+        <div className="flex justify-between items-center p-4 border-b border-gray-300 dark:border-slate-700">
+          <h3 className="text-xl font-bold text-slate-800 dark:text-white flex items-center gap-2">
+            <Sparkles className="w-5 h-5 text-cyan-500 dark:text-cyan-400" />
             {title}
           </h3>
-          <button onClick={onClose} className="text-gray-400 hover:text-white text-2xl transition-colors">
+          <button 
+            onClick={onClose} 
+            className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-white text-2xl transition-colors"
+          >
             <X className="w-6 h-6" />
           </button>
         </div>
-        <div className="p-6 overflow-y-auto flex-1">
+        <div className="p-6 overflow-y-auto flex-1 text-slate-700 dark:text-gray-200">
           {content === "Gerando análise..." ? (
             <div className="flex items-center justify-center">
-              <Loader2 className="h-5 w-5 mr-3 animate-spin" />
+              <Loader2 className="h-5 w-5 mr-3 animate-spin text-cyan-500 dark:text-cyan-400" />
               {content}
             </div>
           ) : (
-            <pre className="whitespace-pre-wrap text-gray-200 leading-relaxed font-sans">{content}</pre>
+            <pre className="whitespace-pre-wrap leading-relaxed font-sans">{content}</pre>
           )}
         </div>
-        <div className="p-4 border-t border-gray-700 text-right">
+        <div className="p-4 border-t border-gray-300 dark:border-slate-700 text-right">
           <button 
             onClick={handleCopy} 
-            className="bg-[#2b466d] hover:bg-[#3c5f94] text-white font-bold py-2 px-4 rounded-lg flex items-center gap-2 transition-colors disabled:opacity-50" 
+            className="bg-cyan-600 hover:bg-cyan-700 dark:bg-[#2b466d] dark:hover:bg-[#3c5f94] text-white font-bold py-2 px-4 rounded-lg flex items-center gap-2 transition-colors disabled:opacity-50" 
             disabled={content === "Gerando análise..."}
           >
             <Copy className="w-4 h-4" />

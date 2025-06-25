@@ -37,9 +37,9 @@ export const AccessTable: FC<AccessTableProps> = ({ data }) => {
    
     const getStatusBadge = (diasStr: string) => {
         const dias = parseInt(diasStr || '0', 10);
-        if (dias > 10) return <span className="status-badge bg-red-500/20 text-red-300">Crítico</span>;
-        if (dias >= 7) return <span className="status-badge bg-amber-500/20 text-amber-300">Atenção</span>;
-        return <span className="status-badge bg-green-500/20 text-green-300">Em Dia</span>;
+        if (dias > 10) return <span className="status-badge bg-red-100 text-red-700 dark:bg-red-500/20 dark:text-red-300">Crítico</span>;
+        if (dias >= 7) return <span className="status-badge bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-300">Atenção</span>;
+        return <span className="status-badge bg-green-100 text-green-700 dark:bg-green-500/20 dark:text-green-300">Em Dia</span>;
     };
    
     const shortenName = (name: string) => {
@@ -51,21 +51,26 @@ export const AccessTable: FC<AccessTableProps> = ({ data }) => {
         setSortOrder(prev => prev === 'desc' ? 'asc' : 'desc');
     };
 
+    const cardClasses = "bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg shadow-sm dark:shadow-md p-6";
+    const thClasses = "p-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider text-left";
+    const tdClasses = "p-3 text-slate-700 dark:text-gray-300";
+    const trHoverClasses = "hover:bg-gray-50 dark:hover:bg-slate-700/50 transition-colors";
+
     return (
-        <div className="card p-6">
-            <h3 className="text-lg font-semibold text-white mb-4">Status de Acesso</h3>
+        <div className={cardClasses}>
+            <h3 className="text-lg font-semibold text-slate-700 dark:text-white mb-4">Status de Acesso</h3>
             <div className="table-container overflow-y-auto">
-                <table className="w-full text-left text-sm table-hover-effect">
-                    <thead className="sticky top-0 bg-slate-900/80 backdrop-blur-sm z-10">
+                <table className="w-full text-left text-sm">
+                    <thead className="sticky top-0 bg-gray-50 dark:bg-slate-800/80 dark:backdrop-blur-sm border-b border-gray-200 dark:border-slate-700 z-10">
                         <tr>
-                            <th className="p-3 font-semibold">Docente</th>
-                            <th className="p-3 font-semibold">Curso</th>
-                            <th className="p-3 font-semibold">Disciplina</th>
-                            <th className="p-3 font-semibold text-center">Dias s/ Acesso</th>
-                            <th className="p-3 font-semibold text-center">
+                            <th className={thClasses}>Docente</th>
+                            <th className={thClasses}>Curso</th>
+                            <th className={thClasses}>Disciplina</th>
+                            <th className={`${thClasses} text-center`}>Dias s/ Acesso</th>
+                            <th className={`${thClasses} text-center`}>
                                 <button 
                                     onClick={toggleSort}
-                                    className="flex items-center gap-1 hover:text-[#00adc7] transition-colors"
+                                    className="flex items-center justify-center gap-1 w-full hover:text-cyan-600 dark:hover:text-cyan-400 transition-colors"
                                 >
                                     Status
                                     {sortOrder === 'desc' ? 
@@ -76,21 +81,21 @@ export const AccessTable: FC<AccessTableProps> = ({ data }) => {
                             </th>
                         </tr>
                     </thead>
-                    <tbody className="divide-y divide-gray-800">
+                    <tbody className="divide-y divide-gray-200 dark:divide-slate-700">
                         {sortedAccessData.length === 0 ? (
                             <tr>
-                                <td colSpan={5} className="text-center p-8 text-gray-400">
+                                <td colSpan={5} className="text-center p-8 text-slate-500 dark:text-gray-400">
                                     Nenhum docente encontrado.
                                 </td>
                             </tr>
                         ) : (
                             sortedAccessData.map(row => (
-                                <tr key={`${row.Docente}-${row.Disciplina}`}>
-                                    <td className="p-3">{shortenName(row.Docente)}</td>
-                                    <td className="p-3">{row.Curso}</td>
-                                    <td className="p-3">{row.Disciplina}</td>
-                                    <td className="p-3 text-center">{row['Dias s/ Acesso']}</td>
-                                    <td className="p-3 text-center">{getStatusBadge(row['Dias s/ Acesso'])}</td>
+                                <tr key={`${row.Docente}-${row.Disciplina}`} className={trHoverClasses}>
+                                    <td className={tdClasses}>{shortenName(row.Docente)}</td>
+                                    <td className={tdClasses}>{row.Curso}</td>
+                                    <td className={tdClasses}>{row.Disciplina}</td>
+                                    <td className={`${tdClasses} text-center`}>{row['Dias s/ Acesso']}</td>
+                                    <td className={`${tdClasses} text-center`}>{getStatusBadge(row['Dias s/ Acesso'])}</td>
                                 </tr>
                             ))
                         )}

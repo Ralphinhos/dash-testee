@@ -14,13 +14,20 @@ interface FilterControlsProps {
 }
 
 export const FilterControls: FC<FilterControlsProps> = ({ filters, filterOptions, onFilterChange }) => {
+    const selectClasses = "block w-full px-3 py-1.5 text-sm rounded-md shadow-sm " +
+                          "bg-white border-gray-300 text-slate-700 " +
+                          "focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 " +
+                          "dark:bg-slate-700 dark:border-slate-600 dark:text-gray-300 dark:placeholder-gray-400 " + 
+                          "dark:focus:ring-cyan-600 dark:focus:border-cyan-600";
+    const labelClasses = "text-sm font-medium text-slate-600 dark:text-gray-400";
+
     return (
-    <div className="flex items-center gap-4 flex-wrap">
+    <div className="flex items-center gap-3 md:gap-4 flex-wrap">
       <div className="flex items-center gap-2">
-        <label htmlFor="filtro-semestre" className="text-sm font-medium text-gray-400">Semestre:</label>
+        <label htmlFor="filtro-semestre" className={labelClasses}>Semestre:</label>
         <select 
             id="filtro-semestre" 
-            className="filter-select filter-select-glowing" 
+            className={selectClasses} 
             value={filters.semestre} 
             onChange={(e) => onFilterChange('semestre', e.target.value)}
         >
@@ -29,10 +36,10 @@ export const FilterControls: FC<FilterControlsProps> = ({ filters, filterOptions
         </select>
       </div>
       <div className="flex items-center gap-2">
-        <label htmlFor="filtro-modalidade" className="text-sm font-medium text-gray-400">Modalidade:</label>
+        <label htmlFor="filtro-modalidade" className={labelClasses}>Modalidade:</label>
         <select 
             id="filtro-modalidade" 
-            className="filter-select filter-select-glowing" 
+            className={selectClasses}
             value={filters.modalidade} 
             onChange={(e) => onFilterChange('modalidade', e.target.value)}
         >
@@ -41,10 +48,10 @@ export const FilterControls: FC<FilterControlsProps> = ({ filters, filterOptions
         </select>
       </div>
       <div className="flex items-center gap-2">
-        <label htmlFor="filtro-curso" className="text-sm font-medium text-gray-400">Curso:</label>
+        <label htmlFor="filtro-curso" className={labelClasses}>Curso:</label>
         <select
             id="filtro-curso"
-            className="filter-select filter-select-glowing"
+            className={selectClasses}
             value={filters.curso}
             onChange={(e) => onFilterChange('curso', e.target.value)}
             disabled={filters.modalidade === 'Todos' || filterOptions.cursos.length === 0}
@@ -54,10 +61,10 @@ export const FilterControls: FC<FilterControlsProps> = ({ filters, filterOptions
         </select>
       </div>
       <div className="flex items-center gap-2">
-        <label htmlFor="filtro-modulo" className="text-sm font-medium text-gray-400">Módulo:</label>
+        <label htmlFor="filtro-modulo" className={labelClasses}>Módulo:</label>
         <select
             id="filtro-modulo"
-            className="filter-select filter-select-glowing"
+            className={selectClasses}
             value={filters.modulo}
             onChange={(e) => onFilterChange('modulo', e.target.value)}
             disabled={filters.modalidade === 'Todos' || filterOptions.modulos.length === 0}

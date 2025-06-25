@@ -10,6 +10,7 @@ import NotFound from "./pages/NotFound";
 import { Login } from "./components/Login";
 import { LoadingScreen } from './components/LoadingScreen'; // Importar LoadingScreen
 import { Coordinator } from './types'; // Importar Coordinator
+import { ThemeProvider } from './contexts/ThemeContext'; // Importar ThemeProvider
 
 const queryClient = new QueryClient();
 const GOOGLE_SHEET_URL = import.meta.env.VITE_GOOGLE_SHEET_URL;
@@ -123,17 +124,19 @@ const App = () => {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <Routes>
-            <Route path="/login" element={<Login />} />
-            <Route path="/" element={<PrivateRoute element={<Index />} />} />
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </BrowserRouter>
-      </TooltipProvider>
+      <ThemeProvider> {/* Envolver com ThemeProvider */}
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
+          <BrowserRouter>
+            <Routes>
+              <Route path="/login" element={<Login />} />
+              <Route path="/" element={<PrivateRoute element={<Index />} />} />
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </BrowserRouter>
+        </TooltipProvider>
+      </ThemeProvider>
     </QueryClientProvider>
   );
 };

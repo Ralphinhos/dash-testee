@@ -59,14 +59,14 @@ export const PerformanceAnalysis: FC<PerformanceAnalysisProps> = ({ data, onAnal
         };
 
         return (
-            <div key={docente} className="p-3 bg-gray-800/50 rounded-lg">
+            <div key={docente} className={innerCardClasses}>
                 <div className="flex items-center justify-between">
-                    <span className="font-bold">{shortenName(docente)}</span>
+                    <span className={perfCardDocenteName}>{shortenName(docente)}</span>
                     <span className={`font-bold ${score >= 80 ? 'text-green-400' : 'text-amber-400'}`}>
                         {score.toFixed(0)}% no Prazo
                     </span>
                 </div>
-                <div className="w-full bg-gray-700 rounded-full h-2.5 mt-2 flex">
+                <div className={`w-full ${perfCardProgressBarBg} rounded-full h-2.5 mt-2 flex`}>
                     <div className="bg-green-500 h-2.5 rounded-l-full" style={{ width: `${pEntregue}%` }}></div>
                     <div className="bg-amber-500 h-2.5" style={{ width: `${pAtrasado}%` }}></div>
                     <div className="bg-red-500 h-2.5 rounded-r-full" style={{ width: `${pPendente}%` }}></div>
@@ -92,8 +92,8 @@ export const PerformanceAnalysis: FC<PerformanceAnalysisProps> = ({ data, onAnal
             if (active && payload && payload.length) {
                 const data = payload[0];
                 return (
-                    <div className="bg-gray-800 p-2 rounded border border-gray-600">
-                        <p className="text-white">{`${data.name}: ${data.value}`}</p>
+                    <div className={tooltipClasses}> {/* Aplicando classe de tooltip */}
+                        <p>{`${data.name}: ${data.value}`}</p> {/* Cor do texto virá da classe tooltipClasses */}
                     </div>
                 );
             }
@@ -101,10 +101,10 @@ export const PerformanceAnalysis: FC<PerformanceAnalysisProps> = ({ data, onAnal
         };
 
         return (
-            <div className="p-4 bg-gray-800/50 rounded-lg">
+            <div className={pieChartCardClasses}> {/* Aplicando classe do card do gráfico */}
                 <div className="text-center mb-3">
-                    <h4 className="font-bold text-white">{shortenName(docenteData.docente)}</h4>
-                    <p className="text-sm text-gray-400">Total: {stats.total} atividades</p>
+                    <h4 className={pieChartTitle}>{shortenName(docenteData.docente)}</h4>
+                    <p className={pieChartSubtitle}>Total: {stats.total} atividades</p>
                 </div>
                 <div className="h-48">
                     <ResponsiveContainer width="100%" height="100%">
@@ -134,9 +134,9 @@ export const PerformanceAnalysis: FC<PerformanceAnalysisProps> = ({ data, onAnal
                                     className="w-3 h-3 rounded-full" 
                                     style={{ backgroundColor: item.color }}
                                 ></div>
-                                <span className="text-gray-300">{item.name}</span>
+                                <span className={pieLegendText}>{item.name}</span>
                             </div>
-                            <span className="text-white font-medium">{item.value}</span>
+                            <span className={pieLegendValue}>{item.value}</span>
                         </div>
                     ))}
                 </div>
@@ -144,49 +144,78 @@ export const PerformanceAnalysis: FC<PerformanceAnalysisProps> = ({ data, onAnal
         );
     };
 
+    // --- Classes de Estilo ---
+    const cardBaseClasses = "flex flex-col p-6 rounded-lg shadow-sm dark:shadow-md";
+    const cardPerformanceClasses = `${cardBaseClasses} bg-white dark:bg-slate-800 border border-green-500 dark:border-green-400 shadow-lg shadow-green-500/10 dark:shadow-green-400/10`;
+    const cardAttentionClasses = `${cardBaseClasses} bg-white dark:bg-slate-800 border border-amber-500 dark:border-amber-400 shadow-lg shadow-amber-500/10 dark:shadow-amber-400/10`;
+    
+    const titleClasses = "text-lg font-semibold text-slate-700 dark:text-white mb-4";
+    const placeholderTextClasses = "text-slate-500 dark:text-gray-400 text-center py-10";
+    
+    const btnAiClasses = "bg-transparent border border-cyan-500 text-cyan-500 hover:bg-cyan-500/10 "+
+                         "dark:border-cyan-400 dark:text-cyan-400 dark:hover:bg-cyan-400/10 "+
+                         "font-semibold text-xs md:text-sm py-2 px-3 md:px-4 rounded-md transition-colors";
+
+    const innerCardClasses = "p-3 rounded-lg bg-gray-50 dark:bg-slate-700/50 border border-gray-200 dark:border-slate-600";
+    const pieChartCardClasses = "p-4 rounded-lg bg-gray-50 dark:bg-slate-700/50 border border-gray-200 dark:border-slate-600";
+    const statsDetailCardClasses = "p-4 rounded-lg bg-gray-50 dark:bg-slate-700/30 border border-gray-200 dark:border-slate-600";
+
+    const tooltipClasses = "bg-white text-slate-700 border border-gray-300 dark:bg-slate-800 dark:text-white dark:border-slate-600 p-2 rounded shadow-lg text-sm";
+    
+    const perfCardDocenteName = "font-bold text-slate-700 dark:text-white";
+    const perfCardProgressBarBg = "bg-gray-200 dark:bg-slate-700";
+
+    const pieChartTitle = "font-bold text-slate-700 dark:text-white";
+    const pieChartSubtitle = "text-sm text-slate-500 dark:text-gray-400";
+    const pieLegendText = "text-slate-600 dark:text-gray-300";
+    const pieLegendValue = "text-slate-700 dark:text-white font-medium";
+    
+    const detailLabel = "text-slate-500 dark:text-gray-400";
+
+
     return (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <div className="card performance-card flex flex-col p-6">
-                <h3 className="text-lg font-semibold text-white mb-4">Top 5 - Análise de Performance</h3>
+            <div className={cardPerformanceClasses}>
+                <h3 className={titleClasses}>Top 5 - Análise de Performance</h3>
                 <div className="flex-grow overflow-y-auto space-y-4">
                     {topPerformers.length > 0 ? (
                         topPerformers.map(renderPerfCard)
                     ) : (
-                        <p className="text-gray-400 text-center py-10">Nenhum docente com performance {'≥'} 60%.</p>
+                        <p className={placeholderTextClasses}>Nenhum docente com performance {'≥'} 60%.</p>
                     )}
                 </div>
                 {topPerformers.length > 0 && (
                     <div className="mt-4 text-center">
-                        <button onClick={() => handleSummary('top')} className="btn-ai">✨ Gerar Resumo de Performance</button>
+                        <button onClick={() => handleSummary('top')} className={btnAiClasses}>✨ Gerar Resumo de Performance</button>
                     </div>
                 )}
             </div>
 
-            <div className="card attention-card flex flex-col p-6">
-                <h3 className="text-lg font-semibold text-white mb-4">
+            <div className={cardAttentionClasses}>
+                <h3 className={titleClasses}>
                     {selectedDocente ? `Detalhes: ${selectedDocente.split(' ')[0]} ${selectedDocente.split(' ').slice(-1)[0]}` : 'Top 5 - Pontos de Atenção'}
                 </h3>
                 <div className="flex-grow overflow-y-auto space-y-4">
                     {selectedDocenteStats ? (
                         <div className="space-y-4">
                             {renderPieChart(selectedDocenteStats)}
-                            <div className="p-4 bg-gray-800/30 rounded-lg">
-                                <h5 className="font-semibold text-white mb-2">Estatísticas Detalhadas</h5>
+                            <div className={statsDetailCardClasses}>
+                                <h5 className={`font-semibold text-slate-700 dark:text-white mb-2 text-base`}>Estatísticas Detalhadas</h5>
                                 <div className="grid grid-cols-2 gap-4 text-sm">
                                     <div>
-                                        <span className="text-gray-400">Taxa de Entrega:</span>
+                                        <span className={detailLabel}>Taxa de Entrega:</span>
                                         <span className="text-green-400 font-medium ml-2">
                                             {selectedDocenteStats.score.toFixed(1)}%
                                         </span>
                                     </div>
                                     <div>
-                                        <span className="text-gray-400">Criticidade:</span>
+                                        <span className={detailLabel}>Criticidade:</span>
                                         <span className="text-orange-400 font-medium ml-2">
                                             {selectedDocenteStats.criticality}
                                         </span>
                                     </div>
                                     <div>
-                                        <span className="text-gray-400">Dias s/ Acesso:</span>
+                                        <span className={detailLabel}>Dias s/ Acesso:</span>
                                         <span className="text-red-400 font-medium ml-2">
                                             {selectedDocenteStats.stats.diasSemAcesso}
                                         </span>
@@ -197,12 +226,12 @@ export const PerformanceAnalysis: FC<PerformanceAnalysisProps> = ({ data, onAnal
                     ) : bottomPerformers.length > 0 ? (
                         bottomPerformers.map(renderPerfCard)
                     ) : (
-                        <p className="text-gray-400 text-center py-10">Nenhum docente com performance {'<'} 60%.</p>
+                        <p className={placeholderTextClasses}>Nenhum docente com performance {'<'} 60%.</p>
                     )}
                 </div>
                 {!selectedDocenteStats && bottomPerformers.length > 0 && (
                     <div className="mt-4 text-center">
-                        <button onClick={() => handleSummary('bottom')} className="btn-ai">✨ Gerar Resumo de Atenção</button>
+                        <button onClick={() => handleSummary('bottom')} className={btnAiClasses}>✨ Gerar Resumo de Atenção</button>
                     </div>
                 )}
             </div>
