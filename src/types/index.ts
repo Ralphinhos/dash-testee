@@ -24,6 +24,7 @@ export interface RawData {
 }
 
 export interface ProcessedData extends RawData {
+  Login: string;
   statusCalculado: string;
   diasCalculado: number;
   isPendente: boolean;

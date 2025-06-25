@@ -65,6 +65,7 @@ export const Login: React.FC = () => {
       if (coordinator.password && password === coordinator.password) {
         localStorage.setItem('isLoggedIn', 'true');
         localStorage.setItem('loggedInCoordinator', coordinator.fullName); 
+        localStorage.setItem('loggedInCoordinatorUsername', coordinator.username); // Adicionado
         localStorage.setItem('coordinatorCourses', JSON.stringify(coordinator.courses));
         navigate('/');
       } else if (!coordinator.password) {

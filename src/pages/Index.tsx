@@ -71,20 +71,43 @@ export default function Index() {
 
     // Memoize os dados base do coordenador
     const dataForCoordinator = useMemo(() => {
-        const loggedInCoordinatorFullName = localStorage.getItem('loggedInCoordinator');
+        const loggedInCoordinatorUsername = localStorage.getItem('loggedInCoordinatorUsername');
         const coordinatorCoursesStr = localStorage.getItem('coordinatorCourses');
-        if (!loggedInCoordinatorFullName || !coordinatorCoursesStr) {
-            // Se não houver coordenador logado ou cursos, retorna allData
-            // (PrivateRoute deveria ter prevenido isso para Index, mas é uma salvaguarda)
-            // Ou, se a intenção é NUNCA mostrar dados se não houver coordenador, retorne []
-            // Vamos assumir que PrivateRoute funciona e sempre haverá coordenador aqui.
-            return allData;
-        }
-        const coordinatorCourses = JSON.parse(coordinatorCoursesStr);
-        if (coordinatorCourses.length === 0) return []; // Coordenador logado mas sem cursos
 
-        return allData.filter(row => coordinatorCourses.includes(row.Curso));
-    }, [allData]);
+        // Adicionado console.log para depuração
+        // console.log("[Index.tsx] dataForCoordinator - Username:", loggedInCoordinatorUsername);
+        // console.log("[Index.tsx] dataForCoordinator - Courses Str:", coordinatorCoursesStr);
+        // console.log("[Index.tsx] dataForCoordinator - AllData length:", allData.length);
+
+        if (!loggedInCoordinatorUsername || !coordinatorCoursesStr) {
+            console.warn("[Index.tsx] dataForCoordinator: Username ou courses não encontrados no localStorage.");
+            return []; // Retorna vazio se não houver info do coordenador
+        }
+
+        let coordinatorCourses: string[] = [];
+        try {
+            coordinatorCourses = JSON.parse(coordinatorCoursesStr);
+        } catch (e) {
+            console.error("[Index.tsx] dataForCoordinator: Erro ao parsear coordinatorCourses.", e);
+            return [];
+        }
+
+        if (coordinatorCourses.length === 0) {
+            // console.log("[Index.tsx] dataForCoordinator: Coordenador logado mas sem cursos atribuídos.");
+            return [];
+        }
+
+        const filtered = allData.filter(row => {
+            // A coluna 'Login' na planilha principal (allData) deve corresponder ao username salvo.
+            // E o curso da linha deve estar na lista de cursos do coordenador.
+            const matchesLogin = row.Login === loggedInCoordinatorUsername;
+            const matchesCourse = coordinatorCourses.includes(row.Curso);
+            return matchesLogin && matchesCourse;
+        });
+
+        // console.log("[Index.tsx] dataForCoordinator - Filtered data length:", filtered.length);
+        return filtered;
+    }, [allData]); // Adicionar loggedInCoordinatorUsername e coordinatorCoursesStr como dependências se eles fossem estados do React, mas são de localStorage. allData é a dependência correta aqui.
 
     // useEffect para aplicar filtros da UI sobre os dados do coordenador
     useEffect(() => {
