@@ -14,8 +14,12 @@ export const AccessTable: FC<AccessTableProps> = ({ data }) => {
         const accessMap = new Map<string, ProcessedData>();
         data.forEach(row => {
             const key = `${row.Docente}-${row.Disciplina}`;
-            const dias = parseInt(row['Dias s/ Acesso'] || '0', 10);
-            if (!accessMap.has(key) || dias > parseInt(accessMap.get(key)!['Dias s/ Acesso'] || '0', 10)) {
+            // 'Dias s/ Acesso' já é number a partir de ProcessedData
+            const dias = Number(row['Dias s/ Acesso']) || 0; 
+            const existingEntry = accessMap.get(key);
+            const existingDias = existingEntry ? (Number(existingEntry['Dias s/ Acesso']) || 0) : -1;
+
+            if (!existingEntry || dias > existingDias) {
                 accessMap.set(key, row);
             }
         });
@@ -24,8 +28,9 @@ export const AccessTable: FC<AccessTableProps> = ({ data }) => {
 
     const sortedAccessData = useMemo(() => {
         return [...allAccessData].sort((a, b) => {
-            const diasA = parseInt(a['Dias s/ Acesso'] || '0', 10);
-            const diasB = parseInt(b['Dias s/ Acesso'] || '0', 10);
+            // 'Dias s/ Acesso' já é number
+            const diasA = Number(a['Dias s/ Acesso']) || 0;
+            const diasB = Number(b['Dias s/ Acesso']) || 0;
             
             if (sortOrder === 'desc') {
                 return diasB - diasA; // Crítico primeiro
@@ -35,8 +40,8 @@ export const AccessTable: FC<AccessTableProps> = ({ data }) => {
         });
     }, [allAccessData, sortOrder]);
    
-    const getStatusBadge = (diasStr: string) => {
-        const dias = parseInt(diasStr || '0', 10);
+    const getStatusBadge = (diasNum: number) => { // Parâmetro agora é number
+        const dias = diasNum; // Já é número
         if (dias > 10) return <span className="status-badge bg-red-100 text-red-700 dark:bg-red-500/20 dark:text-red-300">Crítico</span>;
         if (dias >= 7) return <span className="status-badge bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-300">Atenção</span>;
         return <span className="status-badge bg-green-100 text-green-700 dark:bg-green-500/20 dark:text-green-300">Em Dia</span>;
@@ -62,7 +67,8 @@ export const AccessTable: FC<AccessTableProps> = ({ data }) => {
             <h3 className="text-lg font-semibold text-slate-700 dark:text-white mb-4">Status de Acesso</h3>
             <div className="table-container overflow-y-auto">
                 <table className="w-full text-left text-sm">
-                    <thead className="sticky top-0 bg-gray-50 dark:bg-slate-800/80 dark:backdrop-blur-sm border-b border-gray-200 dark:border-slate-700 z-10">
+                    {/* Aplicando fundo mais escuro ao thead */}
+                    <thead className="sticky top-0 bg-slate-200 dark:bg-slate-700 border-b border-gray-300 dark:border-slate-600 z-10">
                         <tr>
                             <th className={thClasses}>Docente</th>
                             <th className={thClasses}>Curso</th>
@@ -95,8 +101,10 @@ export const AccessTable: FC<AccessTableProps> = ({ data }) => {
                                     <td className={tdClasses}>{shortenName(row.Docente)}</td>
                                     <td className={tdClasses}>{row.Curso}</td>
                                     <td className={tdClasses}>{row.Disciplina}</td>
+                                    {/* 'Dias s/ Acesso' é number, será convertido para string automaticamente na renderização */}
                                     <td className={`${tdClasses} text-center`}>{row['Dias s/ Acesso']}</td>
-                                    <td className={`${tdClasses} text-center`}>{getStatusBadge(row['Dias s/ Acesso'])}</td>
+                                    {/* Passando o número diretamente para getStatusBadge */}
+                                    <td className={`${tdClasses} text-center`}>{getStatusBadge(Number(row['Dias s/ Acesso']) || 0)}</td>
                                 </tr>
                             ))
                         )}

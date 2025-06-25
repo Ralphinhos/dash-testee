@@ -23,7 +23,8 @@ export interface RawData {
   email_docente: string;
 }
 
-export interface ProcessedData extends RawData {
+export interface ProcessedData extends Omit<RawData, 'Dias s/ Acesso'> { // Omitir a string original
+  'Dias s/ Acesso': number; // Redefinir como number
   Login: string;
   statusCalculado: string;
   diasCalculado: number;
@@ -33,13 +34,23 @@ export interface ProcessedData extends RawData {
 }
 
 export interface KPIData {
-  pendentes: number;
-  atrasadas: number;
-  maiorAtrasoDocente: string;
-  maiorAtrasoDias: number;
+  // KPIs que dependem da seleção de modalidade
+  totalPendentesModalidade: number;
+  totalAtrasadasModalidade: number;
+  docenteMaiorMediaAtraso: { nome: string; mediaDias: number; } | null;
+  docenteMaisPendencias: { nome: string; quantidade: number; } | null;
+  docenteMenosAcesso: { 
+    nome: string; 
+    mediaDiasSemAcesso: number; 
+    disciplinaDestaque: string; 
+    diasDisciplinaDestaque: number; 
+  } | null;
+  // Mantidos para possível uso futuro ou como fallback se a lógica mudar, mas os novos acima são prioritários
+  pendentes: number; // Pode ser o total geral, independente de modalidade, se necessário
+  atrasadas: number; // Pode ser o total geral, independente de modalidade, se necessário
 }
 
-  // Definição para os dados do Coordenador
+// Definição para os dados do Coordenador
   export interface Coordinator {
     username: string; // e.g., ana.tomaz (da coluna 'Login')
     fullName: string; // e.g., Ana Clara Tomaz (da coluna 'Coordenador')

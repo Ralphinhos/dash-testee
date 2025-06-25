@@ -114,14 +114,9 @@ export default function Index() {
                                  filters.curso === 'Todos';
         if (noUiFiltersApplied) {
             // Se for admin e nenhum filtro UI, mostra todos os dados do admin (baseDataForView).
-            // Se for coordenador e nenhum filtro UI, não mostra nada até filtrar.
             // A condição inicial de não mostrar nada para coordenador é mantida.
-            // Para admin, queremos que os dados apareçam mesmo sem filtro UI.
-            if (userRole === 'admin') {
-                setFilteredData(baseDataForView);
-            } else {
-                setFilteredData([]); 
-            }
+            // Agora, admin também não verá dados até que um filtro seja aplicado.
+            setFilteredData([]); 
         } else {
             const appliedFiltersResult = baseDataForView.filter(row =>
                 (filters.semestre === 'Todos' || row.Semestre === filters.semestre) &&
@@ -146,19 +141,148 @@ export default function Index() {
         modulos = [...new Set(baseParaModulosECursos.map(item => item['Módulo']).filter(Boolean))].sort();
         cursos = [...new Set(baseParaModulosECursos.map(item => item.Curso).filter(Boolean))].sort();
         return { semestres, modalidades, modulos, cursos };
-    }, [baseDataForView, filters.modalidade]); // filterOptions depende de baseDataForView
+    }, [baseDataForView, filters.modalidade]);
 
-    const kpis = useMemo(() => {
-        if (filteredData.length === 0) return { pendentes: 0, atrasadas: 0, maiorAtrasoDocente: '', maiorAtrasoDias: 0 };
-        const pendentes = filteredData.filter(r => r.isPendente).length;
-        const atrasadas = filteredData.filter(r => r.isAtrasado).length;
-        const maiorAtraso = filteredData.filter(r => r.diasCalculado > 0 && (r.isAtrasado || r.isPendente))
-            .reduce((max, row) => row.diasCalculado > max.dias ? { docente: row.Docente, dias: row.diasCalculado } : max, { docente: '', dias: 0 });
-        return { pendentes, atrasadas, maiorAtrasoDocente: maiorAtraso.docente, maiorAtrasoDias: maiorAtraso.dias };
-    }, [filteredData]);
-    // --- FIM DO BLOCO DE HOOKS RESTAURADO ---
+    const kpis = useMemo((): KPIData => {
+        const initialKpiState: KPIData = {
+            totalPendentesModalidade: 0,
+            totalAtrasadasModalidade: 0,
+            docenteMaiorMediaAtraso: null,
+            docenteMaisPendencias: null,
+            docenteMenosAcesso: null,
+            pendentes: 0, // Fallback/geral - pode ser removido se não usado
+            atrasadas: 0, // Fallback/geral - pode ser removido se não usado
+        };
 
-    // Mocks removidos
+        if (filters.modalidade === 'Todos' || filteredData.length === 0) {
+            // Se "Todas as Modalidades" ou não há dados filtrados, retorna KPIs zerados/nulos
+            // Os KPIs gerais de pendentes/atrasadas podem ser calculados sobre baseDataForView aqui se desejado,
+            // mas a instrução é que todos os 5 principais dependem de uma modalidade específica.
+            // Para manter simples, vamos zerar tudo se não houver modalidade específica.
+            // Se quiser mostrar totais gerais de 'pendentes' e 'atrasadas' mesmo com "Todas Modalidades",
+            // eles seriam calculados sobre 'baseDataForView' e colocados em 'pendentes' e 'atrasadas'.
+            // Por ora, seguindo a regra de depender da modalidade para os 5 KPIs:
+            return initialKpiState;
+        }
+
+        // Declarar variáveis locais com nomes correspondentes às chaves de KPIData
+        let totalPendentesModalidade = 0;
+        let totalAtrasadasModalidade = 0;
+        let docenteMaiorMediaAtraso: KPIData['docenteMaiorMediaAtraso'] = null;
+        let docenteMaisPendencias: KPIData['docenteMaisPendencias'] = null;
+        let docenteMenosAcesso: KPIData['docenteMenosAcesso'] = null;
+
+        // Cálculos principais
+        // 1. Total Pendentes Modalidade
+        totalPendentesModalidade = filteredData.filter(r => r.isPendente).length;
+
+        // 2. Total Atrasadas Modalidade
+        totalAtrasadasModalidade = filteredData.filter(r => r.isAtrasado).length;
+        
+        // 3. Docente com Maior Média de Atraso
+        const atividadesAtrasadas = filteredData.filter(r => r.isAtrasado && r.diasCalculado > 0);
+        if (atividadesAtrasadas.length > 0) {
+            const docentesComAtraso: Record<string, { totalDiasAtraso: number; countAtrasos: number }> = 
+                atividadesAtrasadas.reduce((acc, curr) => {
+                    acc[curr.Docente] = acc[curr.Docente] || { totalDiasAtraso: 0, countAtrasos: 0 };
+                    acc[curr.Docente].totalDiasAtraso += curr.diasCalculado;
+                    acc[curr.Docente].countAtrasos += 1;
+                    return acc;
+                }, {} as Record<string, { totalDiasAtraso: number; countAtrasos: number }>);
+
+            let maiorMedia = -1;
+            let nomeDocenteComMaiorMedia = null; // Renomeado para clareza
+
+            for (const nomeDocenteKey in docentesComAtraso) { // Usar nomeDocenteKey para evitar conflito
+                const mediaDocente = docentesComAtraso[nomeDocenteKey].totalDiasAtraso / docentesComAtraso[nomeDocenteKey].countAtrasos;
+                if (mediaDocente > maiorMedia) {
+                    maiorMedia = mediaDocente;
+                    nomeDocenteComMaiorMedia = nomeDocenteKey;
+                }
+            }
+            if (nomeDocenteComMaiorMedia) {
+                docenteMaiorMediaAtraso = { nome: nomeDocenteComMaiorMedia, mediaDias: Math.round(maiorMedia) };
+            }
+        }
+        
+        // 4. Docente com Mais Pendências
+        const atividadesPendentes = filteredData.filter(r => r.isPendente);
+        if (atividadesPendentes.length > 0) {
+            const pendenciasPorDocente: Record<string, number> = atividadesPendentes.reduce((acc, curr) => {
+                acc[curr.Docente] = (acc[curr.Docente] || 0) + 1;
+                return acc;
+            }, {} as Record<string, number>);
+
+            let maxPendenciasCount = 0; // Renomeado
+            let nomeDocenteComMaisPend = null; // Renomeado
+            for (const nomeDocenteKey in pendenciasPorDocente) { // Usar nomeDocenteKey
+                if (pendenciasPorDocente[nomeDocenteKey] > maxPendenciasCount) {
+                    maxPendenciasCount = pendenciasPorDocente[nomeDocenteKey];
+                    nomeDocenteComMaisPend = nomeDocenteKey;
+                }
+            }
+            if (nomeDocenteComMaisPend) {
+                docenteMaisPendencias = { nome: nomeDocenteComMaisPend, quantidade: maxPendenciasCount };
+            }
+        }
+
+        // 5. Docente com Menos Acesso
+        if (filteredData.length > 0) {
+            const dadosDiasAcesso: Record<string, { totalDias: number; countEntradas: number; maxDiasIndividual: number; disciplinaDestaque: string }> = {};
+
+            filteredData.forEach(row => {
+                const diasAcesso = row['Dias s/ Acesso'];
+                if (typeof diasAcesso === 'number') {
+                    dadosDiasAcesso[row.Docente] = dadosDiasAcesso[row.Docente] || { 
+                        totalDias: 0, 
+                        countEntradas: 0, 
+                        maxDiasIndividual: -1, 
+                        disciplinaDestaque: '' 
+                    };
+                    dadosDiasAcesso[row.Docente].totalDias += diasAcesso;
+                    dadosDiasAcesso[row.Docente].countEntradas += 1;
+                    if (diasAcesso > dadosDiasAcesso[row.Docente].maxDiasIndividual) {
+                        dadosDiasAcesso[row.Docente].maxDiasIndividual = diasAcesso;
+                        dadosDiasAcesso[row.Docente].disciplinaDestaque = row.Disciplina;
+                    }
+                }
+            });
+
+            let nomeDocenteMenosAcessoGlobal: string | null = null; // Renomeado
+            let maiorMaxDiasIndividualGlobal = -1; // Renomeado
+
+            for (const nomeDocenteKey in dadosDiasAcesso) { // Usar nomeDocenteKey
+                if (dadosDiasAcesso[nomeDocenteKey].maxDiasIndividual > maiorMaxDiasIndividualGlobal) {
+                    maiorMaxDiasIndividualGlobal = dadosDiasAcesso[nomeDocenteKey].maxDiasIndividual;
+                    nomeDocenteMenosAcessoGlobal = nomeDocenteKey;
+                }
+            }
+
+            if (nomeDocenteMenosAcessoGlobal && dadosDiasAcesso[nomeDocenteMenosAcessoGlobal]) {
+                const infoDocente = dadosDiasAcesso[nomeDocenteMenosAcessoGlobal];
+                const mediaDiasSemAcesso = infoDocente.countEntradas > 0 
+                    ? Math.round(infoDocente.totalDias / infoDocente.countEntradas) 
+                    : 0;
+                // Atribuição à variável local correta
+                docenteMenosAcesso = { 
+                    nome: nomeDocenteMenosAcessoGlobal,
+                    mediaDiasSemAcesso: mediaDiasSemAcesso,
+                    disciplinaDestaque: infoDocente.disciplinaDestaque,
+                    diasDisciplinaDestaque: Math.round(infoDocente.maxDiasIndividual)
+                };
+            }
+        }
+
+        return {
+            totalPendentesModalidade: Math.round(totalPendentesModalidade),
+            totalAtrasadasModalidade: Math.round(totalAtrasadasModalidade),
+            docenteMaiorMediaAtraso, 
+            docenteMaisPendencias,   
+            docenteMenosAcesso,      
+            pendentes: Math.round(totalPendentesModalidade),
+            atrasadas: Math.round(totalAtrasadasModalidade),
+        };
+    }, [filteredData, filters.modalidade]);
 
     const handleFilterChange = (key: keyof FilterState, value: string) => {
         setFilters(prev => ({ ...prev, [key]: value, ...(key === 'modalidade' && { modulo: 'Todos', curso: 'Todos'}) }));

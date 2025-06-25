@@ -77,9 +77,17 @@ export const useDataProcessor = () => {
         statusCalculado = 'Pendente (sem data limite)'; // Ou apenas 'Pendente'
         diasCalculado = 0; 
       }
+
+      // Converter 'Dias s/ Acesso' para número
+      const diasSemAcessoStr = row['Dias s/ Acesso'];
+      let diasSemAcessoNum = 0; // Valor padrão se não for um número ou estiver ausente
+      if (diasSemAcessoStr && !isNaN(Number(diasSemAcessoStr))) {
+        diasSemAcessoNum = parseInt(diasSemAcessoStr, 10);
+      }
       
       return {
-        ...row, 
+        ...row,
+        'Dias s/ Acesso': diasSemAcessoNum, // Sobrescrever com o valor numérico
         statusCalculado,
         diasCalculado,
         isPendente,

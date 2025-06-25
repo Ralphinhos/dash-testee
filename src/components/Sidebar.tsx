@@ -66,27 +66,65 @@ export const Sidebar: FC<SidebarProps> = ({ kpis, userRole, onNotification }) =>
       </div>
 
       {loggedInCoordinatorName && (
-        <div className={coordinatorCardClasses}> {/* coordinatorCardClasses já tem p-3 */}
-          <p className="text-xs text-cyan-400">Coordenador(a):</p> {/* text-sm para text-xs */}
-          <p className="text-sm font-semibold text-white">{shortenName(loggedInCoordinatorName)}</p> {/* text-md para text-sm */}
+        <div className={coordinatorCardClasses}>
+          <p className="text-xs text-cyan-400">{userRole === 'admin' ? 'Usuário:' : 'Coordenador(a):'}</p>
+          <p className="text-sm font-semibold text-white">{shortenName(loggedInCoordinatorName)}</p>
         </div>
       )}
 
-      {/* KPI Cards com padding ajustado para p-3 e texto menor */}
-      <div className={`${kpiCardClasses.replace('p-4', 'p-3')}`}> {/* Ajusta p-4 para p-3 se kpiCardClasses for usado */}
-        <p className="text-xs text-gray-400">Total de Atividades Pendentes</p> {/* text-sm para text-xs */}
-        <p className="text-2xl font-bold text-[#ef4444]">{kpis.pendentes ?? '-'}</p> {/* text-3xl para text-2xl */}
+      {/* KPIs da Modalidade Selecionada */}
+      <div className={kpiCardClasses.replace('p-4', 'p-3')}>
+        <p className="text-xs text-gray-400">Total Pendentes (Modalidade)</p>
+        <p className="text-2xl font-bold text-[#ef4444]">
+          {kpis.totalPendentesModalidade > 0 ? kpis.totalPendentesModalidade : (kpis.docenteMaiorMediaAtraso === undefined && kpis.totalPendentesModalidade === 0 ? "Selec. Mod." : kpis.totalPendentesModalidade)}
+        </p>
       </div>
-      <div className={`${kpiCardClasses.replace('p-4', 'p-3')}`}>
-        <p className="text-xs text-gray-400">Total de Atividades Atrasadas</p> {/* text-sm para text-xs */}
-        <p className="text-2xl font-bold text-[#f59e0b]">{kpis.atrasadas ?? '-'}</p> {/* text-3xl para text-2xl */}
+      <div className={kpiCardClasses.replace('p-4', 'p-3')}>
+        <p className="text-xs text-gray-400">Total Atrasadas (Modalidade)</p>
+        <p className="text-2xl font-bold text-[#f59e0b]">
+          {kpis.totalAtrasadasModalidade > 0 ? kpis.totalAtrasadasModalidade : (kpis.docenteMaiorMediaAtraso === undefined && kpis.totalAtrasadasModalidade === 0 ? "Selec. Mod." : kpis.totalAtrasadasModalidade)}
+        </p>
       </div>
-      <div className={`${kpiCardClasses.replace('p-4', 'p-3')}`}>
-        <p className="text-xs text-gray-400">Docente com Maior Atraso</p> {/* text-sm para text-xs */}
-        <p className="text-base font-semibold text-orange-400">{kpis.maiorAtrasoDocente ? shortenName(kpis.maiorAtrasoDocente) : '-'}</p> {/* text-lg para text-base */}
-        <p className="text-xl font-bold text-orange-400">{kpis.maiorAtrasoDias > 0 ? `${kpis.maiorAtrasoDias} dia(s)` : '-'}</p> {/* text-2xl para text-xl */}
+
+      <div className={kpiCardClasses.replace('p-4', 'p-3')}>
+        <p className="text-xs text-gray-400">Doc. Maior Média Atraso</p>
+        {kpis.docenteMaiorMediaAtraso ? (
+          <>
+            <p className="text-base font-semibold text-orange-400">{shortenName(kpis.docenteMaiorMediaAtraso.nome)}</p>
+            <p className="text-xl font-bold text-orange-400">Média: {kpis.docenteMaiorMediaAtraso.mediaDias}d</p>
+          </>
+        ) : (
+          <p className="text-xl font-bold text-orange-400">{kpis.docenteMaiorMediaAtraso === undefined ? "Selec. Mod." : "-"}</p>
+        )}
+      </div>
+
+      <div className={kpiCardClasses.replace('p-4', 'p-3')}>
+        <p className="text-xs text-gray-400">Doc. Mais Pendências</p>
+        {kpis.docenteMaisPendencias ? (
+          <>
+            <p className="text-base font-semibold text-indigo-400">{shortenName(kpis.docenteMaisPendencias.nome)}</p>
+            <p className="text-xl font-bold text-indigo-400">{kpis.docenteMaisPendencias.quantidade} pend.</p>
+          </>
+        ) : (
+          <p className="text-xl font-bold text-indigo-400">{kpis.docenteMaisPendencias === undefined ? "Selec. Mod." : "-"}</p>
+        )}
       </div>
       
+      <div className={kpiCardClasses.replace('p-4', 'p-3')}>
+        <p className="text-xs text-gray-400">Doc. Menos Acesso Recente</p>
+        {kpis.docenteMenosAcesso ? (
+          <>
+            <p className="text-base font-semibold text-teal-400">{shortenName(kpis.docenteMenosAcesso.nome)}</p>
+            <p className="text-sm text-gray-300">Média: {kpis.docenteMenosAcesso.mediaDiasSemAcesso}d s/acesso</p>
+            <p className="text-xs text-gray-400 truncate" title={`${kpis.docenteMenosAcesso.disciplinaDestaque} (${kpis.docenteMenosAcesso.diasDisciplinaDestaque}d)`}>
+                Destaque: {kpis.docenteMenosAcesso.disciplinaDestaque} ({kpis.docenteMenosAcesso.diasDisciplinaDestaque}d)
+            </p>
+          </>
+        ) : (
+          <p className="text-xl font-bold text-teal-400">{kpis.docenteMenosAcesso === undefined ? "Selec. Mod." : "-"}</p>
+        )}
+      </div>
+
       {/* Seção de Ações de Comunicação - VISÍVEL APENAS PARA ADMIN */}
       {userRole === 'admin' && onNotification && (
         <div className={actionsCardClasses}>
