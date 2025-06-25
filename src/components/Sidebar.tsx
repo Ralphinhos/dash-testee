@@ -29,42 +29,44 @@ export const Sidebar: FC<SidebarProps> = ({ onNotification, kpis }) => {
   // O card de nome do coordenador pode manter o estilo original ou ser ajustado similarmente.
   const coordinatorCardClasses = "bg-[rgba(30,41,59,0.5)] border border-[rgba(55,65,81,0.5)] backdrop-blur-md p-3 text-center mb-2 rounded-xl";
   // O card de Ações de Comunicação
-  const actionsCardClasses = "bg-[rgba(30,41,59,0.7)] border border-[rgba(55,65,81,0.5)] backdrop-blur-md p-4 flex-grow flex flex-col rounded-xl";
+  const actionsCardClasses = "bg-[rgba(30,41,59,0.7)] border border-[rgba(55,65,81,0.5)] backdrop-blur-md p-3 flex-grow flex flex-col rounded-xl"; // p-4 para p-3
 
 
   return (
-    <aside className="w-72 bg-[#020617] border-r border-gray-800 p-6 flex flex-col space-y-6 overflow-y-auto"> {/* Largura ajustada para w-72 */}
-      <div className="flex items-center justify-center mb-4">
+    <aside className="w-72 bg-[#020617] border-r border-gray-800 p-4 flex flex-col space-y-4 overflow-y-auto"> {/* p-6 para p-4, space-y-6 para space-y-4 */}
+      <div className="flex items-center justify-center mb-2"> {/* mb-4 para mb-2 */}
         <img
           src="/logo_branca.png"
           alt="logo_unifenas"
-          className="h-20 w-auto"
+          className="h-16 w-auto" // h-20 para h-16
         />
       </div>
 
       {loggedInCoordinatorName && (
-        <div className={coordinatorCardClasses}>
-          <p className="text-sm text-cyan-400">Coordenador(a):</p>
-          <p className="text-md font-semibold text-white">{shortenName(loggedInCoordinatorName)}</p>
+        <div className={coordinatorCardClasses}> {/* coordinatorCardClasses já tem p-3 */}
+          <p className="text-xs text-cyan-400">Coordenador(a):</p> {/* text-sm para text-xs */}
+          <p className="text-sm font-semibold text-white">{shortenName(loggedInCoordinatorName)}</p> {/* text-md para text-sm */}
         </div>
       )}
 
-      <div className={kpiCardClasses}>
-        <p className="text-sm text-gray-400">Total de Atividades Pendentes</p>
-        <p className="text-3xl font-bold text-[#ef4444]">{kpis.pendentes ?? '-'}</p>
+      {/* KPI Cards com padding ajustado para p-3 e texto menor */}
+      <div className={`${kpiCardClasses.replace('p-4', 'p-3')}`}> {/* Ajusta p-4 para p-3 se kpiCardClasses for usado */}
+        <p className="text-xs text-gray-400">Total de Atividades Pendentes</p> {/* text-sm para text-xs */}
+        <p className="text-2xl font-bold text-[#ef4444]">{kpis.pendentes ?? '-'}</p> {/* text-3xl para text-2xl */}
       </div>
-      <div className={kpiCardClasses}>
-        <p className="text-sm text-gray-400">Total de Atividades Atrasadas</p>
-        <p className="text-3xl font-bold text-[#f59e0b]">{kpis.atrasadas ?? '-'}</p>
+      <div className={`${kpiCardClasses.replace('p-4', 'p-3')}`}>
+        <p className="text-xs text-gray-400">Total de Atividades Atrasadas</p> {/* text-sm para text-xs */}
+        <p className="text-2xl font-bold text-[#f59e0b]">{kpis.atrasadas ?? '-'}</p> {/* text-3xl para text-2xl */}
       </div>
-      <div className={kpiCardClasses}>
-        <p className="text-sm text-gray-400">Docente com Maior Atraso</p>
-        <p className="text-lg font-semibold text-orange-400">{kpis.maiorAtrasoDocente ? shortenName(kpis.maiorAtrasoDocente) : '-'}</p>
-        <p className="text-2xl font-bold text-orange-400">{kpis.maiorAtrasoDias > 0 ? `${kpis.maiorAtrasoDias} dia(s)` : '-'}</p>
+      <div className={`${kpiCardClasses.replace('p-4', 'p-3')}`}>
+        <p className="text-xs text-gray-400">Docente com Maior Atraso</p> {/* text-sm para text-xs */}
+        <p className="text-base font-semibold text-orange-400">{kpis.maiorAtrasoDocente ? shortenName(kpis.maiorAtrasoDocente) : '-'}</p> {/* text-lg para text-base */}
+        <p className="text-xl font-bold text-orange-400">{kpis.maiorAtrasoDias > 0 ? `${kpis.maiorAtrasoDias} dia(s)` : '-'}</p> {/* text-2xl para text-xl */}
       </div>
+
       <div className={actionsCardClasses}>
-        <h3 className="text-md font-semibold text-white mb-3 text-center">Ações de Comunicação</h3> {/* Centralizado título também */}
-        <div className="space-y-3">
+        <h3 className="text-sm font-semibold text-white mb-2 text-center">Ações de Comunicação</h3> {/* text-md para text-sm, mb-3 para mb-2 */}
+        <div className="space-y-2"> {/* space-y-3 para space-y-2 */}
           <button 
             onClick={() => onNotification('coordenadores')} 
             className="w-full text-sm py-2 px-4 bg-[#2b466d] text-white font-semibold rounded-md hover:bg-[#3c5f94] transition-colors"
