@@ -40,7 +40,10 @@ export const VisaoGeral: React.FC<VisaoGeralProps> = ({ data }) => {
             else if (item.isAtrasado) acc[curso].atrasadas++;
             return acc;
         }, {} as Record<string, { curso: string; entregues: number; pendentes: number; atrasadas: number;}>);
-        return Object.values(dadosAgregados);
+        
+        // Ordenar por 'entregues' em ordem decrescente
+        const sortedData = Object.values(dadosAgregados).sort((a, b) => b.entregues - a.entregues);
+        return sortedData;
     }, [data]);
 
     const CustomTooltip = ({ active, payload, label }: any) => {

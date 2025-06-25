@@ -145,12 +145,11 @@ export const PerformanceAnalysis: FC<PerformanceAnalysisProps> = ({ data, onAnal
     };
 
     // --- Classes de Estilo ---
-    const cardBaseClasses = "flex flex-col p-6 rounded-lg shadow-sm dark:shadow-md";
-    const cardPerformanceClasses = `${cardBaseClasses} bg-white dark:bg-slate-800 border border-green-500 dark:border-green-400 shadow-lg shadow-green-500/10 dark:shadow-green-400/10`;
-    const cardAttentionClasses = `${cardBaseClasses} bg-white dark:bg-slate-800 border border-amber-500 dark:border-amber-400 shadow-lg shadow-amber-500/10 dark:shadow-amber-400/10`;
+    // cardBaseClasses não é mais usado diretamente para os cards principais, suas propriedades são incorporadas em themedCardClasses
+    const themedCardClasses = "bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 flex flex-col p-6 rounded-lg shadow-sm dark:shadow-md";
     
     const titleClasses = "text-lg font-semibold text-slate-700 dark:text-white mb-4";
-    const placeholderTextClasses = "text-slate-600 dark:text-gray-400 text-center py-10"; // Ajustado
+    const placeholderTextClasses = "text-slate-600 dark:text-gray-400 text-center py-10";
     
     const btnAiClasses = "bg-transparent border border-cyan-500 text-cyan-500 hover:bg-cyan-500/10 "+
                          "dark:border-cyan-400 dark:text-cyan-400 dark:hover:bg-cyan-400/10 "+
@@ -175,7 +174,7 @@ export const PerformanceAnalysis: FC<PerformanceAnalysisProps> = ({ data, onAnal
 
     return (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <div className={cardPerformanceClasses}>
+            <div className={themedCardClasses}> {/* Usando themedCardClasses */}
                 <h3 className={titleClasses}>Top 5 - Análise de Performance</h3>
                 <div className="flex-grow overflow-y-auto space-y-4">
                     {topPerformers.length > 0 ? (
@@ -191,7 +190,7 @@ export const PerformanceAnalysis: FC<PerformanceAnalysisProps> = ({ data, onAnal
                 )}
             </div>
 
-            <div className={cardAttentionClasses}>
+            <div className={themedCardClasses}> {/* Usando themedCardClasses */}
                 <h3 className={titleClasses}>
                     {selectedDocente ? `Detalhes: ${selectedDocente.split(' ')[0]} ${selectedDocente.split(' ').slice(-1)[0]}` : 'Top 5 - Pontos de Atenção'}
                 </h3>

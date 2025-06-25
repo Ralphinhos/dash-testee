@@ -23,8 +23,17 @@ export const Sidebar: FC<SidebarProps> = ({ onNotification, kpis }) => {
     return parts.length > 2 ? `${parts[0]} ${parts[parts.length - 1]}` : name;
   };
 
+  // A classe .card da tag <style> em Index.tsx tem: background-color: rgba(30, 41, 59, 0.7); border: 1px solid rgba(55, 65, 81, 0.5); backdrop-filter: blur(12px); border-radius: 1rem;
+  // Vamos adicionar text-center e um rounded-xl para os cards de KPI.
+  const kpiCardClasses = "bg-[rgba(30,41,59,0.7)] border border-[rgba(55,65,81,0.5)] backdrop-blur-md p-4 text-center rounded-xl";
+  // O card de nome do coordenador pode manter o estilo original ou ser ajustado similarmente.
+  const coordinatorCardClasses = "bg-[rgba(30,41,59,0.5)] border border-[rgba(55,65,81,0.5)] backdrop-blur-md p-3 text-center mb-2 rounded-xl";
+  // O card de Ações de Comunicação
+  const actionsCardClasses = "bg-[rgba(30,41,59,0.7)] border border-[rgba(55,65,81,0.5)] backdrop-blur-md p-4 flex-grow flex flex-col rounded-xl";
+
+
   return (
-    <aside className="w-1/4 min-w-[320px] bg-[#020617] border-r border-gray-800 p-6 flex flex-col space-y-6 overflow-y-auto">
+    <aside className="w-72 bg-[#020617] border-r border-gray-800 p-6 flex flex-col space-y-6 overflow-y-auto"> {/* Largura ajustada para w-72 */}
       <div className="flex items-center justify-center mb-4">
         <img
           src="/logo_branca.png"
@@ -34,27 +43,27 @@ export const Sidebar: FC<SidebarProps> = ({ onNotification, kpis }) => {
       </div>
 
       {loggedInCoordinatorName && (
-        <div className="card bg-[rgba(30,41,59,0.5)] p-3 text-center mb-2">
+        <div className={coordinatorCardClasses}>
           <p className="text-sm text-cyan-400">Coordenador(a):</p>
           <p className="text-md font-semibold text-white">{shortenName(loggedInCoordinatorName)}</p>
         </div>
       )}
 
-      <div className="card bg-[rgba(30,41,59,0.7)] p-4">
+      <div className={kpiCardClasses}>
         <p className="text-sm text-gray-400">Total de Atividades Pendentes</p>
         <p className="text-3xl font-bold text-[#ef4444]">{kpis.pendentes ?? '-'}</p>
       </div>
-      <div className="card bg-[rgba(30,41,59,0.7)] p-4">
+      <div className={kpiCardClasses}>
         <p className="text-sm text-gray-400">Total de Atividades Atrasadas</p>
         <p className="text-3xl font-bold text-[#f59e0b]">{kpis.atrasadas ?? '-'}</p>
       </div>
-      <div className="card bg-[rgba(30,41,59,0.7)] p-4">
+      <div className={kpiCardClasses}>
         <p className="text-sm text-gray-400">Docente com Maior Atraso</p>
         <p className="text-lg font-semibold text-orange-400">{kpis.maiorAtrasoDocente ? shortenName(kpis.maiorAtrasoDocente) : '-'}</p>
         <p className="text-2xl font-bold text-orange-400">{kpis.maiorAtrasoDias > 0 ? `${kpis.maiorAtrasoDias} dia(s)` : '-'}</p>
       </div>
-      <div className="card bg-[rgba(30,41,59,0.7)] p-4 flex-grow flex flex-col">
-        <h3 className="text-md font-semibold text-white mb-3">Ações de Comunicação</h3>
+      <div className={actionsCardClasses}>
+        <h3 className="text-md font-semibold text-white mb-3 text-center">Ações de Comunicação</h3> {/* Centralizado título também */}
         <div className="space-y-3">
           <button 
             onClick={() => onNotification('coordenadores')} 

@@ -13,6 +13,7 @@ import { ProcessedData, FilterState, KPIData, Coordinator } from '../types'; // 
 import { useNavigate } from 'react-router-dom'; // Importar useNavigate
 import { LogOut, Sun, Moon } from 'lucide-react'; // Importar ícones
 import { ThemeSwitcher } from '../components/ThemeSwitcher'; // Importar ThemeSwitcher
+import useIdleTimer from '../hooks/useIdleTimer'; // Importar useIdleTimer
 
 export default function Index() {
     const navigate = useNavigate(); // Hook para navegação
@@ -225,6 +226,10 @@ const handleNotification = async (action: string) => {
         localStorage.removeItem('loggedInCoordinatorUsername'); // Adicionado para limpar o username
         navigate('/login');
     };
+
+    // Configurar o timer de inatividade
+    const IDLE_TIMEOUT = 20 * 60 * 1000; // 20 minutos
+    useIdleTimer(IDLE_TIMEOUT, handleLogout);
 
     return (
         // O div principal mantém seu fundo escuro, pois a Sidebar é sempre escura.
