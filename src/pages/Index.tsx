@@ -95,7 +95,7 @@ export default function Index() {
                                  filters.modulo === 'Todos' &&
                                  filters.curso === 'Todos';
         if (noUiFiltersApplied) {
-            setFilteredData(dataForCoordinator);
+            setFilteredData([]); // Alterado para não exibir dados até que um filtro seja aplicado
         } else {
             const appliedFiltersResult = dataForCoordinator.filter(row =>
                 (filters.semestre === 'Todos' || row.Semestre === filters.semestre) &&
@@ -187,7 +187,7 @@ export default function Index() {
                 .table-container { height: calc(30vh); min-height: 200px; }
                 .status-badge { font-size: 0.75rem; line-height: 1rem; font-weight: 500; padding: 0.25rem 0.625rem; border-radius: 9999px; white-space: nowrap; }
             `}</style>
-            <Sidebar kpis={kpis} onNotification={handleNotification} />
+            <Sidebar kpis={kpis} /> {/* Removido onNotification={handleNotification} */}
             <main className="flex-1 p-6 lg:p-8 space-y-6 overflow-y-auto bg-gray-100 dark:bg-[#0f172a] text-slate-800 dark:text-gray-200">
                 <header className="space-y-4">
                     <div className="flex justify-between items-center gap-4">
