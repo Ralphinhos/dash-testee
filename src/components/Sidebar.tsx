@@ -4,33 +4,41 @@ import { useNavigate } from 'react-router-dom';
 import { KPIData } from '../types';
 
 interface SidebarProps {
-  // onNotification: (action: string) => void; // Removido, pois as ações de comunicação serão removidas
   kpis: KPIData;
+  userRole: string | null;
+  onNotification?: (action: string) => void; // Opcional, pois só admin usará
 }
 
-// export const Sidebar: FC<SidebarProps> = ({ onNotification, kpis }) => { // onNotification removido das props
-export const Sidebar: FC<SidebarProps> = ({ kpis }) => {
+export const Sidebar: FC<SidebarProps> = ({ kpis, userRole, onNotification }) => {
   const navigate = useNavigate();
   const [loggedInCoordinatorName, setLoggedInCoordinatorName] = useState<string | null>(null);
   const [coordinatorCourses, setCoordinatorCourses] = useState<string[]>([]);
 
   useEffect(() => {
-    const name = localStorage.getItem('loggedInCoordinator');
+    const name = localStorage.getItem('loggedInCoordinator'); // Nome é "Administrador" ou nome do coord.
     setLoggedInCoordinatorName(name);
 
-    const coursesStr = localStorage.getItem('coordinatorCourses');
-    if (coursesStr) {
-      try {
-        const coursesArray = JSON.parse(coursesStr);
-        if (Array.isArray(coursesArray)) {
-          setCoordinatorCourses(coursesArray);
+    if (userRole === 'coordinator') {
+      const coursesStr = localStorage.getItem('coordinatorCourses');
+      if (coursesStr) {
+        try {
+          const coursesArray = JSON.parse(coursesStr);
+          if (Array.isArray(coursesArray)) {
+            setCoordinatorCourses(coursesArray);
+          } else {
+            setCoordinatorCourses([]); // Garantir que seja array
+          }
+        } catch (error) {
+          console.error("Erro ao parsear cursos do coordenador:", error);
+          setCoordinatorCourses([]);
         }
-      } catch (error) {
-        console.error("Erro ao parsear cursos do coordenador:", error);
-        setCoordinatorCourses([]);
+      } else {
+        setCoordinatorCourses([]); // Nenhum curso no localStorage
       }
+    } else {
+      setCoordinatorCourses([]); // Limpar cursos se for admin ou userRole não definido
     }
-  }, []);
+  }, [userRole]); // Depender de userRole para re-buscar/limpar cursos
 
   const shortenName = (name: string) => {
     if (typeof name !== 'string' || !name) return '';
@@ -79,13 +87,38 @@ export const Sidebar: FC<SidebarProps> = ({ kpis }) => {
         <p className="text-xl font-bold text-orange-400">{kpis.maiorAtrasoDias > 0 ? `${kpis.maiorAtrasoDias} dia(s)` : '-'}</p> {/* text-2xl para text-xl */}
       </div>
       
-      {/* Seção de Ações de Comunicação REMOVIDA */}
+      {/* Seção de Ações de Comunicação - VISÍVEL APENAS PARA ADMIN */}
+      {userRole === 'admin' && onNotification && (
+        <div className={actionsCardClasses}>
+          <h3 className="text-sm font-semibold text-white mb-2 text-center">Ações de Comunicação</h3>
+          <div className="space-y-2">
+            <button 
+              onClick={() => onNotification('coordenadores')} 
+              className="w-full text-sm py-2 px-4 bg-[#2b466d] text-white font-semibold rounded-md hover:bg-[#3c5f94] transition-colors"
+            >
+              Notificar Coordenadores
+            </button>
+            <button 
+              onClick={() => onNotification('docentes')} 
+              className="w-full text-sm py-2 px-4 bg-transparent border border-[#2b466d] text-[#adbbd1] hover:bg-[rgba(43,70,109,0.2)] font-semibold rounded-md transition-colors"
+            >
+              Notificar Docentes
+            </button>
+            <button 
+              onClick={() => onNotification('cobrancaUas')} 
+              className="w-full text-sm py-2 px-4 bg-transparent border border-[#00adc7] text-[#00adc7] hover:bg-[rgba(0,173,199,0.1)] font-semibold rounded-md transition-colors"
+            >
+              ✨ Cobrar UAs Pendentes
+            </button>
+          </div>
+        </div>
+      )}
 
-      {/* Novo Card: Cursos do Coordenador */}
-      {coordinatorCourses.length > 0 && (
-        <div className={actionsCardClasses.replace('flex-grow', '')}> {/* Reutilizando actionsCardClasses para consistência, removendo flex-grow se não for necessário */}
+      {/* Card: Cursos do Coordenador - VISÍVEL APENAS PARA COORDENADOR */}
+      {userRole === 'coordinator' && coordinatorCourses.length > 0 && (
+        <div className={actionsCardClasses.replace('flex-grow', '')}> 
           <h3 className="text-sm font-semibold text-white mb-2 text-center">Meus Cursos</h3>
-          <div className="space-y-1 max-h-32 overflow-y-auto"> {/* Adicionado max-h e overflow-y-auto para o caso de muitos cursos */}
+          <div className="space-y-1 max-h-32 overflow-y-auto">
             {coordinatorCourses.map(course => (
               <p key={course} className="text-xs text-gray-300 bg-slate-700 p-1 rounded-md text-center">
                 {course}

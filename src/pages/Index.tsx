@@ -19,6 +19,7 @@ export default function Index() {
     // 1. Hooks que não dependem de estado/props internos ou que fornecem funções básicas
     const navigate = useNavigate();
     const { processData } = useDataProcessor();
+    const [userRole, setUserRole] = useState<string | null>(null);
 
     // 2. Definições de estado
     const [isLoading, setIsLoading] = useState(true);
@@ -34,12 +35,18 @@ export default function Index() {
     const GOOGLE_SHEET_URL = import.meta.env.VITE_GOOGLE_SHEET_URL;
     const GOOGLE_APPS_SCRIPT_URL = import.meta.env.VITE_GOOGLE_APPS_SCRIPT_URL;
 
+    useEffect(() => {
+        const role = localStorage.getItem('userRole');
+        setUserRole(role);
+    }, []);
+
     // 3. Definições de callbacks estáveis
     const handleLogout = React.useCallback(() => {
         localStorage.removeItem('isLoggedIn');
         localStorage.removeItem('loggedInCoordinator');
         localStorage.removeItem('coordinatorCourses');
         localStorage.removeItem('loggedInCoordinatorUsername');
+        localStorage.removeItem('userRole'); // Adicionado para limpar userRole
         navigate('/login');
     }, [navigate]);
 
@@ -77,17 +84,28 @@ export default function Index() {
     }, [processData]); // A dependência processData vem de useDataProcessor, que usa useCallback, então é estável.
 
     // --- BLOCO DE HOOKS RESTAURADO ---
-    const dataForCoordinator = useMemo(() => {
+    const baseDataForView = useMemo(() => {
+        if (userRole === 'admin') {
+            return allData;
+        }
+        // Para coordenador, ou se userRole ainda não estiver definido (fallback seguro)
         const loggedInCoordinatorUsername = localStorage.getItem('loggedInCoordinatorUsername');
         const coordinatorCoursesStr = localStorage.getItem('coordinatorCourses');
         if (!loggedInCoordinatorUsername || !coordinatorCoursesStr) return [];
+        
         let coordinatorCourses: string[] = [];
-        try { coordinatorCourses = JSON.parse(coordinatorCoursesStr); } catch (e) { return []; }
+        try {
+            coordinatorCourses = JSON.parse(coordinatorCoursesStr);
+        } catch (e) {
+            console.error("Erro ao parsear coordinatorCourses em Index.tsx:", e);
+            return [];
+        }
         if (coordinatorCourses.length === 0) return [];
+
         return allData.filter(row => 
             row.Login === loggedInCoordinatorUsername && coordinatorCourses.includes(row.Curso)
         );
-    }, [allData]);
+    }, [allData, userRole]);
 
     useEffect(() => {
         const noUiFiltersApplied = filters.semestre === 'Todos' &&
@@ -95,9 +113,17 @@ export default function Index() {
                                  filters.modulo === 'Todos' &&
                                  filters.curso === 'Todos';
         if (noUiFiltersApplied) {
-            setFilteredData([]); // Alterado para não exibir dados até que um filtro seja aplicado
+            // Se for admin e nenhum filtro UI, mostra todos os dados do admin (baseDataForView).
+            // Se for coordenador e nenhum filtro UI, não mostra nada até filtrar.
+            // A condição inicial de não mostrar nada para coordenador é mantida.
+            // Para admin, queremos que os dados apareçam mesmo sem filtro UI.
+            if (userRole === 'admin') {
+                setFilteredData(baseDataForView);
+            } else {
+                setFilteredData([]); 
+            }
         } else {
-            const appliedFiltersResult = dataForCoordinator.filter(row =>
+            const appliedFiltersResult = baseDataForView.filter(row =>
                 (filters.semestre === 'Todos' || row.Semestre === filters.semestre) &&
                 (filters.modalidade === 'Todos' || row.Modalidade === filters.modalidade) &&
                 (filters.modulo === 'Todos' || row['Módulo'] === filters.modulo) &&
@@ -106,20 +132,21 @@ export default function Index() {
             setFilteredData(appliedFiltersResult);
         }
         setSelectedDocente(null);
-    }, [filters, dataForCoordinator]);
+    }, [filters, baseDataForView, userRole]); // Adicionado userRole como dependência
 
     const filterOptions = useMemo(() => {
-        const semestres = [...new Set(dataForCoordinator.map(item => item.Semestre).filter(Boolean))].sort();
-        const modalidades = [...new Set(dataForCoordinator.map(item => item.Modalidade).filter(Boolean))].sort();
+        // As opções de filtro são sempre baseadas em baseDataForView, que já considera o userRole
+        const semestres = [...new Set(baseDataForView.map(item => item.Semestre).filter(Boolean))].sort();
+        const modalidades = [...new Set(baseDataForView.map(item => item.Modalidade).filter(Boolean))].sort();
         let modulos: string[] = [];
         let cursos: string[] = [];
         const baseParaModulosECursos = filters.modalidade === 'Todos'
-            ? dataForCoordinator
-            : dataForCoordinator.filter(item => item.Modalidade === filters.modalidade);
+            ? baseDataForView
+            : baseDataForView.filter(item => item.Modalidade === filters.modalidade);
         modulos = [...new Set(baseParaModulosECursos.map(item => item['Módulo']).filter(Boolean))].sort();
         cursos = [...new Set(baseParaModulosECursos.map(item => item.Curso).filter(Boolean))].sort();
         return { semestres, modalidades, modulos, cursos };
-    }, [dataForCoordinator, filters.modalidade]);
+    }, [baseDataForView, filters.modalidade]); // filterOptions depende de baseDataForView
 
     const kpis = useMemo(() => {
         if (filteredData.length === 0) return { pendentes: 0, atrasadas: 0, maiorAtrasoDocente: '', maiorAtrasoDias: 0 };
@@ -187,7 +214,7 @@ export default function Index() {
                 .table-container { height: calc(30vh); min-height: 200px; }
                 .status-badge { font-size: 0.75rem; line-height: 1rem; font-weight: 500; padding: 0.25rem 0.625rem; border-radius: 9999px; white-space: nowrap; }
             `}</style>
-            <Sidebar kpis={kpis} /> {/* Removido onNotification={handleNotification} */}
+            <Sidebar kpis={kpis} userRole={userRole} onNotification={handleNotification} /> {/* Passando onNotification novamente */}
             <main className="flex-1 p-6 lg:p-8 space-y-6 overflow-y-auto bg-gray-100 dark:bg-[#0f172a] text-slate-800 dark:text-gray-200">
                 <header className="space-y-4">
                     <div className="flex justify-between items-center gap-4">

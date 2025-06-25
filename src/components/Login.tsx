@@ -57,28 +57,48 @@ export const Login: React.FC = () => {
   }, []);
 
   const handleLogin = () => {
-    setError(''); 
-    const trimmedUsername = username.trim().toLowerCase();
-    const coordinator = coordinators.find(c => c.username.toLowerCase() === trimmedUsername);
+    setError('');
+    const trimmedUsername = username.trim(); // Não converter para minúsculas ainda, admin pode ser case-sensitive
+    const adminUsernameEnv = import.meta.env.VITE_ADMIN_USERNAME;
+    const adminPasswordEnv = import.meta.env.VITE_ADMIN_PASSWORD;
+
+    // 1. Verificar credenciais de Admin
+    if (trimmedUsername === adminUsernameEnv && password === adminPasswordEnv) {
+      localStorage.setItem('isLoggedIn', 'true');
+      localStorage.setItem('userRole', 'admin');
+      localStorage.setItem('loggedInCoordinator', 'Administrador'); // Nome a ser exibido na Sidebar
+      // Limpar dados específicos de coordenador, caso existam de um login anterior
+      localStorage.removeItem('loggedInCoordinatorUsername');
+      localStorage.removeItem('coordinatorCourses');
+      navigate('/');
+      return;
+    }
+
+    // 2. Se não for Admin, verificar Coordenadores (convertendo username para minúsculas para a busca)
+    const lowercasedTrimmedUsername = trimmedUsername.toLowerCase();
+    const coordinator = coordinators.find(c => c.username.toLowerCase() === lowercasedTrimmedUsername);
 
     if (coordinator) {
       if (coordinator.password && password === coordinator.password) {
         localStorage.setItem('isLoggedIn', 'true');
-        localStorage.setItem('loggedInCoordinator', coordinator.fullName); 
-        localStorage.setItem('loggedInCoordinatorUsername', coordinator.username); // Adicionado
+        localStorage.setItem('userRole', 'coordinator');
+        localStorage.setItem('loggedInCoordinator', coordinator.fullName);
+        localStorage.setItem('loggedInCoordinatorUsername', coordinator.username);
         localStorage.setItem('coordinatorCourses', JSON.stringify(coordinator.courses));
+        // Limpar userRole se for de admin
+        // localStorage.removeItem('userRole'); // Não é necessário, pois já setamos para 'coordinator'
         navigate('/');
       } else if (!coordinator.password) {
         setError('Configuração de senha para este coordenador não encontrada.');
-      }
-      else {
+      } else {
         setError('Senha inválida.');
       }
     } else {
+      // Se não encontrou nem admin nem coordenador
       if (coordinators.length === 0 && !error.startsWith("Erro crítico")) {
         setError('Dados de configuração de coordenadores não disponíveis. Tente novamente em instantes.');
-      } else if (coordinators.length > 0) { 
-        setError('Usuário (Login) não encontrado.');
+      } else { // Pode ser que coordinators.length > 0 mas o usuário não foi encontrado, ou era o admin com senha errada
+        setError('Usuário ou senha inválidos.');
       }
     }
   };
