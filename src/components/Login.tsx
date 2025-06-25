@@ -62,6 +62,12 @@ export const Login: React.FC = () => {
     const adminUsernameEnv = import.meta.env.VITE_ADMIN_USERNAME;
     const adminPasswordEnv = import.meta.env.VITE_ADMIN_PASSWORD;
 
+    // Logs para depuração
+    console.log("Tentativa de login com:", trimmedUsername, password);
+    console.log("Credenciais de Admin do .env:", adminUsernameEnv, adminPasswordEnv);
+    console.log("Comparação Username Admin:", trimmedUsername === adminUsernameEnv);
+    console.log("Comparação Senha Admin:", password === adminPasswordEnv);
+
     // 1. Verificar credenciais de Admin
     if (trimmedUsername === adminUsernameEnv && password === adminPasswordEnv) {
       localStorage.setItem('isLoggedIn', 'true');
