@@ -24,12 +24,12 @@ export const RelatorioPeriodo: React.FC = () => {
     }, [navigate]);
     
     // Estados locais para os filtros e resultados do relatório
-    const [dataInicio, setDataInicio] = useState<string>('');
-    const [dataFim, setDataFim] = useState<string>('');
+    const [anoSelecionado, setAnoSelecionado] = useState<string>(new Date().getFullYear().toString()); // Default para o ano atual
+    const [semestreFiltro, setSemestreFiltro] = useState<string>('0'); // '0' para Ambos, '1' para 1º, '2' para 2º
     const [modalidadeSelecionada, setModalidadeSelecionada] = useState<string>('Todas');
     const [relatorioGerado, setRelatorioGerado] = useState<ProcessedData[] | null>(null);
 
-    // Usar allData do contexto. Não precisamos mais de simulatedAllData.
+    // Usar allData do contexto.
     const availableData = allData; 
 
     const modalidadesUnicas = useMemo(() => {
@@ -40,41 +40,31 @@ export const RelatorioPeriodo: React.FC = () => {
 
     const handleGerarRelatorio = () => {
         console.log("Gerando relatório com os seguintes filtros:");
-        console.log("Data Início:", dataInicio);
-        console.log("Data Fim:", dataFim);
+        console.log("Ano Selecionado:", anoSelecionado);
+        console.log("Filtro de Semestre:", semestreFiltro); // "0" para Ambos, "1" para 1º, "2" para 2º
         console.log("Modalidade:", modalidadeSelecionada);
 
-        if (!dataInicio || !dataFim) {
-            alert("Por favor, selecione Data Início e Data Fim.");
-            return;
-        }
-
-        const dtInicio = new Date(dataInicio + "T00:00:00"); // Adiciona hora para evitar problemas de fuso
-        const dtFim = new Date(dataFim + "T23:59:59"); // Adiciona hora para pegar o dia todo
-
-        if (dtInicio > dtFim) {
-            alert("Data Início não pode ser maior que Data Fim.");
+        if (!anoSelecionado) {
+            alert("Por favor, informe o Ano.");
             return;
         }
         
         const dadosFiltrados = availableData.filter(item => {
-            // Garantir que ambas as datas existam e sejam válidas para o item
-            if (!item.DataInicioSemestre || !item.DataTerminoPrevisto) {
-                return false;
-            }
-
-            // Lógica de sobreposição (Opção B)
-            // O semestre do item (item.DataInicioSemestre a item.DataTerminoPrevisto)
-            // se sobrepõe ao período do relatório selecionado pelo usuário (dtInicio a dtFim)
-            const dataMatch = item.DataInicioSemestre <= dtFim && 
-                              item.DataTerminoPrevisto >= dtInicio;
-            
             const modalidadeMatch = modalidadeSelecionada === 'Todas' || item.Modalidade === modalidadeSelecionada;
             
-            return modalidadeMatch && dataMatch;
+            let semestreMatch = false;
+            if (item.Semestre) { // Verificar se item.Semestre existe
+                if (semestreFiltro === '0') { // Ambos os semestres
+                    semestreMatch = item.Semestre.startsWith(`${anoSelecionado}_`);
+                } else { // 1º ou 2º semestre específico
+                    semestreMatch = item.Semestre === `${anoSelecionado}_${semestreFiltro}`;
+                }
+            }
+            
+            return modalidadeMatch && semestreMatch;
         });
 
-        console.log("Dados filtrados para o relatório (com DataInicioSemestre e DataTerminoPrevisto):", dadosFiltrados);
+        console.log("Dados filtrados para o relatório (Ano/Semestre):", dadosFiltrados);
         setRelatorioGerado(dadosFiltrados);
         // Aqui virão os cálculos e a formatação do relatório
     };
@@ -108,26 +98,30 @@ export const RelatorioPeriodo: React.FC = () => {
                 </p>
             </header>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4 items-end p-4 bg-white dark:bg-slate-800 rounded-lg shadow">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 items-end p-4 bg-white dark:bg-slate-800 rounded-lg shadow">
                 <div>
-                    <label htmlFor="data-inicio" className="block text-sm font-medium text-slate-700 dark:text-gray-300 mb-1">Data Início:</label>
+                    <label htmlFor="ano-relatorio" className="block text-sm font-medium text-slate-700 dark:text-gray-300 mb-1">Ano:</label>
                     <input 
-                        type="date" 
-                        id="data-inicio"
-                        value={dataInicio}
-                        onChange={(e) => setDataInicio(e.target.value)}
+                        type="number" // Usar type="number" para melhor UX, mas tratar como string no estado
+                        id="ano-relatorio"
+                        placeholder="Ex: 2024"
+                        value={anoSelecionado}
+                        onChange={(e) => setAnoSelecionado(e.target.value)}
                         className="block w-full px-3 py-1.5 text-sm rounded-md shadow-sm bg-white border-gray-300 text-slate-700 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 dark:bg-slate-700 dark:border-slate-600 dark:text-gray-300 dark:placeholder-gray-400 dark:focus:ring-cyan-600 dark:focus:border-cyan-600"
                     />
                 </div>
                 <div>
-                    <label htmlFor="data-fim" className="block text-sm font-medium text-slate-700 dark:text-gray-300 mb-1">Data Fim:</label>
-                    <input 
-                        type="date" 
-                        id="data-fim"
-                        value={dataFim}
-                        onChange={(e) => setDataFim(e.target.value)}
+                    <label htmlFor="semestre-relatorio" className="block text-sm font-medium text-slate-700 dark:text-gray-300 mb-1">Semestre:</label>
+                    <select 
+                        id="semestre-relatorio"
+                        value={semestreFiltro}
+                        onChange={(e) => setSemestreFiltro(e.target.value)}
                         className="block w-full px-3 py-1.5 text-sm rounded-md shadow-sm bg-white border-gray-300 text-slate-700 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 dark:bg-slate-700 dark:border-slate-600 dark:text-gray-300 dark:placeholder-gray-400 dark:focus:ring-cyan-600 dark:focus:border-cyan-600"
-                    />
+                    >
+                        <option value="0">Ambos os Semestres</option>
+                        <option value="1">1º Semestre</option>
+                        <option value="2">2º Semestre</option>
+                    </select>
                 </div>
                 <div>
                     <label htmlFor="modalidade-relatorio" className="block text-sm font-medium text-slate-700 dark:text-gray-300 mb-1">Modalidade:</label>
