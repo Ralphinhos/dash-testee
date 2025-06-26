@@ -1,8 +1,8 @@
-import React, { useState, useEffect, useMemo } from 'react'; // Adicionado useMemo de volta, será usado para modalidadesUnicas
-import { useNavigate } from 'react-router-dom'; // Importar useNavigate
-// import { useDataProcessor } from '../hooks/useDataProcessor'; // Removido por enquanto
-import { ProcessedData } from '../types'; // Removido FilterState se não usado diretamente aqui
-// Se houver componentes de UI customizados (ex: Select, Button, DatePicker), importe-os aqui
+import React, { useState, useEffect, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useDataContext } from '../contexts/DataContext'; // Importar useDataContext
+import { ProcessedData } from '../types';
+import { LoadingScreen } from './LoadingScreen'; // Importar LoadingScreen
 // import { Button } from "@/components/ui/button";
 // import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 // import { Input } from "@/components/ui/input"; // Para datas, se não usar type="date"
@@ -12,6 +12,7 @@ import { ProcessedData } from '../types'; // Removido FilterState se não usado 
 
 export const RelatorioPeriodo: React.FC = () => {
     const navigate = useNavigate();
+    const { allData, isLoading, error: dataError } = useDataContext(); // Consumir DataContext
 
     // Proteção de Rota: Apenas Admin
     useEffect(() => {
@@ -22,47 +23,17 @@ export const RelatorioPeriodo: React.FC = () => {
         }
     }, [navigate]);
     
-    // O acesso ao allData real e à função processData será tratado em uma fase posterior
-    // quando a estratégia de gerenciamento de estado global ou passagem de props for definida.
-    // Por enquanto, o componente dependerá de dados simulados para a UI e lógica básica.
-    
-    // Simulação de allData - REMOVER QUANDO INTEGRAR COM DADOS REAIS
-    const [simulatedAllData, setSimulatedAllData] = useState<ProcessedData[]>([
-        { 
-            Docente: 'Ana Silva', Disciplina: 'Mat I', Curso: 'EngComp', Modalidade: 'EAD', Semestre: '2023.1', Módulo: '1', Atividade: 'A1', 'Data Limite Construção': '10/03/2023', 'Entregue': '09/03/2023', 
-            'Dias s/ Acesso': 0, Login: 'ana.silva', statusCalculado: 'Entregue no prazo', diasCalculado: -1, isPendente: false, isAtrasado: false, isEntregueNoPrazo: true, DataTerminoPrevisto: new Date(2023, 2, 10),
-            Coordenador: 'Carlos Luz', email_coordenador: 'carlos.luz@example.com', email_docente: 'ana.silva@example.com' 
-        },
-        { 
-            Docente: 'Bruno Costa', Disciplina: 'Fis I', Curso: 'EngCivil', Modalidade: 'Presencial', Semestre: '2023.1', Módulo: 'N/A', Atividade: 'P1', 'Data Limite Construção': '15/04/2023', 'Entregue': '', 
-            'Dias s/ Acesso': 2, Login: 'bruno.costa', statusCalculado: 'Pendente', diasCalculado: 0, isPendente: true, isAtrasado: false, isEntregueNoPrazo: false, DataTerminoPrevisto: new Date(2023, 3, 15),
-            Coordenador: 'Maria Rita', email_coordenador: 'maria.rita@example.com', email_docente: 'bruno.costa@example.com'
-        },
-        { 
-            Docente: 'Carla Dias', Disciplina: 'Proj Software', Curso: 'EngComp', Modalidade: 'EAD', Semestre: '2023.1', Módulo: '2', Atividade: 'A2', 'Data Limite Construção': '20/05/2023', 'Entregue': '21/05/2023', 
-            'Dias s/ Acesso': 1, Login: 'carla.dias', statusCalculado: 'Entregue com 1 dia(s) de atraso', diasCalculado: 1, isPendente: false, isAtrasado: true, isEntregueNoPrazo: false, DataTerminoPrevisto: new Date(2023, 4, 20),
-            Coordenador: 'Carlos Luz', email_coordenador: 'carlos.luz@example.com', email_docente: 'carla.dias@example.com'
-        },
-        { 
-            Docente: 'Daniel Faria', Disciplina: 'Algoritmos', Curso: 'EngComp', Modalidade: 'Modular', Semestre: '2023.M1', Módulo: '1', Atividade: 'A1', 'Data Limite Construção': '10/02/2023', 'Entregue': '', 
-            'Dias s/ Acesso': 5, Login: 'daniel.faria', statusCalculado: 'Pendente', diasCalculado: 0, isPendente: true, isAtrasado: false, isEntregueNoPrazo: false, DataTerminoPrevisto: new Date(2023, 1, 10),
-            Coordenador: 'Sofia Lima', email_coordenador: 'sofia.lima@example.com', email_docente: 'daniel.faria@example.com'
-        },
-    ]); 
-    // useEffect para setSimulatedAllData foi removido, dados agora são parte do estado inicial.
-    // Se precisar carregar de forma assíncrona no futuro, o useEffect pode voltar.
-
+    // Estados locais para os filtros e resultados do relatório
     const [dataInicio, setDataInicio] = useState<string>('');
     const [dataFim, setDataFim] = useState<string>('');
     const [modalidadeSelecionada, setModalidadeSelecionada] = useState<string>('Todas');
     const [relatorioGerado, setRelatorioGerado] = useState<ProcessedData[] | null>(null);
 
-    // Idealmente, allData viria do contexto ou props, ou de um fetch centralizado.
-    // Por ora, usaremos simulatedAllData
-    const availableData = simulatedAllData; // Substituir por allData real quando integrado
+    // Usar allData do contexto. Não precisamos mais de simulatedAllData.
+    const availableData = allData; 
 
     const modalidadesUnicas = useMemo(() => {
-        // Extrai modalidades únicas dos dados disponíveis (simulados por enquanto)
+        // Extrai modalidades únicas dos dados reais (allData)
         // Filtra valores vazios ou nulos de modalidade e ordena
         return [...new Set(availableData.map(item => item.Modalidade).filter(Boolean).sort())] as string[];
     }, [availableData]);
@@ -104,6 +75,22 @@ export const RelatorioPeriodo: React.FC = () => {
     // A função interna useDataProcessorNoFetch foi completamente removida 
     // para resolver erros de TypeScript e simplificar o componente nesta fase.
     // A integração com os dados reais e o processamento centralizado serão feitos posteriormente.
+
+    if (isLoading) {
+        return <LoadingScreen message="Carregando dados para o relatório..." />;
+    }
+
+    if (dataError) {
+        return (
+            <div className="flex items-center justify-center h-screen bg-red-100 text-red-700 p-4">
+                <div>
+                    <h1 className="text-2xl font-bold mb-2">Erro ao Carregar Dados para o Relatório</h1>
+                    <p className="mb-4">{dataError}</p>
+                    <p>Verifique se os dados principais da aplicação foram carregados corretamente.</p>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="p-6 lg:p-8 space-y-6 bg-gray-100 dark:bg-[#0f172a] text-slate-800 dark:text-gray-200 min-h-screen">

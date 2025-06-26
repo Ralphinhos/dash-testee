@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { useDataProcessor } from '../hooks/useDataProcessor';
+import { useDataContext } from '../contexts/DataContext'; // Importar useDataContext
+// import { useDataProcessor } from '../hooks/useDataProcessor'; // Será removido se processData não for mais usado
 import { LoadingScreen } from '../components/LoadingScreen';
 import { AIModal } from '../components/AIModal';
 import { Sidebar } from '../components/Sidebar';
@@ -16,23 +17,21 @@ import { ThemeSwitcher } from '../components/ThemeSwitcher';
 import useIdleTimer from '../hooks/useIdleTimer';
 
 export default function Index() {
-    // 1. Hooks que não dependem de estado/props internos ou que fornecem funções básicas
+    // 1. Hooks e Contexto
     const navigate = useNavigate();
-    const { processData } = useDataProcessor();
+    const { allData, isLoading, error: dataError } = useDataContext(); // Consumir DataContext
+    // const { processData } = useDataProcessor(); // Removido, pois o fetch está no DataProvider
     const [userRole, setUserRole] = useState<string | null>(null);
 
-    // 2. Definições de estado
-    const [isLoading, setIsLoading] = useState(true);
-    const [loadingMessage, setLoadingMessage] = useState("Carregando dependências...");
-    const [allData, setAllData] = useState<ProcessedData[]>([]);
-    const [filteredData, setFilteredData] = useState<ProcessedData[]>([]); // Mantido, mas seu setter principal está comentado
+    // 2. Definições de estado local (filtros, UI)
+    const [filteredData, setFilteredData] = useState<ProcessedData[]>([]);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [modalTitle, setModalTitle] = useState('');
     const [modalContent, setModalContent] = useState('');
     const [filters, setFilters] = useState<FilterState>({ semestre: 'Todos', modalidade: 'Todos', modulo: 'Todos', curso: 'Todos' });
     const [selectedDocente, setSelectedDocente] = useState<string | null>(null);
     
-    const GOOGLE_SHEET_URL = import.meta.env.VITE_GOOGLE_SHEET_URL;
+    // GOOGLE_SHEET_URL removido, pois o fetch é feito no DataProvider
     const GOOGLE_APPS_SCRIPT_URL = import.meta.env.VITE_GOOGLE_APPS_SCRIPT_URL;
 
     useEffect(() => {
@@ -51,39 +50,41 @@ export default function Index() {
     }, [navigate]);
 
     // 4. Hooks que podem depender de callbacks ou estados (como useIdleTimer)
-    const IDLE_TIMEOUT = 20 * 60 * 1000; // 20 minutos
+    const IDLE_TIMEOUT = 1 * 60 * 1000; // 1 minuto
     useIdleTimer(IDLE_TIMEOUT, handleLogout);
 
-    // 5. useEffects e useMemos
-    useEffect(() => {
-        if (!window.Papa) {
-            setLoadingMessage("Aguardando dependências principais (PapaParse)...");
-            console.warn("[Index.tsx] PapaParse não encontrado. App.tsx deveria ter carregado.");
-            return;
-        }
-        setLoadingMessage("Carregando dados da aplicação...");
-        window.Papa.parse(GOOGLE_SHEET_URL, {
-            download: true, header: true, skipEmptyLines: true,
-            complete: (results: any) => {
-                const rawData = results.data;
-                const mainApplicationData = rawData.filter((r: any) => r.Docente && r.Docente.trim());
-                const processedMainData = processData(mainApplicationData);
-                setAllData(processedMainData);
-                // Com o useEffect de filtros comentado, precisamos popular filteredData aqui minimamente
-                // ou garantir que os componentes lidem com filteredData vazio.
-                // Por enquanto, vamos setar para todos os dados processados para evitar quebras.
-                setFilteredData(processedMainData); 
-                setIsLoading(false);
-            },
-            error: (err: any) => {
-                console.error("[Index.tsx] Erro ao carregar dados principais da aplicação:", err);
-                setLoadingMessage("Erro ao carregar dados da aplicação. Verifique o console.");
-                setIsLoading(false);
-            }
-        });
-    }, [processData]); // A dependência processData vem de useDataProcessor, que usa useCallback, então é estável.
+    // useEffect para carregar dados foi removido, pois agora é gerenciado pelo DataProvider.
+    // O GOOGLE_SHEET_URL e useDataProcessor() também foram removidos das definições do componente.
 
-    // --- BLOCO DE HOOKS RESTAURADO ---
+    // Este useEffect agora reage a mudanças em `allData` do contexto para inicializar `filteredData`
+    // ou quando os filtros são aplicados.
+    useEffect(() => {
+        if (!isLoading && allData.length > 0) {
+            // Se os filtros estiverem no estado inicial ("Todos"),
+            // e a modalidade for "Todos", filteredData deve ser vazio para aguardar seleção.
+            // Caso contrário, se houver dados e não houver modalidade selecionada,
+            // podemos popular filteredData com allData para que baseDataForView funcione,
+            // e o useEffect de filtros subsequente cuidará de limpar se necessário.
+            // No entanto, a lógica atual de filtros já define filteredData como [] se modalidade for 'Todos'.
+            // Vamos garantir que, se não houver modalidade selecionada, filteredData comece vazio.
+             if (filters.modalidade === 'Todos') {
+                setFilteredData([]);
+            } else {
+                // Se uma modalidade já estiver selecionada (ex: vinda de um estado persistido ou default diferente de 'Todos')
+                // e os dados carregaram, o useEffect de filtros abaixo irá processar.
+                // Para uma carga inicial onde filtros podem não ter sido aplicados ainda pela UI,
+                // e allData acabou de chegar, precisamos de uma base para baseDataForView.
+                // A lógica de filtro subsequente é a principal fonte da verdade para filteredData.
+                // Este bloco pode ser simplificado ou removido se o useEffect de filtros for suficiente.
+                // Por ora, vamos deixar que o próximo useEffect lide com a população de filteredData.
+            }
+        } else if (!isLoading && allData.length === 0 && !dataError) {
+            // Dados carregados, mas vazios e sem erro (pode ser uma planilha vazia)
+            setFilteredData([]);
+        }
+    }, [allData, isLoading, dataError, filters.modalidade]);
+
+
     const baseDataForView = useMemo(() => {
         if (userRole === 'admin') {
             return allData;
@@ -312,9 +313,30 @@ export default function Index() {
         }
     };
 
-    if (isLoading) {
-        return <LoadingScreen message={loadingMessage} />;
+    if (isLoading) { // isLoading agora vem do DataContext
+        return <LoadingScreen message="Carregando dados da aplicação..." />;
     }
+
+    if (dataError) { // Tratar erro do DataContext
+        return (
+            <div className="flex items-center justify-center h-screen bg-red-100 text-red-700 p-4">
+                <div>
+                    <h1 className="text-2xl font-bold mb-2">Erro ao Carregar Dados</h1>
+                    <p className="mb-4">{dataError}</p>
+                    <p>Por favor, verifique a URL da planilha e sua conexão, ou contate o suporte.</p>
+                    {/* Opcionalmente, um botão para tentar recarregar, se fetchData for exposto pelo context */}
+                    {/* {fetchData && <button onClick={fetchData} className="mt-4 px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600">Tentar Novamente</button>} */}
+                </div>
+            </div>
+        );
+    }
+
+    // Se não está carregando e não há erro, mas allData está vazio (ex: planilha vazia ou filtro inicial muito restritivo)
+    // Esta verificação pode ser mais específica dependendo do comportamento desejado
+    // if (allData.length === 0 && !Object.values(filters).some(f => f !== 'Todos')) {
+    // A lógica de filteredData já cuida de mostrar "Nenhum docente encontrado" nas tabelas se estiver vazio.
+    // }
+
 
     return (
         <div className="flex h-screen bg-[#0f172a] font-sans overflow-hidden">

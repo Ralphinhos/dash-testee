@@ -8,10 +8,11 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import { Login } from "./components/Login";
-import RelatorioPeriodo from './components/RelatorioPeriodo'; // Descomentado
-import { LoadingScreen } from './components/LoadingScreen'; // Importar LoadingScreen
-import { Coordinator } from './types'; // Importar Coordinator
-import { ThemeProvider } from './contexts/ThemeContext'; // Importar ThemeProvider
+import RelatorioPeriodo from './components/RelatorioPeriodo';
+import { LoadingScreen } from './components/LoadingScreen';
+import { Coordinator } from './types';
+import { ThemeProvider } from './contexts/ThemeContext';
+import { DataProvider } from './contexts/DataContext'; // Importar DataProvider
 
 const queryClient = new QueryClient();
 const GOOGLE_SHEET_URL = import.meta.env.VITE_GOOGLE_SHEET_URL;
@@ -129,14 +130,16 @@ const App = () => {
         <TooltipProvider>
           <Toaster />
           <Sonner />
-          <BrowserRouter>
-            <Routes>
-              <Route path="/login" element={<Login />} />
-              <Route path="/" element={<PrivateRoute element={<Index />} />} />
-              <Route path="/relatorio-periodo" element={<PrivateRoute element={<RelatorioPeriodo />} />} /> {/* Descomentado */}
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </BrowserRouter>
+          <DataProvider> {/* Envolver BrowserRouter com DataProvider */}
+            <BrowserRouter>
+              <Routes>
+                <Route path="/login" element={<Login />} />
+                <Route path="/" element={<PrivateRoute element={<Index />} />} />
+                <Route path="/relatorio-periodo" element={<PrivateRoute element={<RelatorioPeriodo />} />} />
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </BrowserRouter>
+          </DataProvider>
         </TooltipProvider>
       </ThemeProvider>
     </QueryClientProvider>
