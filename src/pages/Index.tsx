@@ -50,7 +50,7 @@ export default function Index() {
     }, [navigate]);
 
     // 4. Hooks que podem depender de callbacks ou estados (como useIdleTimer)
-    const IDLE_TIMEOUT = 1 * 60 * 1000; // 1 minuto
+    const IDLE_TIMEOUT = 20 * 60 * 1000; // 20 minutos
     useIdleTimer(IDLE_TIMEOUT, handleLogout);
 
     // useEffect para carregar dados foi removido, pois agora é gerenciado pelo DataProvider.

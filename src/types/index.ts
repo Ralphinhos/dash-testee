@@ -89,3 +89,14 @@ export interface DocentePerformance {
   porcentagemAtraso: number;
   // Futuramente: totalEntreguesNoPrazo, porcentagemEntreguesNoPrazo, etc.
 }
+
+export interface IKpisPeriodo {
+  totalAtividadesConsideradas: number;
+  totalEntreguesNoPrazo: number;
+  totalEntreguesComAtraso: number;
+  totalPendentes: number;
+  porcentagemEntreguesNoPrazo: number;
+  porcentagemComAtraso: number; 
+  porcentagemPendentes: number;
+  mediaDiasAtraso: number; // Para atividades efetivamente atrasadas que tiveram diasCalculado > 0
+}

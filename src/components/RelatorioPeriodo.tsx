@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useDataContext } from '../contexts/DataContext'; // Importar useDataContext
-import { ProcessedData, DocentePerformance } from '../types'; // Importar DocentePerformance
+import { ProcessedData, DocentePerformance, IKpisPeriodo } from '../types'; // Importar IKpisPeriodo
 import { LoadingScreen } from './LoadingScreen'; // Importar LoadingScreen
 // import { Button } from "@/components/ui/button";
 // import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -30,6 +30,7 @@ export const RelatorioPeriodo: React.FC = () => {
     const [relatorioGerado, setRelatorioGerado] = useState<ProcessedData[] | null>(null); // Dados brutos filtrados
     const [topDocentesMelhorPerformance, setTopDocentesMelhorPerformance] = useState<DocentePerformance[]>([]);
     const [topDocentesPontosAtencao, setTopDocentesPontosAtencao] = useState<DocentePerformance[]>([]);
+    const [kpisPeriodo, setKpisPeriodo] = useState<IKpisPeriodo | null>(null); // Estado para os KPIs gerais
 
     // Usar allData do contexto.
     const availableData = allData; 
@@ -95,10 +96,17 @@ export const RelatorioPeriodo: React.FC = () => {
 
             console.log("Top 5 Melhores:", melhores);
             console.log("Top 5 Atenção:", pontosAtencao);
+
+            // Calcular e setar KPIs gerais do período
+            const kpisCalculados = calcularKpisGerais(dadosFiltrados);
+            setKpisPeriodo(kpisCalculados);
+            console.log("KPIs do Período Calculados:", kpisCalculados);
+
         } else {
-            // Limpar rankings se não houver dados filtrados
+            // Limpar rankings e KPIs se não houver dados filtrados
             setTopDocentesMelhorPerformance([]);
             setTopDocentesPontosAtencao([]);
+            setKpisPeriodo(null); 
         }
     };
 
@@ -133,6 +141,55 @@ export const RelatorioPeriodo: React.FC = () => {
         });
 
         return performances;
+    };
+
+    const calcularKpisGerais = (dados: ProcessedData[]): IKpisPeriodo | null => {
+        if (!dados || dados.length === 0) {
+            return null;
+        }
+
+        const totalAtividadesConsideradas = dados.length;
+        let totalEntreguesNoPrazo = 0;
+        let totalEntreguesComAtraso = 0;
+        let totalPendentes = 0;
+        let somaDiasAtraso = 0;
+        let countAtividadesRealmenteAtrasadasParaMedia = 0;
+
+        dados.forEach(item => {
+            if (item.isEntregueNoPrazo) {
+                totalEntreguesNoPrazo++;
+            }
+            if (item.isAtrasado && !item.isPendente) { // Considera apenas entregues com atraso para esta contagem
+                totalEntreguesComAtraso++;
+            }
+            if (item.isPendente) {
+                totalPendentes++;
+            }
+            // Para a média de dias de atraso, consideramos apenas atividades entregues com atraso
+            // e que tenham um valor de diasCalculado positivo.
+            // Ou, se pendentes e atrasadas, também podem contribuir para uma "média de dias de pendência/atraso".
+            // Vamos focar em 'entregues com atraso' por enquanto para mediaDiasAtraso.
+            if (item.isAtrasado && !item.isPendente && item.diasCalculado && item.diasCalculado > 0) {
+                somaDiasAtraso += item.diasCalculado;
+                countAtividadesRealmenteAtrasadasParaMedia++;
+            }
+        });
+
+        const porcentagemEntreguesNoPrazo = totalAtividadesConsideradas > 0 ? (totalEntreguesNoPrazo / totalAtividadesConsideradas) * 100 : 0;
+        const porcentagemComAtraso = totalAtividadesConsideradas > 0 ? (totalEntreguesComAtraso / totalAtividadesConsideradas) * 100 : 0;
+        const porcentagemPendentes = totalAtividadesConsideradas > 0 ? (totalPendentes / totalAtividadesConsideradas) * 100 : 0;
+        const mediaDiasAtraso = countAtividadesRealmenteAtrasadasParaMedia > 0 ? somaDiasAtraso / countAtividadesRealmenteAtrasadasParaMedia : 0;
+
+        return {
+            totalAtividadesConsideradas,
+            totalEntreguesNoPrazo,
+            totalEntreguesComAtraso,
+            totalPendentes,
+            porcentagemEntreguesNoPrazo,
+            porcentagemComAtraso,
+            porcentagemPendentes,
+            mediaDiasAtraso,
+        };
     };
     
     // A função interna useDataProcessorNoFetch foi completamente removida 
@@ -211,9 +268,10 @@ export const RelatorioPeriodo: React.FC = () => {
                 </button>
             </div>
 
-            {relatorioGerado && (
+            {/* Bloco de exibição do JSON bruto comentado */}
+            {/* {relatorioGerado && (
                 <div className="mt-6 p-4 bg-white dark:bg-slate-800 rounded-lg shadow">
-                    <h3 className="text-xl font-semibold text-slate-800 dark:text-white mb-4">Resultado do Relatório</h3>
+                    <h3 className="text-xl font-semibold text-slate-800 dark:text-white mb-4">Resultado do Relatório Bruto (JSON)</h3>
                     {relatorioGerado.length > 0 ? (
                         <pre className="bg-slate-100 dark:bg-slate-900 p-3 rounded text-sm overflow-x-auto">
                             {JSON.stringify(relatorioGerado, null, 2)}
@@ -222,9 +280,10 @@ export const RelatorioPeriodo: React.FC = () => {
                         <p className="text-slate-600 dark:text-gray-400">Nenhum dado encontrado para os filtros selecionados para o relatório bruto.</p>
                     )}
                 </div>
-            )}
+            )} */}
 
             {/* Seção de Rankings */}
+            {/* A condição para mostrar os rankings também depende de relatorioGerado, o que é bom. */}
             {relatorioGerado && relatorioGerado.length > 0 && (
                 <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
                     {/* Top 5 Melhor Performance */}
