@@ -7,8 +7,19 @@ interface AccessTableProps {
   data: ProcessedData[];
 }
 
+// Definindo a interface para a configuração de classificação
+interface SortConfig {
+  key: keyof ProcessedData | 'Dias s/ Acesso'; // Inclui chaves de ProcessedData e especificamente 'Dias s/ Acesso'
+  direction: 'asc' | 'desc';
+}
+
 export const AccessTable: FC<AccessTableProps> = ({ data }) => {
-    const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc'); // desc = crítico primeiro
+    // Substituindo sortOrder por sortConfig
+    // A coluna 'Dias s/ Acesso' (que alimenta o Status) é a padrão inicial para ordenação
+    const [sortConfig, setSortConfig] = useState<SortConfig>({ 
+        key: 'Dias s/ Acesso', 
+        direction: 'desc' // desc = crítico (maior número de dias) primeiro
+    });
     
     const allAccessData = useMemo(() => {
         const accessMap = new Map<string, ProcessedData>();
@@ -27,18 +38,29 @@ export const AccessTable: FC<AccessTableProps> = ({ data }) => {
     }, [data]);
 
     const sortedAccessData = useMemo(() => {
+        if (!sortConfig) return allAccessData; // Retorna dados não ordenados se não houver configuração
+
         return [...allAccessData].sort((a, b) => {
-            // 'Dias s/ Acesso' já é number
-            const diasA = Number(a['Dias s/ Acesso']) || 0;
-            const diasB = Number(b['Dias s/ Acesso']) || 0;
-            
-            if (sortOrder === 'desc') {
-                return diasB - diasA; // Crítico primeiro
-            } else {
-                return diasA - diasB; // Em dia primeiro
+            // Acessa os valores com base na chave de ordenação
+            // É importante garantir que sortConfig.key seja uma chave válida de ProcessedData
+            // ou 'Dias s/ Acesso' que também deve estar em ProcessedData ou ser tratado especialmente.
+            const aValue = a[sortConfig.key as keyof ProcessedData];
+            const bValue = b[sortConfig.key as keyof ProcessedData];
+
+            // Tratamento para números (como 'Dias s/ Acesso')
+            if (typeof aValue === 'number' && typeof bValue === 'number') {
+                return sortConfig.direction === 'asc' ? aValue - bValue : bValue - aValue;
             }
+            // Tratamento para strings (Docente, Curso, Disciplina)
+            // Usar localeCompare para ordenação correta de strings, incluindo acentos.
+            if (typeof aValue === 'string' && typeof bValue === 'string') {
+                const comparison = aValue.localeCompare(bValue, undefined, { numeric: true, sensitivity: 'base' });
+                return sortConfig.direction === 'asc' ? comparison : -comparison;
+            }
+            // Fallback se os tipos não forem comparáveis ou forem mistos (não ideal)
+            return 0; 
         });
-    }, [allAccessData, sortOrder]);
+    }, [allAccessData, sortConfig]);
    
     const getStatusBadge = (diasNum: number) => { // Parâmetro agora é number
         const dias = diasNum; // Já é número
@@ -52,9 +74,19 @@ export const AccessTable: FC<AccessTableProps> = ({ data }) => {
         return parts.length > 2 ? `${parts[0]} ${parts[parts.length - 1]}` : name;
     }
 
-    const toggleSort = () => {
-        setSortOrder(prev => prev === 'desc' ? 'asc' : 'desc');
+    // Função para lidar com a solicitação de classificação
+    const requestSort = (key: SortConfig['key']) => {
+        let direction: 'asc' | 'desc' = 'asc';
+        // Se a mesma coluna for clicada e já estiver em ordem ascendente, muda para descendente
+        if (sortConfig && sortConfig.key === key && sortConfig.direction === 'asc') {
+            direction = 'desc';
+        }
+        // Caso contrário, (nova coluna ou mesma coluna já em desc) define para ascendente
+        // ou se for uma nova coluna, começa com ascendente.
+        setSortConfig({ key, direction });
     };
+
+    // Removido toggleSort, pois requestSort cobre sua funcionalidade no contexto do novo sistema.
 
     const cardClasses = "bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg shadow-sm dark:shadow-md p-6";
     const thClasses = "p-3 text-xs font-medium text-gray-600 dark:text-gray-400 uppercase tracking-wider text-left"; // Ajustado para text-gray-600
@@ -68,22 +100,61 @@ export const AccessTable: FC<AccessTableProps> = ({ data }) => {
             <div className="table-container overflow-y-auto">
                 <table className="w-full text-left text-sm">
                     {/* Aplicando fundo mais escuro ao thead */}
-                    <thead className="sticky top-0 bg-slate-200 dark:bg-slate-700 border-b border-gray-300 dark:border-slate-600 z-10">
+                    <thead className="sticky top-0 bg-slate-200 bg-opacity-75 dark:bg-slate-700 dark:bg-opacity-75 border-b border-gray-300 dark:border-slate-600 z-10">
                         <tr>
-                            <th className={thClasses}>Docente</th>
-                            <th className={thClasses}>Curso</th>
-                            <th className={thClasses}>Disciplina</th>
-                            <th className={`${thClasses} text-center`}>Dias s/ Acesso</th>
+                            <th className={thClasses}>
+                                <button 
+                                    onClick={() => requestSort('Docente')}
+                                    className="flex items-center gap-1 w-full hover:text-cyan-600 dark:hover:text-cyan-400 transition-colors"
+                                >
+                                    Docente
+                                    {sortConfig?.key === 'Docente' && (
+                                        sortConfig.direction === 'asc' ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />
+                                    )}
+                                </button>
+                            </th>
+                            <th className={thClasses}>
+                                <button 
+                                    onClick={() => requestSort('Curso')}
+                                    className="flex items-center gap-1 w-full hover:text-cyan-600 dark:hover:text-cyan-400 transition-colors"
+                                >
+                                    Curso
+                                    {sortConfig?.key === 'Curso' && (
+                                        sortConfig.direction === 'asc' ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />
+                                    )}
+                                </button>
+                            </th>
+                            <th className={thClasses}>
+                                <button 
+                                    onClick={() => requestSort('Disciplina')}
+                                    className="flex items-center gap-1 w-full hover:text-cyan-600 dark:hover:text-cyan-400 transition-colors"
+                                >
+                                    Disciplina
+                                    {sortConfig?.key === 'Disciplina' && (
+                                        sortConfig.direction === 'asc' ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />
+                                    )}
+                                </button>
+                            </th>
                             <th className={`${thClasses} text-center`}>
                                 <button 
-                                    onClick={toggleSort}
-                                    className="flex items-center justify-center gap-1 w-full hover:text-cyan-600 dark:hover:text-cyan-400 transition-colors text-gray-600 dark:text-gray-400" // Adicionado cor ao botão
+                                    onClick={() => requestSort('Dias s/ Acesso')} // Chave correspondente aos dados
+                                    className="flex items-center justify-center gap-1 w-full hover:text-cyan-600 dark:hover:text-cyan-400 transition-colors"
                                 >
-                                    STATUS
-                                    {sortOrder === 'desc' ? 
-                                        <ChevronDown className="w-4 h-4" /> : 
-                                        <ChevronUp className="w-4 h-4" />
-                                    }
+                                    Dias s/ Acesso
+                                    {sortConfig?.key === 'Dias s/ Acesso' && (
+                                        sortConfig.direction === 'asc' ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />
+                                    )}
+                                </button>
+                            </th>
+                            <th className={`${thClasses} text-center`}>
+                                <button 
+                                    onClick={() => requestSort('Dias s/ Acesso')} // Status é ordenado por 'Dias s/ Acesso'
+                                    className="flex items-center justify-center gap-1 w-full hover:text-cyan-600 dark:hover:text-cyan-400 transition-colors"
+                                >
+                                    Status
+                                    {sortConfig?.key === 'Dias s/ Acesso' && ( // O ícone de Status acompanha 'Dias s/ Acesso'
+                                        sortConfig.direction === 'asc' ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />
+                                    )}
                                 </button>
                             </th>
                         </tr>
