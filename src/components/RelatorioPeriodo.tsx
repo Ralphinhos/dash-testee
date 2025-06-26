@@ -3,10 +3,17 @@ import { useNavigate } from 'react-router-dom';
 import { useDataContext } from '../contexts/DataContext'; // Importar useDataContext
 import { ProcessedData, DocentePerformance, IKpisPeriodo, CursoPerformance, DisciplinaPerformance } from '../types'; // Importar DisciplinaPerformance
 import { LoadingScreen } from './LoadingScreen'; // Importar LoadingScreen
-import { KpiCard } from './ui/KpiCard'; // Importar KpiCard
+import { KpiCard } from './ui/KpiCard'; // KpiCard já importado
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell, LabelList } from 'recharts'; // Importar Recharts
 // import { Button } from "@/components/ui/button";
 // import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 // import { Input } from "@/components/ui/input"; // Para datas, se não usar type="date"
+
+// Definição de cores para os gráficos (Tailwind classes)
+const COR_GRAFICO_POSITIVO = "#22c55e"; // green-500
+const COR_GRAFICO_NEGATIVO = "#ef4444"; // red-500
+const COR_GRAFICO_ATENCAO = "#f59e0b";  // amber-500 (ou orange-500: #f97316)
+const COR_GRAFICO_NEUTRO = "#64748b";  // slate-500
 
 // Removida MOCK_MODALIDADES, pois agora são extraídas de availableData (simulatedAllData)
 // const MOCK_MODALIDADES = ['EAD', 'Presencial', 'Híbrido', 'Modular']; 
@@ -458,46 +465,50 @@ export const RelatorioPeriodo: React.FC = () => {
             {relatorioGerado && relatorioGerado.length > 0 && (
                 <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
                     {/* Top 5 Melhor Performance */}
-                    <div className="p-4 bg-white dark:bg-slate-800 rounded-lg shadow">
+                    <div className="p-4 bg-white dark:bg-slate-800 rounded-lg shadow min-h-[300px]"> {/* Adicionado min-h para dar espaço ao gráfico */}
                         <h4 className="text-lg font-semibold text-slate-700 dark:text-white mb-3">Top 5 Docentes (Menor % de Atraso)</h4>
                         {topDocentesMelhorPerformance.length > 0 ? (
-                            <ul className="space-y-2">
-                                {topDocentesMelhorPerformance.map((doc, index) => (
-                                    <li key={index} className="flex justify-between items-center text-sm text-slate-600 dark:text-gray-300 p-2 rounded bg-slate-50 dark:bg-slate-700/50 hover:bg-slate-100 dark:hover:bg-slate-700">
-                                        <div className="flex items-center">
-                                            <span className="mr-2 text-xs font-semibold bg-green-100 text-green-700 dark:bg-green-700 dark:text-green-100 px-1.5 py-0.5 rounded-full">{index + 1}º</span>
-                                            <span className="font-medium truncate" title={doc.nomeDocente}>{doc.nomeDocente}</span>
-                                        </div>
-                                        <div className="text-right">
-                                            <span className="font-semibold text-green-600 dark:text-green-400">{doc.porcentagemAtraso.toFixed(1)}%</span>
-                                            <span className="block text-xs text-slate-500 dark:text-gray-400">({doc.totalAtrasadas}/{doc.totalAtividades} atr.)</span>
-                                        </div>
-                                    </li>
-                                ))}
-                            </ul>
+                            <ResponsiveContainer width="100%" height={250}>
+                                <BarChart layout="vertical" data={topDocentesMelhorPerformance} margin={{ top: 5, right: 30, left: 100, bottom: 5 }}>
+                                    <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.2} />
+                                    <XAxis type="number" domain={[0, 100]} tickFormatter={(value) => `${value}%`} />
+                                    <YAxis type="category" dataKey="nomeDocente" width={150} tick={{ fontSize: 12 }} interval={0} />
+                                    <Tooltip 
+                                        formatter={(value: number, name: string, props: any) => [`${value.toFixed(1)}%`, `Porc. Atraso (${props.payload.totalAtrasadas}/${props.payload.totalAtividades})`]}
+                                        labelFormatter={(label: string) => <span className="font-semibold">{label}</span>}
+                                        contentStyle={{ backgroundColor: 'rgba(255, 255, 255, 0.8)', backdropFilter: 'blur(2px)', borderRadius: '0.5rem', boxShadow: '0 4px 6px rgba(0,0,0,0.1)' }}
+                                        itemStyle={{ color: '#334155' }} 
+                                    />
+                                    <Bar dataKey="porcentagemAtraso" fill={COR_GRAFICO_POSITIVO} barSize={20}>
+                                        <LabelList dataKey="porcentagemAtraso" position="right" formatter={(value: number) => `${value.toFixed(1)}%`} style={{ fill: 'black', fontSize: 12 }} />
+                                    </Bar>
+                                </BarChart>
+                            </ResponsiveContainer>
                         ) : (
                             <p className="text-sm text-slate-500 dark:text-gray-400">Não há dados suficientes para este ranking ou nenhum docente com atividades no período.</p>
                         )}
                     </div>
 
                     {/* Top 5 Pontos de Atenção */}
-                    <div className="p-4 bg-white dark:bg-slate-800 rounded-lg shadow">
+                    <div className="p-4 bg-white dark:bg-slate-800 rounded-lg shadow min-h-[300px]"> {/* Adicionado min-h */}
                         <h4 className="text-lg font-semibold text-slate-700 dark:text-white mb-3">Top 5 Docentes (Maior % de Atraso)</h4>
                         {topDocentesPontosAtencao.length > 0 ? (
-                            <ul className="space-y-2">
-                                {topDocentesPontosAtencao.map((doc, index) => (
-                                    <li key={index} className="flex justify-between items-center text-sm text-slate-600 dark:text-gray-300 p-2 rounded bg-slate-50 dark:bg-slate-700/50 hover:bg-slate-100 dark:hover:bg-slate-700">
-                                        <div className="flex items-center">
-                                            <span className="mr-2 text-xs font-semibold bg-red-100 text-red-700 dark:bg-red-700 dark:text-red-100 px-1.5 py-0.5 rounded-full">{index + 1}º</span>
-                                            <span className="font-medium truncate" title={doc.nomeDocente}>{doc.nomeDocente}</span>
-                                        </div>
-                                        <div className="text-right">
-                                            <span className="font-semibold text-red-600 dark:text-red-400">{doc.porcentagemAtraso.toFixed(1)}%</span>
-                                            <span className="block text-xs text-slate-500 dark:text-gray-400">({doc.totalAtrasadas}/{doc.totalAtividades} atr.)</span>
-                                        </div>
-                                    </li>
-                                ))}
-                            </ul>
+                             <ResponsiveContainer width="100%" height={250}>
+                                <BarChart layout="vertical" data={topDocentesPontosAtencao} margin={{ top: 5, right: 30, left: 100, bottom: 5 }}>
+                                    <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.2} />
+                                    <XAxis type="number" domain={[0, 100]} tickFormatter={(value) => `${value}%`} />
+                                    <YAxis type="category" dataKey="nomeDocente" width={150} tick={{ fontSize: 12 }} interval={0} />
+                                    <Tooltip 
+                                        formatter={(value: number, name: string, props: any) => [`${value.toFixed(1)}%`, `Porc. Atraso (${props.payload.totalAtrasadas}/${props.payload.totalAtividades})`]}
+                                        labelFormatter={(label: string) => <span className="font-semibold">{label}</span>}
+                                        contentStyle={{ backgroundColor: 'rgba(255, 255, 255, 0.8)', backdropFilter: 'blur(2px)', borderRadius: '0.5rem', boxShadow: '0 4px 6px rgba(0,0,0,0.1)' }}
+                                        itemStyle={{ color: '#334155' }} 
+                                    />
+                                    <Bar dataKey="porcentagemAtraso" fill={COR_GRAFICO_NEGATIVO} barSize={20}>
+                                        <LabelList dataKey="porcentagemAtraso" position="right" formatter={(value: number) => `${value.toFixed(1)}%`} style={{ fill: 'black', fontSize: 12 }} />
+                                    </Bar>
+                                </BarChart>
+                            </ResponsiveContainer>
                         ) : (
                             <p className="text-sm text-slate-500 dark:text-gray-400">Não há dados suficientes para este ranking ou nenhum docente com atividades no período.</p>
                         )}
@@ -509,46 +520,50 @@ export const RelatorioPeriodo: React.FC = () => {
             {relatorioGerado && relatorioGerado.length > 0 && (
                 <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
                     {/* Top 5 Cursos (Melhor Performance) */}
-                    <div className="p-4 bg-white dark:bg-slate-800 rounded-lg shadow">
+                    <div className="p-4 bg-white dark:bg-slate-800 rounded-lg shadow min-h-[300px]"> {/* Adicionado min-h */}
                         <h4 className="text-lg font-semibold text-slate-700 dark:text-white mb-3">Top 5 Cursos (Menor % de Atraso)</h4>
                         {topCursosMelhorPerformance.length > 0 ? (
-                            <ul className="space-y-2">
-                                {topCursosMelhorPerformance.map((curso, index) => (
-                                    <li key={index} className="flex justify-between items-center text-sm text-slate-600 dark:text-gray-300 p-2 rounded bg-slate-50 dark:bg-slate-700/50 hover:bg-slate-100 dark:hover:bg-slate-700">
-                                        <div className="flex items-center">
-                                            <span className="mr-2 text-xs font-semibold bg-green-100 text-green-700 dark:bg-green-700 dark:text-green-100 px-1.5 py-0.5 rounded-full">{index + 1}º</span>
-                                            <span className="font-medium truncate" title={curso.nomeCurso}>{curso.nomeCurso}</span>
-                                        </div>
-                                        <div className="text-right">
-                                            <span className="font-semibold text-green-600 dark:text-green-400">{curso.porcentagemAtrasoCurso.toFixed(1)}%</span>
-                                            <span className="block text-xs text-slate-500 dark:text-gray-400">({curso.totalAtrasadasCurso}/{curso.totalAtividadesCurso} atr.)</span>
-                                        </div>
-                                    </li>
-                                ))}
-                            </ul>
+                            <ResponsiveContainer width="100%" height={250}>
+                                <BarChart layout="vertical" data={topCursosMelhorPerformance} margin={{ top: 5, right: 30, left: 100, bottom: 5 }}>
+                                    <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.2} />
+                                    <XAxis type="number" domain={[0, 100]} tickFormatter={(value) => `${value}%`} />
+                                    <YAxis type="category" dataKey="nomeCurso" width={150} tick={{ fontSize: 12 }} interval={0} />
+                                    <Tooltip 
+                                        formatter={(value: number, name: string, props: any) => [`${value.toFixed(1)}%`, `Porc. Atraso (${props.payload.totalAtrasadasCurso}/${props.payload.totalAtividadesCurso})`]}
+                                        labelFormatter={(label: string) => <span className="font-semibold">{label}</span>}
+                                        contentStyle={{ backgroundColor: 'rgba(255, 255, 255, 0.8)', backdropFilter: 'blur(2px)', borderRadius: '0.5rem', boxShadow: '0 4px 6px rgba(0,0,0,0.1)' }}
+                                        itemStyle={{ color: '#334155' }} 
+                                    />
+                                    <Bar dataKey="porcentagemAtrasoCurso" fill={COR_GRAFICO_POSITIVO} barSize={20}>
+                                        <LabelList dataKey="porcentagemAtrasoCurso" position="right" formatter={(value: number) => `${value.toFixed(1)}%`} style={{ fill: 'black', fontSize: 12 }} />
+                                    </Bar>
+                                </BarChart>
+                            </ResponsiveContainer>
                         ) : (
                             <p className="text-sm text-slate-500 dark:text-gray-400">Não há dados suficientes para este ranking ou nenhum curso com atividades no período.</p>
                         )}
                     </div>
 
                     {/* Top 5 Cursos (Pontos de Atenção) */}
-                    <div className="p-4 bg-white dark:bg-slate-800 rounded-lg shadow">
+                    <div className="p-4 bg-white dark:bg-slate-800 rounded-lg shadow min-h-[300px]"> {/* Adicionado min-h */}
                         <h4 className="text-lg font-semibold text-slate-700 dark:text-white mb-3">Top 5 Cursos (Maior % de Atraso)</h4>
                         {topCursosPontosAtencao.length > 0 ? (
-                            <ul className="space-y-2">
-                                {topCursosPontosAtencao.map((curso, index) => (
-                                    <li key={index} className="flex justify-between items-center text-sm text-slate-600 dark:text-gray-300 p-2 rounded bg-slate-50 dark:bg-slate-700/50 hover:bg-slate-100 dark:hover:bg-slate-700">
-                                        <div className="flex items-center">
-                                            <span className="mr-2 text-xs font-semibold bg-red-100 text-red-700 dark:bg-red-700 dark:text-red-100 px-1.5 py-0.5 rounded-full">{index + 1}º</span>
-                                            <span className="font-medium truncate" title={curso.nomeCurso}>{curso.nomeCurso}</span>
-                                        </div>
-                                        <div className="text-right">
-                                            <span className="font-semibold text-red-600 dark:text-red-400">{curso.porcentagemAtrasoCurso.toFixed(1)}%</span>
-                                            <span className="block text-xs text-slate-500 dark:text-gray-400">({curso.totalAtrasadasCurso}/{curso.totalAtividadesCurso} atr.)</span>
-                                        </div>
-                                    </li>
-                                ))}
-                            </ul>
+                            <ResponsiveContainer width="100%" height={250}>
+                                <BarChart layout="vertical" data={topCursosPontosAtencao} margin={{ top: 5, right: 30, left: 100, bottom: 5 }}>
+                                    <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.2} />
+                                    <XAxis type="number" domain={[0, 100]} tickFormatter={(value) => `${value}%`} />
+                                    <YAxis type="category" dataKey="nomeCurso" width={150} tick={{ fontSize: 12 }} interval={0} />
+                                    <Tooltip 
+                                        formatter={(value: number, name: string, props: any) => [`${value.toFixed(1)}%`, `Porc. Atraso (${props.payload.totalAtrasadasCurso}/${props.payload.totalAtividadesCurso})`]}
+                                        labelFormatter={(label: string) => <span className="font-semibold">{label}</span>}
+                                        contentStyle={{ backgroundColor: 'rgba(255, 255, 255, 0.8)', backdropFilter: 'blur(2px)', borderRadius: '0.5rem', boxShadow: '0 4px 6px rgba(0,0,0,0.1)' }}
+                                        itemStyle={{ color: '#334155' }} 
+                                    />
+                                    <Bar dataKey="porcentagemAtrasoCurso" fill={COR_GRAFICO_NEGATIVO} barSize={20}>
+                                        <LabelList dataKey="porcentagemAtrasoCurso" position="right" formatter={(value: number) => `${value.toFixed(1)}%`} style={{ fill: 'black', fontSize: 12 }} />
+                                    </Bar>
+                                </BarChart>
+                            </ResponsiveContainer>
                         ) : (
                             <p className="text-sm text-slate-500 dark:text-gray-400">Não há dados suficientes para este ranking ou nenhum curso com atividades no período.</p>
                         )}
@@ -557,28 +572,37 @@ export const RelatorioPeriodo: React.FC = () => {
             )}
 
             {/* Seção de Ranking de Disciplinas Problemáticas */}
-            {relatorioGerado && relatorioGerado.length > 0 && topDisciplinasProblematicas.length > 0 && (
-                 <div className="mt-6 p-4 bg-white dark:bg-slate-800 rounded-lg shadow">
+            {relatorioGerado && relatorioGerado.length > 0 && (
+                 <div className="mt-6 p-4 bg-white dark:bg-slate-800 rounded-lg shadow md:col-span-2 min-h-[300px]"> {/* Ocupa mais espaço se for o único na linha, ou ajustar grid */}
                     <h4 className="text-lg font-semibold text-slate-700 dark:text-white mb-3">Top 5 Disciplinas (Mais Atividades Problemáticas)</h4>
-                    <ul className="space-y-2">
-                        {topDisciplinasProblematicas.map((disciplina, index) => (
-                            <li key={index} className="text-sm text-slate-600 dark:text-gray-300 p-2 rounded bg-slate-50 dark:bg-slate-700/50">
-                                <span className="font-medium">{disciplina.nomeDisciplina}:</span> {disciplina.totalProblematicas} atividades problemáticas 
-                                <span className="text-xs text-slate-500 dark:text-gray-400"> ({disciplina.porcentagemProblematicas.toFixed(1)}% de {disciplina.totalAtividadesDisciplina} atividades)</span>
-                                <br />
-                                <span className="text-xs text-slate-500 dark:text-gray-400 ml-2">↳ Pendentes: {disciplina.totalPendentes}, Entregues com Atraso: {disciplina.totalEntreguesComAtraso}</span>
-                            </li>
-                        ))}
-                    </ul>
+                    {topDisciplinasProblematicas.length > 0 ? (
+                        <ResponsiveContainer width="100%" height={250}>
+                            <BarChart layout="vertical" data={topDisciplinasProblematicas} margin={{ top: 5, right: 30, left: 100, bottom: 5 }}>
+                                <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.2} />
+                                <XAxis type="number" />
+                                <YAxis type="category" dataKey="nomeDisciplina" width={150} tick={{ fontSize: 12 }} interval={0} />
+                                <Tooltip 
+                                    formatter={(value: number, name: string, props: any) => {
+                                        if (name === 'totalProblematicas') {
+                                            return [`${value} (${props.payload.porcentagemProblematicas.toFixed(1)}%)`, `Problemáticas`];
+                                        }
+                                        return [value, name];
+                                    }}
+                                    labelFormatter={(label: string) => <span className="font-semibold">{label}</span>}
+                                    contentStyle={{ backgroundColor: 'rgba(255, 255, 255, 0.8)', backdropFilter: 'blur(2px)', borderRadius: '0.5rem', boxShadow: '0 4px 6px rgba(0,0,0,0.1)' }}
+                                    itemStyle={{ color: '#334155' }} 
+                                />
+                                <Bar dataKey="totalProblematicas" fill={COR_GRAFICO_ATENCAO} barSize={20}>
+                                    <LabelList dataKey="totalProblematicas" position="right" style={{ fill: 'black', fontSize: 12 }} />
+                                </Bar>
+                            </BarChart>
+                        </ResponsiveContainer>
+                    ) : (
+                        <p className="text-sm text-slate-500 dark:text-gray-400">Nenhuma disciplina com atividades problemáticas encontradas ou dados insuficientes.</p>
+                    )}
                 </div>
             )}
-             {relatorioGerado && relatorioGerado.length > 0 && topDisciplinasProblematicas.length === 0 && (
-                 <div className="mt-6 p-4 bg-white dark:bg-slate-800 rounded-lg shadow">
-                    <h4 className="text-lg font-semibold text-slate-700 dark:text-white mb-3">Top 5 Disciplinas (Mais Atividades Problemáticas)</h4>
-                    <p className="text-sm text-slate-500 dark:text-gray-400">Nenhuma disciplina com atividades problemáticas encontradas ou dados insuficientes.</p>
-                </div>
-            )}
-
+            {/* Removido o bloco 'else' separado para mensagem de 'nenhuma disciplina', pois o ternário acima já cobre */}
         </div>
     );
 };
