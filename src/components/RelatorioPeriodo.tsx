@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useDataContext } from '../contexts/DataContext'; // Importar useDataContext
-import { ProcessedData, DocentePerformance, IKpisPeriodo, CursoPerformance } from '../types'; // Importar CursoPerformance
+import { ProcessedData, DocentePerformance, IKpisPeriodo, CursoPerformance, DisciplinaPerformance } from '../types'; // Importar DisciplinaPerformance
 import { LoadingScreen } from './LoadingScreen'; // Importar LoadingScreen
 import { KpiCard } from './ui/KpiCard'; // Importar KpiCard
 // import { Button } from "@/components/ui/button";
@@ -34,6 +34,7 @@ export const RelatorioPeriodo: React.FC = () => {
     const [kpisPeriodo, setKpisPeriodo] = useState<IKpisPeriodo | null>(null); // Estado para os KPIs gerais
     const [topCursosMelhorPerformance, setTopCursosMelhorPerformance] = useState<CursoPerformance[]>([]);
     const [topCursosPontosAtencao, setTopCursosPontosAtencao] = useState<CursoPerformance[]>([]);
+    const [topDisciplinasProblematicas, setTopDisciplinasProblematicas] = useState<DisciplinaPerformance[]>([]);
 
     // Usar allData do contexto.
     const availableData = allData; 
@@ -127,13 +128,31 @@ export const RelatorioPeriodo: React.FC = () => {
             console.log("Top 5 Cursos Melhores:", melhoresCursos);
             console.log("Top 5 Cursos Atenção:", pontosAtencaoCursos);
 
+            // Calcular e setar ranking de Disciplinas Problemáticas
+            const performanceDisciplinas = calcularPerformanceDisciplinas(dadosFiltrados);
+            const problematicasDisciplinas = [...performanceDisciplinas].sort((a, b) => {
+                // Ordenar por totalProblematicas descendente
+                if (b.totalProblematicas !== a.totalProblematicas) {
+                    return b.totalProblematicas - a.totalProblematicas;
+                }
+                // Desempate: maior porcentagem problemática primeiro
+                if (b.porcentagemProblematicas !== a.porcentagemProblematicas) {
+                    return b.porcentagemProblematicas - a.porcentagemProblematicas;
+                }
+                // Desempate final: maior número total de atividades na disciplina
+                return b.totalAtividadesDisciplina - a.totalAtividadesDisciplina;
+            }).slice(0, 5);
+            setTopDisciplinasProblematicas(problematicasDisciplinas);
+            console.log("Top 5 Disciplinas Problemáticas:", problematicasDisciplinas);
+
         } else {
             // Limpar rankings e KPIs se não houver dados filtrados
             setTopDocentesMelhorPerformance([]);
             setTopDocentesPontosAtencao([]);
             setKpisPeriodo(null);
             setTopCursosMelhorPerformance([]); 
-            setTopCursosPontosAtencao([]);   
+            setTopCursosPontosAtencao([]);
+            setTopDisciplinasProblematicas([]); 
         }
     };
 
@@ -246,6 +265,57 @@ export const RelatorioPeriodo: React.FC = () => {
                 totalAtividadesCurso: stats.totalAtividadesCurso,
                 totalAtrasadasCurso: stats.totalAtrasadasCurso,
                 porcentagemAtrasoCurso,
+            });
+        });
+
+        return performances;
+    };
+
+    const calcularPerformanceDisciplinas = (dados: ProcessedData[]): DisciplinaPerformance[] => {
+        if (!dados || dados.length === 0) {
+            return [];
+        }
+
+        const performanceMap: Map<string, { 
+            totalAtividadesDisciplina: number; 
+            totalPendentes: number; 
+            totalEntreguesComAtraso: number;
+        }> = new Map();
+
+        dados.forEach(item => {
+            if (!item.Disciplina) return; 
+
+            const disciplinaStats = performanceMap.get(item.Disciplina) || { 
+                totalAtividadesDisciplina: 0, 
+                totalPendentes: 0,
+                totalEntreguesComAtraso: 0,
+            };
+            
+            disciplinaStats.totalAtividadesDisciplina += 1;
+            if (item.isPendente) {
+                disciplinaStats.totalPendentes += 1;
+            } else if (item.isAtrasado) { // Se não é pendente, mas é atrasado, então foi entregue com atraso
+                disciplinaStats.totalEntreguesComAtraso += 1;
+            }
+            // Nota: Uma atividade pendente que também está atrasada (isPendente && isAtrasado)
+            // é contada em totalPendentes. Não a contamos duplamente em totalEntreguesComAtraso.
+            performanceMap.set(item.Disciplina, disciplinaStats);
+        });
+
+        const performances: DisciplinaPerformance[] = [];
+        performanceMap.forEach((stats, nomeDisciplina) => {
+            const totalProblematicas = stats.totalPendentes + stats.totalEntreguesComAtraso;
+            const porcentagemProblematicas = stats.totalAtividadesDisciplina > 0 
+                ? (totalProblematicas / stats.totalAtividadesDisciplina) * 100 
+                : 0;
+            
+            performances.push({
+                nomeDisciplina,
+                totalAtividadesDisciplina: stats.totalAtividadesDisciplina,
+                totalPendentes: stats.totalPendentes,
+                totalEntreguesComAtraso: stats.totalEntreguesComAtraso,
+                totalProblematicas,
+                porcentagemProblematicas,
             });
         });
 
@@ -461,6 +531,30 @@ export const RelatorioPeriodo: React.FC = () => {
                     </div>
                 </div>
             )}
+
+            {/* Seção de Ranking de Disciplinas Problemáticas */}
+            {relatorioGerado && relatorioGerado.length > 0 && topDisciplinasProblematicas.length > 0 && (
+                 <div className="mt-6 p-4 bg-white dark:bg-slate-800 rounded-lg shadow">
+                    <h4 className="text-lg font-semibold text-slate-700 dark:text-white mb-3">Top 5 Disciplinas (Mais Atividades Problemáticas)</h4>
+                    <ul className="space-y-2">
+                        {topDisciplinasProblematicas.map((disciplina, index) => (
+                            <li key={index} className="text-sm text-slate-600 dark:text-gray-300 p-2 rounded bg-slate-50 dark:bg-slate-700/50">
+                                <span className="font-medium">{disciplina.nomeDisciplina}:</span> {disciplina.totalProblematicas} atividades problemáticas 
+                                <span className="text-xs text-slate-500 dark:text-gray-400"> ({disciplina.porcentagemProblematicas.toFixed(1)}% de {disciplina.totalAtividadesDisciplina} atividades)</span>
+                                <br />
+                                <span className="text-xs text-slate-500 dark:text-gray-400 ml-2">↳ Pendentes: {disciplina.totalPendentes}, Entregues com Atraso: {disciplina.totalEntreguesComAtraso}</span>
+                            </li>
+                        ))}
+                    </ul>
+                </div>
+            )}
+             {relatorioGerado && relatorioGerado.length > 0 && topDisciplinasProblematicas.length === 0 && (
+                 <div className="mt-6 p-4 bg-white dark:bg-slate-800 rounded-lg shadow">
+                    <h4 className="text-lg font-semibold text-slate-700 dark:text-white mb-3">Top 5 Disciplinas (Mais Atividades Problemáticas)</h4>
+                    <p className="text-sm text-slate-500 dark:text-gray-400">Nenhuma disciplina com atividades problemáticas encontradas ou dados insuficientes.</p>
+                </div>
+            )}
+
         </div>
     );
 };
