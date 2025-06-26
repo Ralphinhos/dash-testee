@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useDataContext } from '../contexts/DataContext'; // Importar useDataContext
 import { ProcessedData, DocentePerformance, IKpisPeriodo } from '../types'; // Importar IKpisPeriodo
 import { LoadingScreen } from './LoadingScreen'; // Importar LoadingScreen
+import { KpiCard } from './ui/KpiCard'; // Importar KpiCard
 // import { Button } from "@/components/ui/button";
 // import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 // import { Input } from "@/components/ui/input"; // Para datas, se não usar type="date"
@@ -267,6 +268,47 @@ export const RelatorioPeriodo: React.FC = () => {
                     Gerar Relatório
                 </button>
             </div>
+
+            {/* KPIs Gerais do Período */}
+            {kpisPeriodo && (
+            <div className="mt-6 p-4 bg-white dark:bg-slate-800 rounded-lg shadow">
+                <h3 className="text-xl font-semibold text-slate-800 dark:text-white mb-4">Resumo Geral do Período</h3>
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                    <KpiCard 
+                        titulo="Total de Atividades" 
+                        valor={kpisPeriodo.totalAtividadesConsideradas} 
+                    />
+                    <KpiCard 
+                        titulo="% Entregues no Prazo" 
+                        valor={kpisPeriodo.porcentagemEntreguesNoPrazo.toFixed(1)}
+                        unidade="%"
+                        corValor={kpisPeriodo.porcentagemEntreguesNoPrazo >= 70 ? 'text-green-500 dark:text-green-400' : kpisPeriodo.porcentagemEntreguesNoPrazo >= 50 ? 'text-amber-500 dark:text-amber-400' : 'text-red-500 dark:text-red-400'}
+                        descricao={`${kpisPeriodo.totalEntreguesNoPrazo} atividades`}
+                    />
+                    <KpiCard 
+                        titulo="% Entregues com Atraso" 
+                        valor={kpisPeriodo.porcentagemComAtraso.toFixed(1)}
+                        unidade="%"
+                        corValor={kpisPeriodo.porcentagemComAtraso > 20 ? 'text-red-500 dark:text-red-400' : kpisPeriodo.porcentagemComAtraso > 10 ? 'text-amber-500 dark:text-amber-400' : 'text-slate-700 dark:text-white'}
+                        descricao={`${kpisPeriodo.totalEntreguesComAtraso} atividades`}
+                    />
+                    <KpiCard 
+                        titulo="% Pendentes" 
+                        valor={kpisPeriodo.porcentagemPendentes.toFixed(1)}
+                        unidade="%"
+                        corValor={kpisPeriodo.porcentagemPendentes > 15 ? 'text-red-500 dark:text-red-400' : kpisPeriodo.porcentagemPendentes > 5 ? 'text-amber-500 dark:text-amber-400' : 'text-slate-700 dark:text-white'}
+                        descricao={`${kpisPeriodo.totalPendentes} atividades`}
+                    />
+                     <KpiCard 
+                        titulo="Média Dias de Atraso" 
+                        valor={kpisPeriodo.mediaDiasAtraso.toFixed(1)}
+                        unidade="dias"
+                        descricao="Para atividades entregues com atraso"
+                        corValor={kpisPeriodo.mediaDiasAtraso > 7 ? 'text-red-500 dark:text-red-400' : kpisPeriodo.mediaDiasAtraso > 3 ? 'text-amber-500 dark:text-amber-400' : 'text-slate-700 dark:text-white'}
+                    />
+                </div>
+            </div>
+            )}
 
             {/* Bloco de exibição do JSON bruto comentado */}
             {/* {relatorioGerado && (
