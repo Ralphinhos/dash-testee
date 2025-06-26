@@ -463,9 +463,15 @@ export const RelatorioPeriodo: React.FC = () => {
                         {topDocentesMelhorPerformance.length > 0 ? (
                             <ul className="space-y-2">
                                 {topDocentesMelhorPerformance.map((doc, index) => (
-                                    <li key={index} className="text-sm text-slate-600 dark:text-gray-300 p-2 rounded bg-slate-50 dark:bg-slate-700/50">
-                                        <span className="font-medium">{doc.nomeDocente}:</span> {doc.porcentagemAtraso.toFixed(2)}% de atraso 
-                                        <span className="text-xs text-slate-500 dark:text-gray-400"> ({doc.totalAtrasadas}/{doc.totalAtividades} atividades)</span>
+                                    <li key={index} className="flex justify-between items-center text-sm text-slate-600 dark:text-gray-300 p-2 rounded bg-slate-50 dark:bg-slate-700/50 hover:bg-slate-100 dark:hover:bg-slate-700">
+                                        <div className="flex items-center">
+                                            <span className="mr-2 text-xs font-semibold bg-green-100 text-green-700 dark:bg-green-700 dark:text-green-100 px-1.5 py-0.5 rounded-full">{index + 1}º</span>
+                                            <span className="font-medium truncate" title={doc.nomeDocente}>{doc.nomeDocente}</span>
+                                        </div>
+                                        <div className="text-right">
+                                            <span className="font-semibold text-green-600 dark:text-green-400">{doc.porcentagemAtraso.toFixed(1)}%</span>
+                                            <span className="block text-xs text-slate-500 dark:text-gray-400">({doc.totalAtrasadas}/{doc.totalAtividades} atr.)</span>
+                                        </div>
                                     </li>
                                 ))}
                             </ul>
@@ -480,9 +486,15 @@ export const RelatorioPeriodo: React.FC = () => {
                         {topDocentesPontosAtencao.length > 0 ? (
                             <ul className="space-y-2">
                                 {topDocentesPontosAtencao.map((doc, index) => (
-                                    <li key={index} className="text-sm text-slate-600 dark:text-gray-300 p-2 rounded bg-slate-50 dark:bg-slate-700/50">
-                                        <span className="font-medium">{doc.nomeDocente}:</span> {doc.porcentagemAtraso.toFixed(2)}% de atraso
-                                        <span className="text-xs text-slate-500 dark:text-gray-400"> ({doc.totalAtrasadas}/{doc.totalAtividades} atividades)</span>
+                                    <li key={index} className="flex justify-between items-center text-sm text-slate-600 dark:text-gray-300 p-2 rounded bg-slate-50 dark:bg-slate-700/50 hover:bg-slate-100 dark:hover:bg-slate-700">
+                                        <div className="flex items-center">
+                                            <span className="mr-2 text-xs font-semibold bg-red-100 text-red-700 dark:bg-red-700 dark:text-red-100 px-1.5 py-0.5 rounded-full">{index + 1}º</span>
+                                            <span className="font-medium truncate" title={doc.nomeDocente}>{doc.nomeDocente}</span>
+                                        </div>
+                                        <div className="text-right">
+                                            <span className="font-semibold text-red-600 dark:text-red-400">{doc.porcentagemAtraso.toFixed(1)}%</span>
+                                            <span className="block text-xs text-slate-500 dark:text-gray-400">({doc.totalAtrasadas}/{doc.totalAtividades} atr.)</span>
+                                        </div>
                                     </li>
                                 ))}
                             </ul>
@@ -502,9 +514,15 @@ export const RelatorioPeriodo: React.FC = () => {
                         {topCursosMelhorPerformance.length > 0 ? (
                             <ul className="space-y-2">
                                 {topCursosMelhorPerformance.map((curso, index) => (
-                                    <li key={index} className="text-sm text-slate-600 dark:text-gray-300 p-2 rounded bg-slate-50 dark:bg-slate-700/50">
-                                        <span className="font-medium">{curso.nomeCurso}:</span> {curso.porcentagemAtrasoCurso.toFixed(2)}% de atraso
-                                        <span className="text-xs text-slate-500 dark:text-gray-400"> ({curso.totalAtrasadasCurso}/{curso.totalAtividadesCurso} atividades)</span>
+                                    <li key={index} className="flex justify-between items-center text-sm text-slate-600 dark:text-gray-300 p-2 rounded bg-slate-50 dark:bg-slate-700/50 hover:bg-slate-100 dark:hover:bg-slate-700">
+                                        <div className="flex items-center">
+                                            <span className="mr-2 text-xs font-semibold bg-green-100 text-green-700 dark:bg-green-700 dark:text-green-100 px-1.5 py-0.5 rounded-full">{index + 1}º</span>
+                                            <span className="font-medium truncate" title={curso.nomeCurso}>{curso.nomeCurso}</span>
+                                        </div>
+                                        <div className="text-right">
+                                            <span className="font-semibold text-green-600 dark:text-green-400">{curso.porcentagemAtrasoCurso.toFixed(1)}%</span>
+                                            <span className="block text-xs text-slate-500 dark:text-gray-400">({curso.totalAtrasadasCurso}/{curso.totalAtividadesCurso} atr.)</span>
+                                        </div>
                                     </li>
                                 ))}
                             </ul>
@@ -519,9 +537,15 @@ export const RelatorioPeriodo: React.FC = () => {
                         {topCursosPontosAtencao.length > 0 ? (
                             <ul className="space-y-2">
                                 {topCursosPontosAtencao.map((curso, index) => (
-                                    <li key={index} className="text-sm text-slate-600 dark:text-gray-300 p-2 rounded bg-slate-50 dark:bg-slate-700/50">
-                                        <span className="font-medium">{curso.nomeCurso}:</span> {curso.porcentagemAtrasoCurso.toFixed(2)}% de atraso
-                                        <span className="text-xs text-slate-500 dark:text-gray-400"> ({curso.totalAtrasadasCurso}/{curso.totalAtividadesCurso} atividades)</span>
+                                    <li key={index} className="flex justify-between items-center text-sm text-slate-600 dark:text-gray-300 p-2 rounded bg-slate-50 dark:bg-slate-700/50 hover:bg-slate-100 dark:hover:bg-slate-700">
+                                        <div className="flex items-center">
+                                            <span className="mr-2 text-xs font-semibold bg-red-100 text-red-700 dark:bg-red-700 dark:text-red-100 px-1.5 py-0.5 rounded-full">{index + 1}º</span>
+                                            <span className="font-medium truncate" title={curso.nomeCurso}>{curso.nomeCurso}</span>
+                                        </div>
+                                        <div className="text-right">
+                                            <span className="font-semibold text-red-600 dark:text-red-400">{curso.porcentagemAtrasoCurso.toFixed(1)}%</span>
+                                            <span className="block text-xs text-slate-500 dark:text-gray-400">({curso.totalAtrasadasCurso}/{curso.totalAtividadesCurso} atr.)</span>
+                                        </div>
                                     </li>
                                 ))}
                             </ul>
