@@ -58,16 +58,23 @@ export const RelatorioPeriodo: React.FC = () => {
         }
         
         const dadosFiltrados = availableData.filter(item => {
-            if (!item.DataTerminoPrevisto) return false;
-            const dataTerminoItem = item.DataTerminoPrevisto; // Já é Date
+            // Garantir que ambas as datas existam e sejam válidas para o item
+            if (!item.DataInicioSemestre || !item.DataTerminoPrevisto) {
+                return false;
+            }
 
+            // Lógica de sobreposição (Opção B)
+            // O semestre do item (item.DataInicioSemestre a item.DataTerminoPrevisto)
+            // se sobrepõe ao período do relatório selecionado pelo usuário (dtInicio a dtFim)
+            const dataMatch = item.DataInicioSemestre <= dtFim && 
+                              item.DataTerminoPrevisto >= dtInicio;
+            
             const modalidadeMatch = modalidadeSelecionada === 'Todas' || item.Modalidade === modalidadeSelecionada;
-            const dataMatch = dataTerminoItem >= dtInicio && dataTerminoItem <= dtFim;
             
             return modalidadeMatch && dataMatch;
         });
 
-        console.log("Dados filtrados para o relatório:", dadosFiltrados);
+        console.log("Dados filtrados para o relatório (com DataInicioSemestre e DataTerminoPrevisto):", dadosFiltrados);
         setRelatorioGerado(dadosFiltrados);
         // Aqui virão os cálculos e a formatação do relatório
     };

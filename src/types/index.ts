@@ -21,10 +21,13 @@ export interface RawData {
   Coordenador: string;
   email_coordenador: string;
   email_docente: string;
+  DataTerminoPrevisto?: string; // Adicionado para consistência, lido por useDataProcessor
+  DataInicioSemestre?: string; // Adicionado para o relatório do período
 }
 
-export interface ProcessedData extends Omit<RawData, 'Dias s/ Acesso'> { // Omitir a string original
+export interface ProcessedData extends Omit<RawData, 'Dias s/ Acesso' | 'DataInicioSemestre' | 'DataTerminoPrevisto'> { // Omitir as strings originais
   'Dias s/ Acesso': number; // Redefinir como number
+  DataInicioSemestre?: Date | null; // Adicionar como Date | null
   Login: string;
   statusCalculado: string;
   diasCalculado: number;
