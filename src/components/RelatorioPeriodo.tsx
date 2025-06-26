@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react'; // Removido useMemo e useDataProcessor, useCallback implicitamente (se não usado em outro lugar)
+import React, { useState, useEffect, useMemo } from 'react'; // Adicionado useMemo de volta, será usado para modalidadesUnicas
+import { useNavigate } from 'react-router-dom'; // Importar useNavigate
 // import { useDataProcessor } from '../hooks/useDataProcessor'; // Removido por enquanto
 import { ProcessedData } from '../types'; // Removido FilterState se não usado diretamente aqui
 // Se houver componentes de UI customizados (ex: Select, Button, DatePicker), importe-os aqui
@@ -6,27 +7,50 @@ import { ProcessedData } from '../types'; // Removido FilterState se não usado 
 // import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 // import { Input } from "@/components/ui/input"; // Para datas, se não usar type="date"
 
-// Mock das opções de modalidade por enquanto, idealmente viria de filterOptions como em Index.tsx
-const MOCK_MODALIDADES = ['EAD', 'Presencial', 'Híbrido', 'Modular']; // Substituir por dados dinâmicos depois
+// Removida MOCK_MODALIDADES, pois agora são extraídas de availableData (simulatedAllData)
+// const MOCK_MODALIDADES = ['EAD', 'Presencial', 'Híbrido', 'Modular']; 
 
 export const RelatorioPeriodo: React.FC = () => {
+    const navigate = useNavigate();
+
+    // Proteção de Rota: Apenas Admin
+    useEffect(() => {
+        const storedUserRole = localStorage.getItem('userRole');
+        if (storedUserRole !== 'admin') {
+            console.warn("[RelatorioPeriodo] Acesso não autorizado. Redirecionando...");
+            navigate('/'); // Redireciona para a página inicial se não for admin
+        }
+    }, [navigate]);
+    
     // O acesso ao allData real e à função processData será tratado em uma fase posterior
     // quando a estratégia de gerenciamento de estado global ou passagem de props for definida.
     // Por enquanto, o componente dependerá de dados simulados para a UI e lógica básica.
     
     // Simulação de allData - REMOVER QUANDO INTEGRAR COM DADOS REAIS
-    const [simulatedAllData, setSimulatedAllData] = useState<ProcessedData[]>([]); 
-    useEffect(() => {
-        // Simula o carregamento de alguns dados para teste
-        const exampleData: ProcessedData[] = [
-            // Adicione exemplos de ProcessedData aqui, incluindo DataTerminoPrevisto
-            // Exemplo:
-            // { Docente: 'Ana Silva', Disciplina: 'Mat I', Curso: 'Eng', Modalidade: 'EAD', Semestre: '2023.1', Módulo: '1', Atividade: 'A1', 'Data Limite Construção': '10/03/2023', 'Entregue': '09/03/2023', 'Dias s/ Acesso': 0, Login: 'ana.silva', statusCalculado: 'Entregue no prazo', diasCalculado: -1, isPendente: false, isAtrasado: false, isEntregueNoPrazo: true, DataTerminoPrevisto: new Date(2023, 5, 30) },
-            // { Docente: 'Bruno Costa', Disciplina: 'Fis I', Curso: 'Eng', Modalidade: 'Presencial', Semestre: '2023.1', Módulo: 'N/A', Atividade: 'P1', 'Data Limite Construção': '15/04/2023', 'Entregue': '', 'Dias s/ Acesso': 2, Login: 'bruno.costa', statusCalculado: 'Pendente', diasCalculado: 0, isPendente: true, isAtrasado: false, isEntregueNoPrazo: false, DataTerminoPrevisto: new Date(2023, 6, 15) },
-        ];
-        setSimulatedAllData(exampleData);
-    }, []);
-
+    const [simulatedAllData, setSimulatedAllData] = useState<ProcessedData[]>([
+        { 
+            Docente: 'Ana Silva', Disciplina: 'Mat I', Curso: 'EngComp', Modalidade: 'EAD', Semestre: '2023.1', Módulo: '1', Atividade: 'A1', 'Data Limite Construção': '10/03/2023', 'Entregue': '09/03/2023', 
+            'Dias s/ Acesso': 0, Login: 'ana.silva', statusCalculado: 'Entregue no prazo', diasCalculado: -1, isPendente: false, isAtrasado: false, isEntregueNoPrazo: true, DataTerminoPrevisto: new Date(2023, 2, 10),
+            Coordenador: 'Carlos Luz', email_coordenador: 'carlos.luz@example.com', email_docente: 'ana.silva@example.com' 
+        },
+        { 
+            Docente: 'Bruno Costa', Disciplina: 'Fis I', Curso: 'EngCivil', Modalidade: 'Presencial', Semestre: '2023.1', Módulo: 'N/A', Atividade: 'P1', 'Data Limite Construção': '15/04/2023', 'Entregue': '', 
+            'Dias s/ Acesso': 2, Login: 'bruno.costa', statusCalculado: 'Pendente', diasCalculado: 0, isPendente: true, isAtrasado: false, isEntregueNoPrazo: false, DataTerminoPrevisto: new Date(2023, 3, 15),
+            Coordenador: 'Maria Rita', email_coordenador: 'maria.rita@example.com', email_docente: 'bruno.costa@example.com'
+        },
+        { 
+            Docente: 'Carla Dias', Disciplina: 'Proj Software', Curso: 'EngComp', Modalidade: 'EAD', Semestre: '2023.1', Módulo: '2', Atividade: 'A2', 'Data Limite Construção': '20/05/2023', 'Entregue': '21/05/2023', 
+            'Dias s/ Acesso': 1, Login: 'carla.dias', statusCalculado: 'Entregue com 1 dia(s) de atraso', diasCalculado: 1, isPendente: false, isAtrasado: true, isEntregueNoPrazo: false, DataTerminoPrevisto: new Date(2023, 4, 20),
+            Coordenador: 'Carlos Luz', email_coordenador: 'carlos.luz@example.com', email_docente: 'carla.dias@example.com'
+        },
+        { 
+            Docente: 'Daniel Faria', Disciplina: 'Algoritmos', Curso: 'EngComp', Modalidade: 'Modular', Semestre: '2023.M1', Módulo: '1', Atividade: 'A1', 'Data Limite Construção': '10/02/2023', 'Entregue': '', 
+            'Dias s/ Acesso': 5, Login: 'daniel.faria', statusCalculado: 'Pendente', diasCalculado: 0, isPendente: true, isAtrasado: false, isEntregueNoPrazo: false, DataTerminoPrevisto: new Date(2023, 1, 10),
+            Coordenador: 'Sofia Lima', email_coordenador: 'sofia.lima@example.com', email_docente: 'daniel.faria@example.com'
+        },
+    ]); 
+    // useEffect para setSimulatedAllData foi removido, dados agora são parte do estado inicial.
+    // Se precisar carregar de forma assíncrona no futuro, o useEffect pode voltar.
 
     const [dataInicio, setDataInicio] = useState<string>('');
     const [dataFim, setDataFim] = useState<string>('');
@@ -36,6 +60,12 @@ export const RelatorioPeriodo: React.FC = () => {
     // Idealmente, allData viria do contexto ou props, ou de um fetch centralizado.
     // Por ora, usaremos simulatedAllData
     const availableData = simulatedAllData; // Substituir por allData real quando integrado
+
+    const modalidadesUnicas = useMemo(() => {
+        // Extrai modalidades únicas dos dados disponíveis (simulados por enquanto)
+        // Filtra valores vazios ou nulos de modalidade e ordena
+        return [...new Set(availableData.map(item => item.Modalidade).filter(Boolean).sort())] as string[];
+    }, [availableData]);
 
     const handleGerarRelatorio = () => {
         console.log("Gerando relatório com os seguintes filtros:");
@@ -114,10 +144,9 @@ export const RelatorioPeriodo: React.FC = () => {
                         className="block w-full px-3 py-1.5 text-sm rounded-md shadow-sm bg-white border-gray-300 text-slate-700 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 dark:bg-slate-700 dark:border-slate-600 dark:text-gray-300 dark:placeholder-gray-400 dark:focus:ring-cyan-600 dark:focus:border-cyan-600"
                     >
                         <option value="Todas">Todas as Modalidades</option>
-                        {MOCK_MODALIDADES.map(mod => (
+                        {modalidadesUnicas.map(mod => (
                             <option key={mod} value={mod}>{mod}</option>
                         ))}
-                        {/* Idealmente, popular com filterOptions.modalidades */}
                     </select>
                 </div>
                 <button 
