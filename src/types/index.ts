@@ -81,3 +81,11 @@ export interface FilterState {
   modulo: string;
   curso: string;
 }
+
+export interface DocentePerformance {
+  nomeDocente: string;
+  totalAtividades: number;
+  totalAtrasadas: number;
+  porcentagemAtraso: number;
+  // Futuramente: totalEntreguesNoPrazo, porcentagemEntreguesNoPrazo, etc.
+}

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useDataContext } from '../contexts/DataContext'; // Importar useDataContext
-import { ProcessedData } from '../types';
+import { ProcessedData, DocentePerformance } from '../types'; // Importar DocentePerformance
 import { LoadingScreen } from './LoadingScreen'; // Importar LoadingScreen
 // import { Button } from "@/components/ui/button";
 // import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -27,7 +27,9 @@ export const RelatorioPeriodo: React.FC = () => {
     const [anoSelecionado, setAnoSelecionado] = useState<string>(new Date().getFullYear().toString()); // Default para o ano atual
     const [semestreFiltro, setSemestreFiltro] = useState<string>('0'); // '0' para Ambos, '1' para 1º, '2' para 2º
     const [modalidadeSelecionada, setModalidadeSelecionada] = useState<string>('Todas');
-    const [relatorioGerado, setRelatorioGerado] = useState<ProcessedData[] | null>(null);
+    const [relatorioGerado, setRelatorioGerado] = useState<ProcessedData[] | null>(null); // Dados brutos filtrados
+    const [topDocentesMelhorPerformance, setTopDocentesMelhorPerformance] = useState<DocentePerformance[]>([]);
+    const [topDocentesPontosAtencao, setTopDocentesPontosAtencao] = useState<DocentePerformance[]>([]);
 
     // Usar allData do contexto.
     const availableData = allData; 
@@ -65,8 +67,72 @@ export const RelatorioPeriodo: React.FC = () => {
         });
 
         console.log("Dados filtrados para o relatório (Ano/Semestre):", dadosFiltrados);
-        setRelatorioGerado(dadosFiltrados);
-        // Aqui virão os cálculos e a formatação do relatório
+        setRelatorioGerado(dadosFiltrados); // Mantém os dados brutos filtrados, se necessário para outros fins
+
+        if (dadosFiltrados.length > 0) {
+            const performances = calcularPerformanceDocentes(dadosFiltrados);
+
+            // Top 5 Melhor Performance (menor % de atraso)
+            // Ordena por porcentagemAtraso ascendente, depois por totalAtividades descendente (para desempate, mais atividades é melhor)
+            const melhores = [...performances].sort((a, b) => {
+                if (a.porcentagemAtraso !== b.porcentagemAtraso) {
+                    return a.porcentagemAtraso - b.porcentagemAtraso;
+                }
+                return b.totalAtividades - a.totalAtividades; // Maior número de atividades como desempate positivo
+            }).slice(0, 5);
+            setTopDocentesMelhorPerformance(melhores);
+
+            // Top 5 Pontos de Atenção (maior % de atraso)
+            // Ordena por porcentagemAtraso descendente, depois por totalAtividades descendente (para desempate)
+            // Considerar apenas docentes com um número mínimo de atividades para este ranking pode ser útil no futuro.
+            const pontosAtencao = [...performances].sort((a, b) => {
+                if (b.porcentagemAtraso !== a.porcentagemAtraso) {
+                    return b.porcentagemAtraso - a.porcentagemAtraso;
+                }
+                return b.totalAtividades - a.totalAtividades; // Maior número de atividades como desempate (mais impacto)
+            }).slice(0, 5);
+            setTopDocentesPontosAtencao(pontosAtencao);
+
+            console.log("Top 5 Melhores:", melhores);
+            console.log("Top 5 Atenção:", pontosAtencao);
+        } else {
+            // Limpar rankings se não houver dados filtrados
+            setTopDocentesMelhorPerformance([]);
+            setTopDocentesPontosAtencao([]);
+        }
+    };
+
+    const calcularPerformanceDocentes = (dados: ProcessedData[]): DocentePerformance[] => {
+        if (!dados || dados.length === 0) {
+            return [];
+        }
+
+        const performanceMap: Map<string, { totalAtividades: number, totalAtrasadas: number }> = new Map();
+
+        dados.forEach(item => {
+            if (!item.Docente) return; // Pular se não houver docente
+
+            const docenteStats = performanceMap.get(item.Docente) || { totalAtividades: 0, totalAtrasadas: 0 };
+            
+            docenteStats.totalAtividades += 1;
+            if (item.isAtrasado) {
+                docenteStats.totalAtrasadas += 1;
+            }
+            performanceMap.set(item.Docente, docenteStats);
+        });
+
+        const performances: DocentePerformance[] = [];
+        performanceMap.forEach((stats, nomeDocente) => {
+            const porcentagemAtraso = stats.totalAtividades > 0 ? (stats.totalAtrasadas / stats.totalAtividades) * 100 : 0;
+            performances.push({
+                nomeDocente,
+                totalAtividades: stats.totalAtividades,
+                totalAtrasadas: stats.totalAtrasadas,
+                porcentagemAtraso,
+            });
+        });
+
+        return performances;
     };
     
     // A função interna useDataProcessorNoFetch foi completamente removida 
@@ -153,8 +219,47 @@ export const RelatorioPeriodo: React.FC = () => {
                             {JSON.stringify(relatorioGerado, null, 2)}
                         </pre>
                     ) : (
-                        <p className="text-slate-600 dark:text-gray-400">Nenhum dado encontrado para os filtros selecionados.</p>
+                        <p className="text-slate-600 dark:text-gray-400">Nenhum dado encontrado para os filtros selecionados para o relatório bruto.</p>
                     )}
+                </div>
+            )}
+
+            {/* Seção de Rankings */}
+            {relatorioGerado && relatorioGerado.length > 0 && (
+                <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {/* Top 5 Melhor Performance */}
+                    <div className="p-4 bg-white dark:bg-slate-800 rounded-lg shadow">
+                        <h4 className="text-lg font-semibold text-slate-700 dark:text-white mb-3">Top 5 Docentes (Menor % de Atraso)</h4>
+                        {topDocentesMelhorPerformance.length > 0 ? (
+                            <ul className="space-y-2">
+                                {topDocentesMelhorPerformance.map((doc, index) => (
+                                    <li key={index} className="text-sm text-slate-600 dark:text-gray-300 p-2 rounded bg-slate-50 dark:bg-slate-700/50">
+                                        <span className="font-medium">{doc.nomeDocente}:</span> {doc.porcentagemAtraso.toFixed(2)}% de atraso 
+                                        <span className="text-xs text-slate-500 dark:text-gray-400"> ({doc.totalAtrasadas}/{doc.totalAtividades} atividades)</span>
+                                    </li>
+                                ))}
+                            </ul>
+                        ) : (
+                            <p className="text-sm text-slate-500 dark:text-gray-400">Não há dados suficientes para este ranking ou nenhum docente com atividades no período.</p>
+                        )}
+                    </div>
+
+                    {/* Top 5 Pontos de Atenção */}
+                    <div className="p-4 bg-white dark:bg-slate-800 rounded-lg shadow">
+                        <h4 className="text-lg font-semibold text-slate-700 dark:text-white mb-3">Top 5 Docentes (Maior % de Atraso)</h4>
+                        {topDocentesPontosAtencao.length > 0 ? (
+                            <ul className="space-y-2">
+                                {topDocentesPontosAtencao.map((doc, index) => (
+                                    <li key={index} className="text-sm text-slate-600 dark:text-gray-300 p-2 rounded bg-slate-50 dark:bg-slate-700/50">
+                                        <span className="font-medium">{doc.nomeDocente}:</span> {doc.porcentagemAtraso.toFixed(2)}% de atraso
+                                        <span className="text-xs text-slate-500 dark:text-gray-400"> ({doc.totalAtrasadas}/{doc.totalAtividades} atividades)</span>
+                                    </li>
+                                ))}
+                            </ul>
+                        ) : (
+                            <p className="text-sm text-slate-500 dark:text-gray-400">Não há dados suficientes para este ranking ou nenhum docente com atividades no período.</p>
+                        )}
+                    </div>
                 </div>
             )}
         </div>
