@@ -100,7 +100,7 @@ export const AccessTable: FC<AccessTableProps> = ({ data }) => {
             <div className="table-container overflow-y-auto">
                 <table className="w-full text-left text-sm">
                     {/* Aplicando fundo mais escuro ao thead */}
-                    <thead className="sticky top-0 bg-slate-200 bg-opacity-75 dark:bg-slate-700 dark:bg-opacity-75 border-b border-gray-300 dark:border-slate-600 z-10">
+                    <thead className="sticky top-0 bg-slate-200 dark:bg-slate-700 border-b border-gray-300 dark:border-slate-600 z-10">
                         <tr>
                             <th className={thClasses}>
                                 <button 
