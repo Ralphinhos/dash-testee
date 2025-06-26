@@ -18,7 +18,7 @@ export const PerformanceAnalysis: FC<PerformanceAnalysisProps> = ({ data, onAnal
             else if (row.isAtrasado) acc[row.Docente].atrasado++;
             else if (row.isEntregueNoPrazo) acc[row.Docente].entregue++;
            
-            const dias = parseInt(row['Dias s/ Acesso'], 10) || 0;
+            const dias = row['Dias s/ Acesso'] || 0;
             if (dias > acc[row.Docente].diasSemAcesso) {
                 acc[row.Docente].diasSemAcesso = dias;
             }
