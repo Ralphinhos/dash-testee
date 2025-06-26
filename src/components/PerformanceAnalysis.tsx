@@ -183,11 +183,6 @@ export const PerformanceAnalysis: FC<PerformanceAnalysisProps> = ({ data, onAnal
                         <p className={placeholderTextClasses}>Nenhum docente com performance {'≥'} 60%.</p>
                     )}
                 </div>
-                {topPerformers.length > 0 && (
-                    <div className="mt-4 text-center">
-                        <button onClick={() => handleSummary('top')} className={btnAiClasses}>✨ Gerar Resumo de Performance</button>
-                    </div>
-                )}
             </div>
 
             <div className={themedCardClasses}> {/* Usando themedCardClasses */}
@@ -228,11 +223,6 @@ export const PerformanceAnalysis: FC<PerformanceAnalysisProps> = ({ data, onAnal
                         <p className={placeholderTextClasses}>Nenhum docente com performance {'<'} 60%.</p>
                     )}
                 </div>
-                {!selectedDocenteStats && bottomPerformers.length > 0 && (
-                    <div className="mt-4 text-center">
-                        <button onClick={() => handleSummary('bottom')} className={btnAiClasses}>✨ Gerar Resumo de Atenção</button>
-                    </div>
-                )}
             </div>
         </div>
     );
