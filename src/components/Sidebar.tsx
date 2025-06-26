@@ -152,19 +152,7 @@ export const Sidebar: FC<SidebarProps> = ({ kpis, userRole, onNotification }) =>
         </div>
       )}
 
-      {/* Card: Cursos do Coordenador - VISÍVEL APENAS PARA COORDENADOR */}
-      {userRole === 'coordinator' && coordinatorCourses.length > 0 && (
-        <div className={actionsCardClasses.replace('flex-grow', '')}> 
-          <h3 className="text-sm font-semibold text-white mb-2 text-center">Meus Cursos</h3>
-          <div className="space-y-1 max-h-32 overflow-y-auto">
-            {coordinatorCourses.map(course => (
-              <p key={course} className="text-xs text-gray-300 bg-slate-700 p-1 rounded-md text-center">
-                {course}
-              </p>
-            ))}
-          </div>
-        </div>
-      )}
+      {/* Card "Meus Cursos" foi removido conforme solicitado */}
 
       {/* Botão Sair removido daqui */}
     </aside>

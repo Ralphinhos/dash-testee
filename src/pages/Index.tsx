@@ -108,26 +108,22 @@ export default function Index() {
     }, [allData, userRole]);
 
     useEffect(() => {
-        const noUiFiltersApplied = filters.semestre === 'Todos' &&
-                                 filters.modalidade === 'Todos' &&
-                                 filters.modulo === 'Todos' &&
-                                 filters.curso === 'Todos';
-        if (noUiFiltersApplied) {
-            // Se for admin e nenhum filtro UI, mostra todos os dados do admin (baseDataForView).
-            // A condição inicial de não mostrar nada para coordenador é mantida.
-            // Agora, admin também não verá dados até que um filtro seja aplicado.
-            setFilteredData([]); 
+        // Modificado para que os dados só sejam filtrados se uma modalidade for selecionada.
+        if (filters.modalidade === 'Todos') {
+            setFilteredData([]); // Nenhum dado se nenhuma modalidade específica for selecionada
         } else {
+            // Se uma modalidade foi selecionada, então aplicamos os outros filtros.
+            // O filtro de semestre ainda precisa ser considerado. Se "Todos" para semestre, não filtra por semestre.
             const appliedFiltersResult = baseDataForView.filter(row =>
                 (filters.semestre === 'Todos' || row.Semestre === filters.semestre) &&
-                (filters.modalidade === 'Todos' || row.Modalidade === filters.modalidade) &&
+                (row.Modalidade === filters.modalidade) && // Modalidade já é específica aqui
                 (filters.modulo === 'Todos' || row['Módulo'] === filters.modulo) &&
                 (filters.curso === 'Todos' || row.Curso === filters.curso)
             );
             setFilteredData(appliedFiltersResult);
         }
         setSelectedDocente(null);
-    }, [filters, baseDataForView, userRole]); // Adicionado userRole como dependência
+    }, [filters, baseDataForView, userRole]);
 
     const filterOptions = useMemo(() => {
         // As opções de filtro são sempre baseadas em baseDataForView, que já considera o userRole
