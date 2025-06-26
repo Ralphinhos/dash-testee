@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useDataContext } from '../contexts/DataContext'; // Importar useDataContext
-import { ProcessedData, DocentePerformance, IKpisPeriodo } from '../types'; // Importar IKpisPeriodo
+import { ProcessedData, DocentePerformance, IKpisPeriodo, CursoPerformance } from '../types'; // Importar CursoPerformance
 import { LoadingScreen } from './LoadingScreen'; // Importar LoadingScreen
 import { KpiCard } from './ui/KpiCard'; // Importar KpiCard
 // import { Button } from "@/components/ui/button";
@@ -32,6 +32,8 @@ export const RelatorioPeriodo: React.FC = () => {
     const [topDocentesMelhorPerformance, setTopDocentesMelhorPerformance] = useState<DocentePerformance[]>([]);
     const [topDocentesPontosAtencao, setTopDocentesPontosAtencao] = useState<DocentePerformance[]>([]);
     const [kpisPeriodo, setKpisPeriodo] = useState<IKpisPeriodo | null>(null); // Estado para os KPIs gerais
+    const [topCursosMelhorPerformance, setTopCursosMelhorPerformance] = useState<CursoPerformance[]>([]);
+    const [topCursosPontosAtencao, setTopCursosPontosAtencao] = useState<CursoPerformance[]>([]);
 
     // Usar allData do contexto.
     const availableData = allData; 
@@ -103,11 +105,35 @@ export const RelatorioPeriodo: React.FC = () => {
             setKpisPeriodo(kpisCalculados);
             console.log("KPIs do Período Calculados:", kpisCalculados);
 
+            // Calcular e setar rankings de Cursos
+            const performancesCursos = calcularPerformanceCursos(dadosFiltrados);
+
+            const melhoresCursos = [...performancesCursos].sort((a, b) => {
+                if (a.porcentagemAtrasoCurso !== b.porcentagemAtrasoCurso) {
+                    return a.porcentagemAtrasoCurso - b.porcentagemAtrasoCurso;
+                }
+                return b.totalAtividadesCurso - a.totalAtividadesCurso; // Desempate: mais atividades é melhor
+            }).slice(0, 5);
+            setTopCursosMelhorPerformance(melhoresCursos);
+
+            const pontosAtencaoCursos = [...performancesCursos].sort((a, b) => {
+                if (b.porcentagemAtrasoCurso !== a.porcentagemAtrasoCurso) {
+                    return b.porcentagemAtrasoCurso - a.porcentagemAtrasoCurso;
+                }
+                return b.totalAtividadesCurso - a.totalAtividadesCurso; // Desempate: mais atividades é mais impacto
+            }).slice(0, 5);
+            setTopCursosPontosAtencao(pontosAtencaoCursos);
+
+            console.log("Top 5 Cursos Melhores:", melhoresCursos);
+            console.log("Top 5 Cursos Atenção:", pontosAtencaoCursos);
+
         } else {
             // Limpar rankings e KPIs se não houver dados filtrados
             setTopDocentesMelhorPerformance([]);
             setTopDocentesPontosAtencao([]);
-            setKpisPeriodo(null); 
+            setKpisPeriodo(null);
+            setTopCursosMelhorPerformance([]); 
+            setTopCursosPontosAtencao([]);   
         }
     };
 
@@ -191,6 +217,39 @@ export const RelatorioPeriodo: React.FC = () => {
             porcentagemPendentes,
             mediaDiasAtraso,
         };
+    };
+
+    const calcularPerformanceCursos = (dados: ProcessedData[]): CursoPerformance[] => {
+        if (!dados || dados.length === 0) {
+            return [];
+        }
+
+        const performanceMap: Map<string, { totalAtividadesCurso: number, totalAtrasadasCurso: number }> = new Map();
+
+        dados.forEach(item => {
+            if (!item.Curso) return; // Pular se não houver curso no item
+
+            const cursoStats = performanceMap.get(item.Curso) || { totalAtividadesCurso: 0, totalAtrasadasCurso: 0 };
+            
+            cursoStats.totalAtividadesCurso += 1;
+            if (item.isAtrasado) {
+                cursoStats.totalAtrasadasCurso += 1;
+            }
+            performanceMap.set(item.Curso, cursoStats);
+        });
+
+        const performances: CursoPerformance[] = [];
+        performanceMap.forEach((stats, nomeCurso) => {
+            const porcentagemAtrasoCurso = stats.totalAtividadesCurso > 0 ? (stats.totalAtrasadasCurso / stats.totalAtividadesCurso) * 100 : 0;
+            performances.push({
+                nomeCurso,
+                totalAtividadesCurso: stats.totalAtividadesCurso,
+                totalAtrasadasCurso: stats.totalAtrasadasCurso,
+                porcentagemAtrasoCurso,
+            });
+        });
+
+        return performances;
     };
     
     // A função interna useDataProcessorNoFetch foi completamente removida 
@@ -359,6 +418,45 @@ export const RelatorioPeriodo: React.FC = () => {
                             </ul>
                         ) : (
                             <p className="text-sm text-slate-500 dark:text-gray-400">Não há dados suficientes para este ranking ou nenhum docente com atividades no período.</p>
+                        )}
+                    </div>
+                </div>
+            )}
+
+            {/* Seção de Rankings de Cursos */}
+            {relatorioGerado && relatorioGerado.length > 0 && (
+                <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {/* Top 5 Cursos (Melhor Performance) */}
+                    <div className="p-4 bg-white dark:bg-slate-800 rounded-lg shadow">
+                        <h4 className="text-lg font-semibold text-slate-700 dark:text-white mb-3">Top 5 Cursos (Menor % de Atraso)</h4>
+                        {topCursosMelhorPerformance.length > 0 ? (
+                            <ul className="space-y-2">
+                                {topCursosMelhorPerformance.map((curso, index) => (
+                                    <li key={index} className="text-sm text-slate-600 dark:text-gray-300 p-2 rounded bg-slate-50 dark:bg-slate-700/50">
+                                        <span className="font-medium">{curso.nomeCurso}:</span> {curso.porcentagemAtrasoCurso.toFixed(2)}% de atraso
+                                        <span className="text-xs text-slate-500 dark:text-gray-400"> ({curso.totalAtrasadasCurso}/{curso.totalAtividadesCurso} atividades)</span>
+                                    </li>
+                                ))}
+                            </ul>
+                        ) : (
+                            <p className="text-sm text-slate-500 dark:text-gray-400">Não há dados suficientes para este ranking ou nenhum curso com atividades no período.</p>
+                        )}
+                    </div>
+
+                    {/* Top 5 Cursos (Pontos de Atenção) */}
+                    <div className="p-4 bg-white dark:bg-slate-800 rounded-lg shadow">
+                        <h4 className="text-lg font-semibold text-slate-700 dark:text-white mb-3">Top 5 Cursos (Maior % de Atraso)</h4>
+                        {topCursosPontosAtencao.length > 0 ? (
+                            <ul className="space-y-2">
+                                {topCursosPontosAtencao.map((curso, index) => (
+                                    <li key={index} className="text-sm text-slate-600 dark:text-gray-300 p-2 rounded bg-slate-50 dark:bg-slate-700/50">
+                                        <span className="font-medium">{curso.nomeCurso}:</span> {curso.porcentagemAtrasoCurso.toFixed(2)}% de atraso
+                                        <span className="text-xs text-slate-500 dark:text-gray-400"> ({curso.totalAtrasadasCurso}/{curso.totalAtividadesCurso} atividades)</span>
+                                    </li>
+                                ))}
+                            </ul>
+                        ) : (
+                            <p className="text-sm text-slate-500 dark:text-gray-400">Não há dados suficientes para este ranking ou nenhum curso com atividades no período.</p>
                         )}
                     </div>
                 </div>

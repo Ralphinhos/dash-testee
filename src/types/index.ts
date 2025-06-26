@@ -100,3 +100,10 @@ export interface IKpisPeriodo {
   porcentagemPendentes: number;
   mediaDiasAtraso: number; // Para atividades efetivamente atrasadas que tiveram diasCalculado > 0
 }
+
+export interface CursoPerformance {
+  nomeCurso: string;
+  totalAtividadesCurso: number;
+  totalAtrasadasCurso: number;
+  porcentagemAtrasoCurso: number;
+}
