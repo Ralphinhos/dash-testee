@@ -87,7 +87,7 @@ export const Sidebar: FC<SidebarProps> = ({ kpis, userRole, onNotification }) =>
       </div>
 
       <div className={kpiCardClasses.replace('p-4', 'p-3')}>
-        <p className="text-xs text-gray-400">Doc. Maior Média Atraso</p>
+        <p className="text-xs text-gray-400">Docente com Maior Atraso</p>
         {kpis.docenteMaiorMediaAtraso ? (
           <>
             <p className="text-base font-semibold text-orange-400">{shortenName(kpis.docenteMaiorMediaAtraso.nome)}</p>
@@ -99,11 +99,11 @@ export const Sidebar: FC<SidebarProps> = ({ kpis, userRole, onNotification }) =>
       </div>
 
       <div className={kpiCardClasses.replace('p-4', 'p-3')}>
-        <p className="text-xs text-gray-400">Doc. Mais Pendências</p>
+        <p className="text-xs text-gray-400">Dococente com Mais Pendências</p>
         {kpis.docenteMaisPendencias ? (
           <>
             <p className="text-base font-semibold text-indigo-400">{shortenName(kpis.docenteMaisPendencias.nome)}</p>
-            <p className="text-xl font-bold text-indigo-400">{kpis.docenteMaisPendencias.quantidade} pend.</p>
+            <p className="text-xl font-bold text-indigo-400">{kpis.docenteMaisPendencias.quantidade} pendências</p>
           </>
         ) : (
           <p className="text-xl font-bold text-indigo-400">{kpis.docenteMaisPendencias === undefined ? "Selec. Mod." : "-"}</p>
@@ -111,7 +111,7 @@ export const Sidebar: FC<SidebarProps> = ({ kpis, userRole, onNotification }) =>
       </div>
       
       <div className={kpiCardClasses.replace('p-4', 'p-3')}>
-        <p className="text-xs text-gray-400">Doc. Menos Acesso Recente</p>
+        <p className="text-xs text-gray-400">Docente com Menos Acesso Recente</p>
         {kpis.docenteMenosAcesso ? (
           <>
             <p className="text-base font-semibold text-teal-400">{shortenName(kpis.docenteMenosAcesso.nome)}</p>
