@@ -79,7 +79,7 @@ export const AccessTable: FC<AccessTableProps> = ({ data }) => {
                                     onClick={toggleSort}
                                     className="flex items-center justify-center gap-1 w-full hover:text-cyan-600 dark:hover:text-cyan-400 transition-colors text-gray-600 dark:text-gray-400" // Adicionado cor ao botão
                                 >
-                                    Status
+                                    STATUS
                                     {sortOrder === 'desc' ? 
                                         <ChevronDown className="w-4 h-4" /> : 
                                         <ChevronUp className="w-4 h-4" />
