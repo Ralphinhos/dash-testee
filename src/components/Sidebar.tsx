@@ -1,6 +1,5 @@
-
+import { Link, useNavigate } from 'react-router-dom'; // Adicionado Link
 import React, { FC, useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { KPIData } from '../types';
 
 interface SidebarProps {
@@ -72,6 +71,16 @@ export const Sidebar: FC<SidebarProps> = ({ kpis, userRole, onNotification }) =>
         </div>
       )}
 
+      {/* Link para o Relatório do Período */}
+      <div className="text-center">
+        <Link 
+          to="/relatorio-periodo" 
+          className="inline-block w-full text-sm py-2 px-4 bg-sky-600 text-white font-semibold rounded-md hover:bg-sky-700 transition-colors"
+        >
+          Relatório do Período
+        </Link>
+      </div>
+
       {/* KPIs da Modalidade Selecionada */}
       <div className={kpiCardClasses.replace('p-4', 'p-3')}>
         <p className="text-xs text-gray-400">Total Pendentes (Modalidade)</p>
@@ -99,7 +108,7 @@ export const Sidebar: FC<SidebarProps> = ({ kpis, userRole, onNotification }) =>
       </div>
 
       <div className={kpiCardClasses.replace('p-4', 'p-3')}>
-        <p className="text-xs text-gray-400">Dococente com Mais Pendências</p>
+        <p className="text-xs text-gray-400">Docente com Mais Pendências</p>
         {kpis.docenteMaisPendencias ? (
           <>
             <p className="text-base font-semibold text-indigo-400">{shortenName(kpis.docenteMaisPendencias.nome)}</p>

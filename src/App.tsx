@@ -8,6 +8,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import { Login } from "./components/Login";
+import RelatorioPeriodo from './components/RelatorioPeriodo'; // Descomentado
 import { LoadingScreen } from './components/LoadingScreen'; // Importar LoadingScreen
 import { Coordinator } from './types'; // Importar Coordinator
 import { ThemeProvider } from './contexts/ThemeContext'; // Importar ThemeProvider
@@ -132,6 +133,7 @@ const App = () => {
             <Routes>
               <Route path="/login" element={<Login />} />
               <Route path="/" element={<PrivateRoute element={<Index />} />} />
+              <Route path="/relatorio-periodo" element={<PrivateRoute element={<RelatorioPeriodo />} />} /> {/* Descomentado */}
               <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>

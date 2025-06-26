@@ -31,6 +31,7 @@ export interface ProcessedData extends Omit<RawData, 'Dias s/ Acesso'> { // Omit
   isPendente: boolean;
   isAtrasado: boolean;
   isEntregueNoPrazo: boolean;
+  DataTerminoPrevisto?: Date | null; // Adicionado para o relatório do período
 }
 
 export interface KPIData {
