@@ -73,18 +73,44 @@ export const RelatorioPeriodo: React.FC = () => {
 
         if (dadosFiltrados.length > 0) {
             const performancesDocentes = calcularPerformanceDocentes(dadosFiltrados);
-            const melhoresDocentes = [...performancesDocentes].sort((a, b) => (a.porcentagemAtraso - b.porcentagemAtraso) || (b.totalAtividades - a.totalAtividades)).slice(0, 5);
+            // Ordenar por porcentagemEntreguesNoPrazo DESCENDENTE, depois por totalAtividades DESCENDENTE
+            const melhoresDocentes = [...performancesDocentes].sort((a, b) => {
+                if (b.porcentagemEntreguesNoPrazo !== a.porcentagemEntreguesNoPrazo) {
+                    return b.porcentagemEntreguesNoPrazo - a.porcentagemEntreguesNoPrazo;
+                }
+                return b.totalAtividades - a.totalAtividades;
+            }).slice(0, 5);
             setTopDocentesMelhorPerformance(melhoresDocentes);
-            const pontosAtencaoDocentes = [...performancesDocentes].sort((a, b) => (b.porcentagemAtraso - a.porcentagemAtraso) || (b.totalAtividades - a.totalAtividades)).slice(0, 5);
+
+            // Ranking de pontos de atenção continua baseado em porcentagemAtraso ASCENDENTE (maior % de atraso é pior)
+            const pontosAtencaoDocentes = [...performancesDocentes].sort((a, b) => {
+                if (b.porcentagemAtraso !== a.porcentagemAtraso) {
+                    return b.porcentagemAtraso - a.porcentagemAtraso;
+                }
+                return b.totalAtividades - a.totalAtividades; // Maior número de atividades como desempate (mais impacto)
+            }).slice(0, 5);
             setTopDocentesPontosAtencao(pontosAtencaoDocentes);
 
             const kpis = calcularKpisGerais(dadosFiltrados);
             setKpisPeriodo(kpis);
 
             const performancesCursos = calcularPerformanceCursos(dadosFiltrados);
-            const melhoresCursos = [...performancesCursos].sort((a, b) => (a.porcentagemAtrasoCurso - b.porcentagemAtrasoCurso) || (b.totalAtividadesCurso - a.totalAtividadesCurso)).slice(0, 5);
+            // Ordenar por porcentagemEntreguesNoPrazoCurso DESCENDENTE, depois por totalAtividadesCurso DESCENDENTE
+            const melhoresCursos = [...performancesCursos].sort((a, b) => {
+                if (b.porcentagemEntreguesNoPrazoCurso !== a.porcentagemEntreguesNoPrazoCurso) {
+                    return b.porcentagemEntreguesNoPrazoCurso - a.porcentagemEntreguesNoPrazoCurso;
+                }
+                return b.totalAtividadesCurso - a.totalAtividadesCurso;
+            }).slice(0, 5);
             setTopCursosMelhorPerformance(melhoresCursos);
-            const pontosAtencaoCursos = [...performancesCursos].sort((a, b) => (b.porcentagemAtrasoCurso - a.porcentagemAtrasoCurso) || (b.totalAtividadesCurso - a.totalAtividadesCurso)).slice(0, 5);
+
+            // Ranking de pontos de atenção para cursos continua baseado em porcentagemAtrasoCurso ASCENDENTE
+            const pontosAtencaoCursos = [...performancesCursos].sort((a, b) => {
+                if (b.porcentagemAtrasoCurso !== a.porcentagemAtrasoCurso) {
+                    return b.porcentagemAtrasoCurso - a.porcentagemAtrasoCurso;
+                }
+                return b.totalAtividadesCurso - a.totalAtividadesCurso; // Maior número de atividades como desempate (mais impacto)
+            }).slice(0, 5);
             setTopCursosPontosAtencao(pontosAtencaoCursos);
 
             const performanceDisciplinas = calcularPerformanceDisciplinas(dadosFiltrados);
@@ -102,19 +128,40 @@ export const RelatorioPeriodo: React.FC = () => {
 
     const calcularPerformanceDocentes = (dados: ProcessedData[]): DocentePerformance[] => {
         if (!dados || dados.length === 0) return [];
-        const performanceMap: Map<string, { totalAtividades: number, totalAtrasadas: number }> = new Map();
+        const performanceMap: Map<string, { 
+            totalAtividades: number; 
+            totalAtrasadas: number;
+            totalEntreguesNoPrazo: number;
+        }> = new Map();
+
         dados.forEach(item => {
             if (!item.Docente) return;
-            const stats = performanceMap.get(item.Docente) || { totalAtividades: 0, totalAtrasadas: 0 };
+            const stats = performanceMap.get(item.Docente) || { 
+                totalAtividades: 0, 
+                totalAtrasadas: 0,
+                totalEntreguesNoPrazo: 0 
+            };
             stats.totalAtividades++;
-            if (item.isAtrasado) stats.totalAtrasadas++;
+            if (item.isAtrasado) { // Note: isAtrasado pode ser true mesmo se isPendente for true
+                stats.totalAtrasadas++;
+            }
+            if (item.isEntregueNoPrazo) {
+                stats.totalEntreguesNoPrazo++;
+            }
             performanceMap.set(item.Docente, stats);
         });
+
         const performances: DocentePerformance[] = [];
         performanceMap.forEach((stats, nomeDocente) => {
+            const porcentagemAtraso = stats.totalAtividades > 0 ? (stats.totalAtrasadas / stats.totalAtividades) * 100 : 0;
+            const porcentagemEntreguesNoPrazo = stats.totalAtividades > 0 ? (stats.totalEntreguesNoPrazo / stats.totalAtividades) * 100 : 0;
             performances.push({
-                nomeDocente, ...stats,
-                porcentagemAtraso: stats.totalAtividades > 0 ? (stats.totalAtrasadas / stats.totalAtividades) * 100 : 0,
+                nomeDocente,
+                totalAtividades: stats.totalAtividades,
+                totalAtrasadas: stats.totalAtrasadas,
+                porcentagemAtraso,
+                totalEntreguesNoPrazo: stats.totalEntreguesNoPrazo,
+                porcentagemEntreguesNoPrazo,
             });
         });
         return performances;
@@ -144,19 +191,40 @@ export const RelatorioPeriodo: React.FC = () => {
 
     const calcularPerformanceCursos = (dados: ProcessedData[]): CursoPerformance[] => {
         if (!dados || dados.length === 0) return [];
-        const performanceMap: Map<string, { totalAtividadesCurso: number, totalAtrasadasCurso: number }> = new Map();
+        const performanceMap: Map<string, { 
+            totalAtividadesCurso: number; 
+            totalAtrasadasCurso: number;
+            totalEntreguesNoPrazoCurso: number;
+        }> = new Map();
+
         dados.forEach(item => {
             if (!item.Curso) return;
-            const stats = performanceMap.get(item.Curso) || { totalAtividadesCurso: 0, totalAtrasadasCurso: 0 };
+            const stats = performanceMap.get(item.Curso) || { 
+                totalAtividadesCurso: 0, 
+                totalAtrasadasCurso: 0,
+                totalEntreguesNoPrazoCurso: 0 
+            };
             stats.totalAtividadesCurso++;
-            if (item.isAtrasado) stats.totalAtrasadasCurso++;
+            if (item.isAtrasado) {
+                stats.totalAtrasadasCurso++;
+            }
+            if (item.isEntregueNoPrazo) {
+                stats.totalEntreguesNoPrazoCurso++;
+            }
             performanceMap.set(item.Curso, stats);
         });
+
         const performances: CursoPerformance[] = [];
         performanceMap.forEach((stats, nomeCurso) => {
+            const porcentagemAtrasoCurso = stats.totalAtividadesCurso > 0 ? (stats.totalAtrasadasCurso / stats.totalAtividadesCurso) * 100 : 0;
+            const porcentagemEntreguesNoPrazoCurso = stats.totalAtividadesCurso > 0 ? (stats.totalEntreguesNoPrazoCurso / stats.totalAtividadesCurso) * 100 : 0;
             performances.push({
-                nomeCurso, ...stats,
-                porcentagemAtrasoCurso: stats.totalAtividadesCurso > 0 ? (stats.totalAtrasadasCurso / stats.totalAtividadesCurso) * 100 : 0,
+                nomeCurso,
+                totalAtividadesCurso: stats.totalAtividadesCurso,
+                totalAtrasadasCurso: stats.totalAtrasadasCurso,
+                porcentagemAtrasoCurso,
+                totalEntreguesNoPrazoCurso: stats.totalEntreguesNoPrazoCurso,
+                porcentagemEntreguesNoPrazoCurso,
             });
         });
         return performances;

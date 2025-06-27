@@ -87,7 +87,8 @@ export interface DocentePerformance {
   totalAtividades: number;
   totalAtrasadas: number;
   porcentagemAtraso: number;
-  // Futuramente: totalEntreguesNoPrazo, porcentagemEntreguesNoPrazo, etc.
+  totalEntreguesNoPrazo: number;
+  porcentagemEntreguesNoPrazo: number;
 }
 
 export interface IKpisPeriodo {
@@ -106,6 +107,8 @@ export interface CursoPerformance {
   totalAtividadesCurso: number;
   totalAtrasadasCurso: number;
   porcentagemAtrasoCurso: number;
+  totalEntreguesNoPrazoCurso: number;
+  porcentagemEntreguesNoPrazoCurso: number;
 }
 
 export interface DisciplinaPerformance {
