@@ -1,8 +1,9 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react'; // Adicionado useCallback
 import { useNavigate } from 'react-router-dom';
 import { useDataContext } from '../contexts/DataContext';
 import { ProcessedData, DocentePerformance, IKpisPeriodo, CursoPerformance } from '../types'; // Removido DisciplinaPerformance
 import { LoadingScreen } from './LoadingScreen';
+import useIdleTimer from '../hooks/useIdleTimer'; // Importar useIdleTimer
 import { KpiCard } from './ui/KpiCard';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LabelList } from 'recharts';
 
@@ -25,11 +26,30 @@ export const RelatorioPeriodo: React.FC = () => {
     const navigate = useNavigate();
     const { allData, isLoading, error: dataError } = useDataContext();
 
+    // Logout por Inatividade
+    const IDLE_TIMEOUT_RELATORIO = 1 * 60 * 1000; // 1 minuto para teste
+
+    const handleRelatorioIdleLogout = useCallback(() => {
+        localStorage.removeItem('isLoggedIn');
+        localStorage.removeItem('loggedInCoordinator');
+        localStorage.removeItem('coordinatorCourses');
+        localStorage.removeItem('loggedInCoordinatorUsername');
+        localStorage.removeItem('userRole');
+        navigate('/login');
+    }, [navigate]);
+
+    useIdleTimer(IDLE_TIMEOUT_RELATORIO, handleRelatorioIdleLogout);
+
+    // Proteção de Rota e carregamento de userRole
     useEffect(() => {
         const storedUserRole = localStorage.getItem('userRole');
         if (storedUserRole !== 'admin') {
-            navigate('/');
+            // Se não for admin, não precisa nem carregar o resto, redireciona logo
+            console.warn("[RelatorioPeriodo] Acesso não autorizado. Redirecionando...");
+            navigate('/'); 
+            return; 
         }
+        // Se for admin, pode continuar a lógica do componente
     }, [navigate]);
     
     const [anoSelecionado, setAnoSelecionado] = useState<string>(new Date().getFullYear().toString());
@@ -219,7 +239,7 @@ export const RelatorioPeriodo: React.FC = () => {
         chartContentDocentesAtencao = (
             <>
                 <ResponsiveContainer width="100%" height={350}>
-                    <BarChart data={topDocentesPontosAtencao} margin={{ top: 20, right: 30, left: 20, bottom: 70 }}>
+                                <BarChart data={topDocentesPontosAtencao} margin={{ top: 20, right: 30, left: 20, bottom: 10 }}> {/* Margem inferior reduzida */}
                         <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.2} />
                         <XAxis type="category" dataKey="nomeAbreviado" tick={{ fontSize: 9, fill: '#FFFFFF' }} interval={0} angle={-30} textAnchor="end" height={60} />
                         <YAxis type="number" domain={[0, 'auto']} width={0} tick={false} axisLine={false} tickLine={false} /> {/* Domain auto, sem formatter de % */}
@@ -364,7 +384,7 @@ export const RelatorioPeriodo: React.FC = () => {
 
             {/* KPIs Gerais do Período */}
             {kpisPeriodo && (
-            <div className="mt-6 p-4 bg-white dark:bg-slate-800 rounded-lg shadow">
+            <div className="mt-6 p-4 bg-slate-100 dark:bg-slate-900 rounded-lg shadow"> {/* Cor de fundo do container alterada */}
                 <h3 className="text-xl font-semibold text-slate-800 dark:text-white mb-4">Resumo Geral do Período</h3>
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                     <KpiCard titulo="Total de Atividades" valor={kpisPeriodo.totalAtividadesConsideradas} />
