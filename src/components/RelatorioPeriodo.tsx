@@ -12,6 +12,15 @@ const COR_GRAFICO_NEGATIVO = "#ef4444"; // red-500
 // const COR_GRAFICO_ATENCAO = "#f59e0b";  // amber-500 - Não mais usado para disciplinas
 // const COR_GRAFICO_NEUTRO = "#64748b"; // slate-500 - Não usado ainda
 
+const shortenName = (name: string): string => {
+    if (typeof name !== 'string' || !name.trim()) return 'N/D';
+    const parts = name.trim().split(/\s+/);
+    if (parts.length > 1) {
+        return `${parts[0]} ${parts[parts.length - 1]}`;
+    }
+    return name;
+};
+
 export const RelatorioPeriodo: React.FC = () => {
     const navigate = useNavigate();
     const { allData, isLoading, error: dataError } = useDataContext();
@@ -62,9 +71,21 @@ export const RelatorioPeriodo: React.FC = () => {
 
         if (dadosFiltrados.length > 0) {
             const performancesDocentes = calcularPerformanceDocentes(dadosFiltrados);
-            const melhoresDocentes = [...performancesDocentes].sort((a, b) => (b.porcentagemEntreguesNoPrazo - a.porcentagemEntreguesNoPrazo) || (b.totalAtividades - a.totalAtividades)).slice(0, 5);
+            
+            const melhoresDocentes = [...performancesDocentes].sort((a, b) => {
+                if (b.porcentagemEntreguesNoPrazo !== a.porcentagemEntreguesNoPrazo) {
+                    return b.porcentagemEntreguesNoPrazo - a.porcentagemEntreguesNoPrazo;
+                }
+                return b.totalAtividades - a.totalAtividades;
+            }).slice(0, 5).map(d => ({ ...d, nomeAbreviado: shortenName(d.nomeDocente) })); // Adiciona nomeAbreviado
             setTopDocentesMelhorPerformance(melhoresDocentes);
-            const pontosAtencaoDocentes = [...performancesDocentes].sort((a, b) => (b.porcentagemAtraso - a.porcentagemAtraso) || (b.totalAtividades - a.totalAtividades)).slice(0, 5);
+            
+            const pontosAtencaoDocentes = [...performancesDocentes].sort((a, b) => {
+                if (b.porcentagemAtraso !== a.porcentagemAtraso) {
+                    return b.porcentagemAtraso - a.porcentagemAtraso;
+                }
+                return b.totalAtividades - a.totalAtividades; 
+            }).slice(0, 5).map(d => ({ ...d, nomeAbreviado: shortenName(d.nomeDocente) })); // Adiciona nomeAbreviado
             setTopDocentesPontosAtencao(pontosAtencaoDocentes);
 
             const kpis = calcularKpisGerais(dadosFiltrados);
@@ -164,7 +185,7 @@ export const RelatorioPeriodo: React.FC = () => {
                 <ResponsiveContainer width="100%" height={350}>
                     <BarChart data={topDocentesMelhorPerformance} margin={{ top: 20, right: 30, left: 20, bottom: 70 }}>
                         <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.2} />
-                        <XAxis type="category" dataKey="nomeDocente" tick={{ fontSize: 9, fill: '#FFFFFF' }} interval={0} angle={-30} textAnchor="end" height={60} />
+                        <XAxis type="category" dataKey="nomeAbreviado" tick={{ fontSize: 9, fill: '#FFFFFF' }} interval={0} angle={-30} textAnchor="end" height={60} />
                         <YAxis type="number" domain={[0, 'auto']} width={0} tick={false} axisLine={false} tickLine={false} />
                         <Tooltip 
                             formatter={(value: number, name: string, props: any) => {
@@ -176,7 +197,8 @@ export const RelatorioPeriodo: React.FC = () => {
                                 }
                                 return [value, name];
                             }}
-                            labelFormatter={(label: string) => <span style={{ fontWeight: '600', color: '#334155' }}>{label}</span>} 
+                            // Usar o nome completo no tooltip se desejado, acessando props.payload.nomeDocente
+                            labelFormatter={(label: string, payload: any[]) => <span style={{ fontWeight: '600', color: '#334155' }}>{payload && payload.length ? payload[0].payload.nomeDocente : label}</span>} 
                             contentStyle={{ backgroundColor: 'rgba(255, 255, 255, 0.95)', color: '#334155', border: '1px solid #e2e8f0', borderRadius: '0.5rem', boxShadow: '0 4px 6px rgba(0,0,0,0.1)' }}
                         />
                         <Bar dataKey="totalEntreguesNoPrazo" fill={COR_GRAFICO_POSITIVO} >
@@ -199,11 +221,23 @@ export const RelatorioPeriodo: React.FC = () => {
                 <ResponsiveContainer width="100%" height={350}>
                     <BarChart data={topDocentesPontosAtencao} margin={{ top: 20, right: 30, left: 20, bottom: 70 }}>
                         <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.2} />
-                        <XAxis type="category" dataKey="nomeDocente" tick={{ fontSize: 9, fill: '#FFFFFF' }} interval={0} angle={-30} textAnchor="end" height={60} />
-                        <YAxis type="number" domain={[0, 100]} tickFormatter={(value) => `${value.toFixed(0)}%`} tick={{ fill: '#FFFFFF', fontSize: 9 }} width={0} tickLine={false} axisLine={false} />
-                        <Tooltip formatter={(value: number, name: string, props: any) => [`${value.toFixed(1)}% de Atraso`, `Total Atividades: ${props.payload.totalAtividades}`, `Atrasadas: ${props.payload.totalAtrasadas}`]} labelFormatter={(label: string) => <span style={{ fontWeight: '600', color: '#334155' }}>{label}</span>} contentStyle={{ backgroundColor: 'rgba(255, 255, 255, 0.95)', color: '#334155', border: '1px solid #e2e8f0', borderRadius: '0.5rem', boxShadow: '0 4px 6px rgba(0,0,0,0.1)' }}/>
-                        <Bar dataKey="porcentagemAtraso" fill={COR_GRAFICO_NEGATIVO} >
-                            <LabelList dataKey="porcentagemAtraso" position="top" formatter={(value: number) => `${value.toFixed(1)}%`} style={{ fill: '#fef2f2', fontSize: 10 }} />
+                        <XAxis type="category" dataKey="nomeAbreviado" tick={{ fontSize: 9, fill: '#FFFFFF' }} interval={0} angle={-30} textAnchor="end" height={60} />
+                        <YAxis type="number" domain={[0, 'auto']} width={0} tick={false} axisLine={false} tickLine={false} /> {/* Domain auto, sem formatter de % */}
+                        <Tooltip 
+                            formatter={(value: number, name: string, props: any) => {
+                                if (name === 'totalAtrasadas') {
+                                    return [
+                                        `${value} Atrasadas (${props.payload.porcentagemAtraso.toFixed(1)}%)`,
+                                        `Total Atividades: ${props.payload.totalAtividades}`
+                                    ];
+                                }
+                                return [value, name];
+                            }}
+                            labelFormatter={(label: string, payload: any[]) => <span style={{ fontWeight: '600', color: '#334155' }}>{payload && payload.length ? payload[0].payload.nomeDocente : label}</span>} 
+                            contentStyle={{ backgroundColor: 'rgba(255, 255, 255, 0.95)', color: '#334155', border: '1px solid #e2e8f0', borderRadius: '0.5rem', boxShadow: '0 4px 6px rgba(0,0,0,0.1)' }}
+                        />
+                        <Bar dataKey="totalAtrasadas" fill={COR_GRAFICO_NEGATIVO} >
+                            <LabelList dataKey="totalAtrasadas" position="top" style={{ fill: '#fef2f2', fontSize: 10 }} />
                         </Bar>
                     </BarChart>
                 </ResponsiveContainer>
@@ -258,10 +292,22 @@ export const RelatorioPeriodo: React.FC = () => {
                     <BarChart data={topCursosPontosAtencao} margin={{ top: 20, right: 30, left: 20, bottom: 70 }}>
                         <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.2} />
                         <XAxis type="category" dataKey="nomeCurso" tick={{ fontSize: 9, fill: '#FFFFFF' }} interval={0} angle={-30} textAnchor="end" height={60} />
-                        <YAxis type="number" domain={[0, 100]} tickFormatter={(value) => `${value.toFixed(0)}%`} tick={{ fill: '#FFFFFF', fontSize: 9 }} width={0} tickLine={false} axisLine={false} />
-                        <Tooltip formatter={(value: number, name: string, props: any) => [`${value.toFixed(1)}% de Atraso`, `Total Atividades: ${props.payload.totalAtividadesCurso}`, `Atrasadas: ${props.payload.totalAtrasadasCurso}`]} labelFormatter={(label: string) => <span style={{ fontWeight: '600', color: '#334155' }}>{label}</span>} contentStyle={{ backgroundColor: 'rgba(255, 255, 255, 0.95)', color: '#334155', border: '1px solid #e2e8f0', borderRadius: '0.5rem', boxShadow: '0 4px 6px rgba(0,0,0,0.1)' }}/>
-                        <Bar dataKey="porcentagemAtrasoCurso" fill={COR_GRAFICO_NEGATIVO} >
-                            <LabelList dataKey="porcentagemAtrasoCurso" position="top" formatter={(value: number) => `${value.toFixed(1)}%`} style={{ fill: '#fef2f2', fontSize: 10 }} />
+                                    <YAxis type="number" domain={[0, 'auto']} width={0} tick={false} axisLine={false} tickLine={false} /> {/* Domain auto, sem formatter de % */}
+                                    <Tooltip 
+                                        formatter={(value: number, name: string, props: any) => {
+                                            if (name === 'totalAtrasadasCurso') {
+                                                return [
+                                                    `${value} Atrasadas (${props.payload.porcentagemAtrasoCurso.toFixed(1)}%)`,
+                                                    `Total Atividades: ${props.payload.totalAtividadesCurso}`
+                                                ];
+                                            }
+                                            return [value, name];
+                                        }}
+                                        labelFormatter={(label: string) => <span style={{ fontWeight: '600', color: '#334155' }}>{label}</span>} 
+                                        contentStyle={{ backgroundColor: 'rgba(255, 255, 255, 0.95)', color: '#334155', border: '1px solid #e2e8f0', borderRadius: '0.5rem', boxShadow: '0 4px 6px rgba(0,0,0,0.1)' }}
+                                    />
+                                    <Bar dataKey="totalAtrasadasCurso" fill={COR_GRAFICO_NEGATIVO} >
+                                        <LabelList dataKey="totalAtrasadasCurso" position="top" style={{ fill: '#fef2f2', fontSize: 10 }} />
                         </Bar>
                     </BarChart>
                 </ResponsiveContainer>

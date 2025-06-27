@@ -71,17 +71,7 @@ export const Sidebar: FC<SidebarProps> = ({ kpis, userRole, onNotification }) =>
         </div>
       )}
 
-      {/* Link para o Relatório do Período - APENAS PARA ADMIN */}
-      {userRole === 'admin' && (
-        <div className="text-center">
-          <Link 
-            to="/relatorio-periodo" 
-            className="inline-block w-full text-sm py-2 px-4 bg-sky-600 text-white font-semibold rounded-md hover:bg-sky-700 transition-colors"
-          >
-            Relatório do Período
-          </Link>
-        </div>
-      )}
+      {/* Link para o Relatório do Período REMOVIDO */}
 
       {/* KPIs da Modalidade Selecionada */}
       <div className={kpiCardClasses.replace('p-4', 'p-3')}>

@@ -12,7 +12,7 @@ import { VisaoGeral } from '../components/VisaoGeral';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ProcessedData, FilterState, KPIData, Coordinator } from '../types';
 import { useNavigate } from 'react-router-dom';
-import { LogOut, Sun, Moon } from 'lucide-react';
+import { LogOut, Sun, Moon, FileText } from 'lucide-react'; // Adicionado FileText
 import { ThemeSwitcher } from '../components/ThemeSwitcher';
 import useIdleTimer from '../hooks/useIdleTimer';
 
@@ -50,7 +50,7 @@ export default function Index() {
     }, [navigate]);
 
     // 4. Hooks que podem depender de callbacks ou estados (como useIdleTimer)
-    const IDLE_TIMEOUT = 20 * 60 * 1000; // 20 minutos
+    const IDLE_TIMEOUT = 1 * 60 * 1000; // 1 minuto
     useIdleTimer(IDLE_TIMEOUT, handleLogout);
 
     // useEffect para carregar dados foi removido, pois agora é gerenciado pelo DataProvider.
@@ -362,6 +362,15 @@ export default function Index() {
                     <div className="flex justify-between items-center gap-4">
                         <h2 className="text-2xl font-bold text-slate-800 dark:text-white">Acompanhamento de Disciplinas - Docente</h2>
                         <div className="flex items-center gap-2 md:gap-4">
+                            {userRole === 'admin' && (
+                                <button
+                                    onClick={() => navigate('/relatorio-periodo')}
+                                    title="Relatório do Período"
+                                    className="p-2 rounded-md text-slate-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-slate-700 transition-colors"
+                                >
+                                    <FileText size={20} />
+                                </button>
+                            )}
                             <ThemeSwitcher />
                             <button
                                 onClick={handleLogout}
