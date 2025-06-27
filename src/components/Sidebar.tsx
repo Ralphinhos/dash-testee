@@ -1,6 +1,5 @@
-
+import { Link, useNavigate } from 'react-router-dom'; // Adicionado Link
 import React, { FC, useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { KPIData } from '../types';
 
 interface SidebarProps {
@@ -69,6 +68,18 @@ export const Sidebar: FC<SidebarProps> = ({ kpis, userRole, onNotification }) =>
         <div className={coordinatorCardClasses}>
           <p className="text-xs text-cyan-400">{userRole === 'admin' ? 'Usuário:' : 'Coordenador(a):'}</p>
           <p className="text-sm font-semibold text-white">{shortenName(loggedInCoordinatorName)}</p>
+        </div>
+      )}
+
+      {/* Link para o Relatório do Período - APENAS PARA ADMIN */}
+      {userRole === 'admin' && (
+        <div className="text-center">
+          <Link
+            to="/relatorio-periodo"
+            className="inline-block w-full text-sm py-2 px-4 bg-sky-600 text-white font-semibold rounded-md hover:bg-sky-700 transition-colors"
+          >
+            Relatório do Período
+          </Link>
         </div>
       )}
 
@@ -152,19 +163,7 @@ export const Sidebar: FC<SidebarProps> = ({ kpis, userRole, onNotification }) =>
         </div>
       )}
 
-      {/* Card: Cursos do Coordenador - VISÍVEL APENAS PARA COORDENADOR */}
-      {userRole === 'coordinator' && coordinatorCourses.length > 0 && (
-        <div className={actionsCardClasses.replace('flex-grow', '')}> 
-          <h3 className="text-sm font-semibold text-white mb-2 text-center">Meus Cursos</h3>
-          <div className="space-y-1 max-h-32 overflow-y-auto">
-            {coordinatorCourses.map(course => (
-              <p key={course} className="text-xs text-gray-300 bg-slate-700 p-1 rounded-md text-center">
-                {course}
-              </p>
-            ))}
-          </div>
-        </div>
-      )}
+      {/* Card "Meus Cursos" foi removido conforme solicitado */}
 
       {/* Botão Sair removido daqui */}
     </aside>

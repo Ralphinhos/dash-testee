@@ -21,16 +21,20 @@ export interface RawData {
   Coordenador: string;
   email_coordenador: string;
   email_docente: string;
+  DataTerminoPrevisto?: string; // Adicionado para consistência, lido por useDataProcessor
+  DataInicioSemestre?: string; // Adicionado para o relatório do período
 }
 
-export interface ProcessedData extends Omit<RawData, 'Dias s/ Acesso'> { // Omitir a string original
+export interface ProcessedData extends Omit<RawData, 'Dias s/ Acesso' | 'DataInicioSemestre' | 'DataTerminoPrevisto'> { // Omitir as strings originais
   'Dias s/ Acesso': number; // Redefinir como number
+  DataInicioSemestre?: Date | null; // Adicionar como Date | null
   Login: string;
   statusCalculado: string;
   diasCalculado: number;
   isPendente: boolean;
   isAtrasado: boolean;
   isEntregueNoPrazo: boolean;
+  DataTerminoPrevisto?: Date | null; // Adicionado para o relatório do período
 }
 
 export interface KPIData {
@@ -77,3 +81,34 @@ export interface FilterState {
   modulo: string;
   curso: string;
 }
+
+export interface DocentePerformance {
+  nomeDocente: string;
+  totalAtividades: number;
+  totalAtrasadas: number;
+  porcentagemAtraso: number;
+  totalEntreguesNoPrazo: number;
+  porcentagemEntreguesNoPrazo: number;
+}
+
+export interface IKpisPeriodo {
+  totalAtividadesConsideradas: number;
+  totalEntreguesNoPrazo: number;
+  totalEntreguesComAtraso: number;
+  totalPendentes: number;
+  porcentagemEntreguesNoPrazo: number;
+  porcentagemComAtraso: number;
+  porcentagemPendentes: number;
+  mediaDiasAtraso: number; // Para atividades efetivamente atrasadas que tiveram diasCalculado > 0
+}
+
+export interface CursoPerformance {
+  nomeCurso: string;
+  totalAtividadesCurso: number;
+  totalAtrasadasCurso: number;
+  porcentagemAtrasoCurso: number;
+  totalEntreguesNoPrazoCurso: number;
+  porcentagemEntreguesNoPrazoCurso: number;
+}
+
+// Interface DisciplinaPerformance removida conforme solicitação.

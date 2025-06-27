@@ -84,10 +84,21 @@ export const useDataProcessor = () => {
       if (diasSemAcessoStr && !isNaN(Number(diasSemAcessoStr))) {
         diasSemAcessoNum = parseInt(diasSemAcessoStr, 10);
       }
+
+      // Processar DataTerminoPrevisto
+      // Assumindo que o nome da coluna na RawData (planilha) seja 'DataTerminoPrevisto'
+      const dataTerminoPrevistoStr = row['DataTerminoPrevisto'] as string | undefined; // Ajustado para ler de RawData
+      const dataTerminoPrevisto = dataTerminoPrevistoStr ? parseDate(dataTerminoPrevistoStr) : null;
+
+      // Processar DataInicioSemestre
+      const dataInicioSemestreStr = row['DataInicioSemestre'] as string | undefined; // Ler da RawData
+      const dataInicioSemestre = dataInicioSemestreStr ? parseDate(dataInicioSemestreStr) : null;
       
       return {
         ...row,
         'Dias s/ Acesso': diasSemAcessoNum, // Sobrescrever com o valor numérico
+        DataTerminoPrevisto: dataTerminoPrevisto, // Adicionar o campo processado
+        DataInicioSemestre: dataInicioSemestre, // Adicionar o novo campo processado
         statusCalculado,
         diasCalculado,
         isPendente,
