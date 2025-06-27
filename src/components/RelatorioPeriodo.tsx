@@ -1,17 +1,15 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react'; // Adicionado useCallback
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useDataContext } from '../contexts/DataContext';
-import { ProcessedData, DocentePerformance, IKpisPeriodo, CursoPerformance } from '../types'; // Removido DisciplinaPerformance
+import { ProcessedData, DocentePerformance, IKpisPeriodo, CursoPerformance } from '../types';
 import { LoadingScreen } from './LoadingScreen';
-import useIdleTimer from '../hooks/useIdleTimer'; // Importar useIdleTimer
+import useIdleTimer from '../hooks/useIdleTimer';
 import { KpiCard } from './ui/KpiCard';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LabelList } from 'recharts';
 
 // Definição de cores para os gráficos
 const COR_GRAFICO_POSITIVO = "#22c55e"; // green-500
 const COR_GRAFICO_NEGATIVO = "#ef4444"; // red-500
-// const COR_GRAFICO_ATENCAO = "#f59e0b";  // amber-500 - Não mais usado para disciplinas
-// const COR_GRAFICO_NEUTRO = "#64748b"; // slate-500 - Não usado ainda
 
 const shortenName = (name: string): string => {
     if (typeof name !== 'string' || !name.trim()) return 'N/D';
@@ -26,9 +24,7 @@ export const RelatorioPeriodo: React.FC = () => {
     const navigate = useNavigate();
     const { allData, isLoading, error: dataError } = useDataContext();
 
-    // Logout por Inatividade
     const IDLE_TIMEOUT_RELATORIO = 1 * 60 * 1000; // 1 minuto para teste
-
     const handleRelatorioIdleLogout = useCallback(() => {
         localStorage.removeItem('isLoggedIn');
         localStorage.removeItem('loggedInCoordinator');
@@ -37,23 +33,17 @@ export const RelatorioPeriodo: React.FC = () => {
         localStorage.removeItem('userRole');
         navigate('/login');
     }, [navigate]);
-
     useIdleTimer(IDLE_TIMEOUT_RELATORIO, handleRelatorioIdleLogout);
 
-    // Proteção de Rota e carregamento de userRole
     useEffect(() => {
         const storedUserRole = localStorage.getItem('userRole');
         if (storedUserRole !== 'admin') {
-            // Se não for admin, não precisa nem carregar o resto, redireciona logo
-            console.warn("[RelatorioPeriodo] Acesso não autorizado. Redirecionando...");
             navigate('/'); 
-            return; 
         }
-        // Se for admin, pode continuar a lógica do componente
     }, [navigate]);
     
     const [anoSelecionado, setAnoSelecionado] = useState<string>(new Date().getFullYear().toString());
-    const [semestreFiltro, setSemestreFiltro] = useState<string>('0'); // "0" para Ambos, "1" para 1º, "2" para 2º
+    const [semestreFiltro, setSemestreFiltro] = useState<string>('0');
     const [modalidadeSelecionada, setModalidadeSelecionada] = useState<string>('Todas');
     const [relatorioGerado, setRelatorioGerado] = useState<ProcessedData[] | null>(null);
     const [topDocentesMelhorPerformance, setTopDocentesMelhorPerformance] = useState<DocentePerformance[]>([]);
@@ -73,7 +63,6 @@ export const RelatorioPeriodo: React.FC = () => {
             alert("Por favor, informe o Ano.");
             return;
         }
-        
         const dadosFiltrados = availableData.filter(item => {
             const modalidadeMatch = modalidadeSelecionada === 'Todas' || item.Modalidade === modalidadeSelecionada;
             let semestreMatch = false;
@@ -86,253 +75,94 @@ export const RelatorioPeriodo: React.FC = () => {
             }
             return modalidadeMatch && semestreMatch;
         });
-
         setRelatorioGerado(dadosFiltrados);
 
         if (dadosFiltrados.length > 0) {
-            const performancesDocentes = calcularPerformanceDocentes(dadosFiltrados);
+            const perfDocentes = calcularPerformanceDocentes(dadosFiltrados);
+            setTopDocentesMelhorPerformance([...perfDocentes].sort((a,b) => b.porcentagemEntreguesNoPrazo - a.porcentagemEntreguesNoPrazo || b.totalAtividades - a.totalAtividades).slice(0,5).map(d=>({...d, nomeAbreviado: shortenName(d.nomeDocente)})));
+            setTopDocentesPontosAtencao([...perfDocentes].sort((a,b) => b.porcentagemAtraso - a.porcentagemAtraso || b.totalAtividades - a.totalAtividades).slice(0,5).map(d=>({...d, nomeAbreviado: shortenName(d.nomeDocente)})));
             
-            const melhoresDocentes = [...performancesDocentes].sort((a, b) => {
-                if (b.porcentagemEntreguesNoPrazo !== a.porcentagemEntreguesNoPrazo) {
-                    return b.porcentagemEntreguesNoPrazo - a.porcentagemEntreguesNoPrazo;
-                }
-                return b.totalAtividades - a.totalAtividades;
-            }).slice(0, 5).map(d => ({ ...d, nomeAbreviado: shortenName(d.nomeDocente) })); // Adiciona nomeAbreviado
-            setTopDocentesMelhorPerformance(melhoresDocentes);
+            setKpisPeriodo(calcularKpisGerais(dadosFiltrados));
             
-            const pontosAtencaoDocentes = [...performancesDocentes].sort((a, b) => {
-                if (b.porcentagemAtraso !== a.porcentagemAtraso) {
-                    return b.porcentagemAtraso - a.porcentagemAtraso;
-                }
-                return b.totalAtividades - a.totalAtividades; 
-            }).slice(0, 5).map(d => ({ ...d, nomeAbreviado: shortenName(d.nomeDocente) })); // Adiciona nomeAbreviado
-            setTopDocentesPontosAtencao(pontosAtencaoDocentes);
-
-            const kpis = calcularKpisGerais(dadosFiltrados);
-            setKpisPeriodo(kpis);
-
-            const performancesCursos = calcularPerformanceCursos(dadosFiltrados);
-            const melhoresCursos = [...performancesCursos].sort((a, b) => (b.porcentagemEntreguesNoPrazoCurso - a.porcentagemEntreguesNoPrazoCurso) || (b.totalAtividadesCurso - a.totalAtividadesCurso)).slice(0, 5);
-            setTopCursosMelhorPerformance(melhoresCursos);
-            const pontosAtencaoCursos = [...performancesCursos].sort((a, b) => (b.porcentagemAtrasoCurso - a.porcentagemAtrasoCurso) || (b.totalAtividadesCurso - a.totalAtividadesCurso)).slice(0, 5);
-            setTopCursosPontosAtencao(pontosAtencaoCursos);
+            const perfCursos = calcularPerformanceCursos(dadosFiltrados);
+            setTopCursosMelhorPerformance([...perfCursos].sort((a,b) => b.porcentagemEntreguesNoPrazoCurso - a.porcentagemEntreguesNoPrazoCurso || b.totalAtividadesCurso - a.totalAtividadesCurso).slice(0,5));
+            setTopCursosPontosAtencao([...perfCursos].sort((a,b) => b.porcentagemAtrasoCurso - a.porcentagemAtrasoCurso || b.totalAtividadesCurso - a.totalAtividadesCurso).slice(0,5));
         } else {
-            setTopDocentesMelhorPerformance([]);
-            setTopDocentesPontosAtencao([]);
-            setKpisPeriodo(null);
-            setTopCursosMelhorPerformance([]); 
-            setTopCursosPontosAtencao([]);
+            setTopDocentesMelhorPerformance([]); setTopDocentesPontosAtencao([]); setKpisPeriodo(null);
+            setTopCursosMelhorPerformance([]); setTopCursosPontosAtencao([]);
         }
     };
 
     const calcularPerformanceDocentes = (dados: ProcessedData[]): DocentePerformance[] => {
         if (!dados || dados.length === 0) return [];
-        const performanceMap: Map<string, { totalAtividades: number; totalAtrasadas: number; totalEntreguesNoPrazo: number; }> = new Map();
+        const map: Map<string, { totalAtividades: number; totalAtrasadas: number; totalEntreguesNoPrazo: number; }> = new Map();
         dados.forEach(item => {
             if (!item.Docente) return;
-            const stats = performanceMap.get(item.Docente) || { totalAtividades: 0, totalAtrasadas: 0, totalEntreguesNoPrazo: 0 };
-            stats.totalAtividades++;
-            if (item.isAtrasado) stats.totalAtrasadas++;
-            if (item.isEntregueNoPrazo) stats.totalEntreguesNoPrazo++;
-            performanceMap.set(item.Docente, stats);
+            const s = map.get(item.Docente) || { totalAtividades: 0, totalAtrasadas: 0, totalEntreguesNoPrazo: 0 };
+            s.totalAtividades++; if (item.isAtrasado) s.totalAtrasadas++; if (item.isEntregueNoPrazo) s.totalEntreguesNoPrazo++;
+            map.set(item.Docente, s);
         });
-        const performances: DocentePerformance[] = [];
-        performanceMap.forEach((stats, nomeDocente) => {
-            performances.push({
-                nomeDocente, ...stats,
-                porcentagemAtraso: stats.totalAtividades > 0 ? (stats.totalAtrasadas / stats.totalAtividades) * 100 : 0,
-                porcentagemEntreguesNoPrazo: stats.totalAtividades > 0 ? (stats.totalEntreguesNoPrazo / stats.totalAtividades) * 100 : 0,
-            });
-        });
-        return performances;
+        return Array.from(map.entries()).map(([nome, stats]) => ({
+            nomeDocente: nome, ...stats,
+            porcentagemAtraso: stats.totalAtividades > 0 ? (stats.totalAtrasadas / stats.totalAtividades) * 100 : 0,
+            porcentagemEntreguesNoPrazo: stats.totalAtividades > 0 ? (stats.totalEntreguesNoPrazo / stats.totalAtividades) * 100 : 0,
+        }));
     };
 
     const calcularKpisGerais = (dados: ProcessedData[]): IKpisPeriodo | null => {
         if (!dados || dados.length === 0) return null;
-        const totalAtividadesConsideradas = dados.length;
-        let tENP = 0, tECA = 0, tP = 0, sDA = 0, cAATMPM = 0; // Abreviações
-        dados.forEach(item => {
-            if (item.isEntregueNoPrazo) tENP++;
-            if (item.isAtrasado && !item.isPendente) tECA++;
-            if (item.isPendente) tP++;
-            if (item.isAtrasado && !item.isPendente && item.diasCalculado && item.diasCalculado > 0) {
-                sDA += item.diasCalculado;
-                cAATMPM++;
-            }
+        let tENP = 0, tECA = 0, tP = 0, sDA = 0, cAATMPM = 0;
+        dados.forEach(i => { 
+            if (i.isEntregueNoPrazo) tENP++; if (i.isAtrasado && !i.isPendente) tECA++; if (i.isPendente) tP++;
+            if (i.isAtrasado && !i.isPendente && i.diasCalculado && i.diasCalculado > 0) { sDA += i.diasCalculado; cAATMPM++; }
         });
+        const tAC = dados.length;
         return {
-            totalAtividadesConsideradas, totalEntreguesNoPrazo: tENP, totalEntreguesComAtraso: tECA, totalPendentes: tP,
-            porcentagemEntreguesNoPrazo: totalAtividadesConsideradas > 0 ? (tENP / totalAtividadesConsideradas) * 100 : 0,
-            porcentagemComAtraso: totalAtividadesConsideradas > 0 ? (tECA / totalAtividadesConsideradas) * 100 : 0,
-            porcentagemPendentes: totalAtividadesConsideradas > 0 ? (tP / totalAtividadesConsideradas) * 100 : 0,
+            totalAtividadesConsideradas: tAC, totalEntreguesNoPrazo: tENP, totalEntreguesComAtraso: tECA, totalPendentes: tP,
+            porcentagemEntreguesNoPrazo: tAC > 0 ? (tENP / tAC) * 100 : 0,
+            porcentagemComAtraso: tAC > 0 ? (tECA / tAC) * 100 : 0,
+            porcentagemPendentes: tAC > 0 ? (tP / tAC) * 100 : 0,
             mediaDiasAtraso: cAATMPM > 0 ? sDA / cAATMPM : 0,
         };
     };
 
     const calcularPerformanceCursos = (dados: ProcessedData[]): CursoPerformance[] => {
         if (!dados || dados.length === 0) return [];
-        const performanceMap: Map<string, { totalAtividadesCurso: number; totalAtrasadasCurso: number; totalEntreguesNoPrazoCurso: number;}> = new Map();
+        const map: Map<string, { totalAtividadesCurso: number; totalAtrasadasCurso: number; totalEntreguesNoPrazoCurso: number;}> = new Map();
         dados.forEach(item => {
             if (!item.Curso) return;
-            const stats = performanceMap.get(item.Curso) || { totalAtividadesCurso: 0, totalAtrasadasCurso: 0, totalEntreguesNoPrazoCurso: 0 };
-            stats.totalAtividadesCurso++;
-            if (item.isAtrasado) stats.totalAtrasadasCurso++;
-            if (item.isEntregueNoPrazo) stats.totalEntreguesNoPrazoCurso++;
-            performanceMap.set(item.Curso, stats);
+            const s = map.get(item.Curso) || { totalAtividadesCurso: 0, totalAtrasadasCurso: 0, totalEntreguesNoPrazoCurso: 0 };
+            s.totalAtividadesCurso++; if (item.isAtrasado) s.totalAtrasadasCurso++; if (item.isEntregueNoPrazo) s.totalEntreguesNoPrazoCurso++;
+            map.set(item.Curso, s);
         });
-        const performances: CursoPerformance[] = [];
-        performanceMap.forEach((stats, nomeCurso) => {
-            performances.push({
-                nomeCurso, ...stats,
-                porcentagemAtrasoCurso: stats.totalAtividadesCurso > 0 ? (stats.totalAtrasadasCurso / stats.totalAtividadesCurso) * 100 : 0,
-                porcentagemEntreguesNoPrazoCurso: stats.totalAtividadesCurso > 0 ? (stats.totalEntreguesNoPrazoCurso / stats.totalAtividadesCurso) * 100 : 0,
-            });
-        });
-        return performances;
+        return Array.from(map.entries()).map(([nome, stats]) => ({
+            nomeCurso: nome, ...stats,
+            porcentagemAtrasoCurso: stats.totalAtividadesCurso > 0 ? (stats.totalAtrasadasCurso / stats.totalAtividadesCurso) * 100 : 0,
+            porcentagemEntreguesNoPrazoCurso: stats.totalAtividadesCurso > 0 ? (stats.totalEntreguesNoPrazoCurso / stats.totalAtividadesCurso) * 100 : 0,
+        }));
     };
 
     if (isLoading) return <LoadingScreen message="Carregando dados para o relatório..." />;
     if (dataError) return <div className="p-4 text-red-700 dark:text-red-400 bg-red-100 dark:bg-red-900/30 rounded-md">Erro ao carregar dados: {dataError}</div>;
 
-    let chartContentDocentesMelhor = (
-        <p className="text-sm text-slate-500 dark:text-gray-400">
-            Não há dados suficientes para este ranking...
-        </p>
-    );
+    let chartContentDocentesMelhor = <p className="text-sm text-slate-500 dark:text-gray-400">Não há dados suficientes...</p>;
     if (topDocentesMelhorPerformance.length > 0) {
-        chartContentDocentesMelhor = (
-            <>
-                <ResponsiveContainer width="100%" height={350}>
-                    <BarChart data={topDocentesMelhorPerformance} margin={{ top: 20, right: 30, left: 20, bottom: 70 }}>
-                        <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.2} />
-                        <XAxis type="category" dataKey="nomeAbreviado" tick={{ fontSize: 9, fill: '#FFFFFF' }} interval={0} angle={-30} textAnchor="end" height={60} />
-                        <YAxis type="number" domain={[0, 'auto']} width={0} tick={false} axisLine={false} tickLine={false} />
-                        <Tooltip 
-                            formatter={(value: number, name: string, props: any) => {
-                                if (name === 'totalEntreguesNoPrazo') {
-                                    return [
-                                        `${value} Ent. no Prazo (${props.payload.porcentagemEntreguesNoPrazo.toFixed(1)}%)`,
-                                        `Total Atividades: ${props.payload.totalAtividades}`
-                                    ];
-                                }
-                                return [value, name];
-                            }}
-                            // Usar o nome completo no tooltip se desejado, acessando props.payload.nomeDocente
-                            labelFormatter={(label: string, payload: any[]) => <span style={{ fontWeight: '600', color: '#334155' }}>{payload && payload.length ? payload[0].payload.nomeDocente : label}</span>} 
-                            contentStyle={{ backgroundColor: 'rgba(255, 255, 255, 0.95)', color: '#334155', border: '1px solid #e2e8f0', borderRadius: '0.5rem', boxShadow: '0 4px 6px rgba(0,0,0,0.1)' }}
-                        />
-                        <Bar dataKey="totalEntreguesNoPrazo" fill={COR_GRAFICO_POSITIVO} >
-                            <LabelList dataKey="totalEntreguesNoPrazo" position="top" style={{ fill: '#FFFFFF', fontSize: 10 }} />
-                        </Bar>
-                    </BarChart>
-                </ResponsiveContainer>
-            </>
-        );
+        chartContentDocentesMelhor = (<ResponsiveContainer width="100%" height={350}><BarChart data={topDocentesMelhorPerformance} margin={{ top: 20, right: 30, left: 20, bottom: 70 }}><CartesianGrid strokeDasharray="3 3" strokeOpacity={0.2} /><XAxis type="category" dataKey="nomeAbreviado" tick={{ fontSize: 9, fill: '#FFFFFF' }} interval={0} angle={-30} textAnchor="end" height={60} /><YAxis type="number" domain={[0, 'auto']} width={0} tick={false} axisLine={false} tickLine={false} /><Tooltip formatter={(v, n, p: any) => n === 'totalEntreguesNoPrazo' ? [`${v} Ent. Prazo (${p.payload.porcentagemEntreguesNoPrazo.toFixed(1)}%)`, `Total: ${p.payload.totalAtividades}`] : [v,n]} labelFormatter={(l, p: any) => <span style={{fontWeight:'600', color:'#334155'}}>{p && p.length ? p[0].payload.nomeDocente : l}</span>} contentStyle={{backgroundColor:'rgba(255,255,255,0.95)',color:'#334155',border:'1px solid #e2e8f0',borderRadius:'0.5rem',boxShadow:'0 4px 6px rgba(0,0,0,0.1)'}} /><Bar dataKey="totalEntreguesNoPrazo" fill={COR_GRAFICO_POSITIVO}><LabelList dataKey="totalEntreguesNoPrazo" position="top" style={{fill:'#FFFFFF',fontSize:10}} /></Bar></BarChart></ResponsiveContainer>);
     }
 
-    let chartContentDocentesAtencao = (
-        <p className="text-sm text-slate-500 dark:text-gray-400">
-            Não há dados suficientes para este ranking...
-        </p>
-    );
+    let chartContentDocentesAtencao = <p className="text-sm text-slate-500 dark:text-gray-400">Não há dados suficientes...</p>;
     if (topDocentesPontosAtencao.length > 0) {
-        chartContentDocentesAtencao = (
-            <>
-                <ResponsiveContainer width="100%" height={350}>
-                                <BarChart data={topDocentesPontosAtencao} margin={{ top: 20, right: 30, left: 20, bottom: 10 }}> {/* Margem inferior reduzida */}
-                        <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.2} />
-                        <XAxis type="category" dataKey="nomeAbreviado" tick={{ fontSize: 9, fill: '#FFFFFF' }} interval={0} angle={-30} textAnchor="end" height={60} />
-                        <YAxis type="number" domain={[0, 'auto']} width={0} tick={false} axisLine={false} tickLine={false} /> {/* Domain auto, sem formatter de % */}
-                        <Tooltip 
-                            formatter={(value: number, name: string, props: any) => {
-                                if (name === 'totalAtrasadas') {
-                                    return [
-                                        `${value} Atrasadas (${props.payload.porcentagemAtraso.toFixed(1)}%)`,
-                                        `Total Atividades: ${props.payload.totalAtividades}`
-                                    ];
-                                }
-                                return [value, name];
-                            }}
-                            labelFormatter={(label: string, payload: any[]) => <span style={{ fontWeight: '600', color: '#334155' }}>{payload && payload.length ? payload[0].payload.nomeDocente : label}</span>} 
-                            contentStyle={{ backgroundColor: 'rgba(255, 255, 255, 0.95)', color: '#334155', border: '1px solid #e2e8f0', borderRadius: '0.5rem', boxShadow: '0 4px 6px rgba(0,0,0,0.1)' }}
-                        />
-                        <Bar dataKey="totalAtrasadas" fill={COR_GRAFICO_NEGATIVO} >
-                            <LabelList dataKey="totalAtrasadas" position="top" style={{ fill: '#fef2f2', fontSize: 10 }} />
-                        </Bar>
-                    </BarChart>
-                </ResponsiveContainer>
-            </>
-        );
+        chartContentDocentesAtencao = (<ResponsiveContainer width="100%" height={350}><BarChart data={topDocentesPontosAtencao} margin={{ top: 20, right: 30, left: 20, bottom: 70 }}><CartesianGrid strokeDasharray="3 3" strokeOpacity={0.2} /><XAxis type="category" dataKey="nomeAbreviado" tick={{ fontSize: 9, fill: '#FFFFFF' }} interval={0} angle={-30} textAnchor="end" height={60} /><YAxis type="number" domain={[0, 'auto']} width={0} tick={false} axisLine={false} tickLine={false} /><Tooltip formatter={(v, n, p: any) => n === 'totalAtrasadas' ? [`${v} Atrasadas (${p.payload.porcentagemAtraso.toFixed(1)}%)`, `Total: ${p.payload.totalAtividades}`] : [v,n]} labelFormatter={(l, p: any) => <span style={{fontWeight:'600', color:'#334155'}}>{p && p.length ? p[0].payload.nomeDocente : l}</span>} contentStyle={{backgroundColor:'rgba(255,255,255,0.95)',color:'#334155',border:'1px solid #e2e8f0',borderRadius:'0.5rem',boxShadow:'0 4px 6px rgba(0,0,0,0.1)'}} /><Bar dataKey="totalAtrasadas" fill={COR_GRAFICO_NEGATIVO}><LabelList dataKey="totalAtrasadas" position="top" style={{fill:'#fef2f2',fontSize:10}} /></Bar></BarChart></ResponsiveContainer>);
     }
 
-    let chartContentCursosMelhor = (
-        <p className="text-sm text-slate-500 dark:text-gray-400">
-            Não há dados suficientes para este ranking...
-        </p>
-    );
+    let chartContentCursosMelhor = <p className="text-sm text-slate-500 dark:text-gray-400">Não há dados suficientes...</p>;
     if (topCursosMelhorPerformance.length > 0) {
-        chartContentCursosMelhor = (
-            <>
-                <ResponsiveContainer width="100%" height={300}>
-                    <BarChart data={topCursosMelhorPerformance} margin={{ top: 20, right: 30, left: 20, bottom: 70 }}>
-                        <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.2} />
-                        <XAxis type="category" dataKey="nomeCurso" tick={{ fontSize: 9, fill: '#FFFFFF' }} interval={0} angle={-30} textAnchor="end" height={60} />
-                        <YAxis type="number" domain={[0, 'auto']} width={0} tick={false} axisLine={false} tickLine={false} />
-                        <Tooltip 
-                            formatter={(value: number, name: string, props: any) => {
-                                if (name === 'totalEntreguesNoPrazoCurso') {
-                                    return [
-                                        `${value} Ent. no Prazo (${props.payload.porcentagemEntreguesNoPrazoCurso.toFixed(1)}%)`,
-                                        `Total Atividades: ${props.payload.totalAtividadesCurso}`
-                                    ];
-                                }
-                                return [value, name];
-                            }}
-                            labelFormatter={(label: string) => <span style={{ fontWeight: '600', color: '#334155' }}>{label}</span>} 
-                            contentStyle={{ backgroundColor: 'rgba(255, 255, 255, 0.95)', color: '#334155', border: '1px solid #e2e8f0', borderRadius: '0.5rem', boxShadow: '0 4px 6px rgba(0,0,0,0.1)' }}
-                        />
-                        <Bar dataKey="totalEntreguesNoPrazoCurso" fill={COR_GRAFICO_POSITIVO} >
-                            <LabelList dataKey="totalEntreguesNoPrazoCurso" position="top" style={{ fill: '#FFFFFF', fontSize: 10 }} />
-                        </Bar>
-                    </BarChart>
-                </ResponsiveContainer>
-            </>
-        );
+        chartContentCursosMelhor = (<ResponsiveContainer width="100%" height={350}><BarChart data={topCursosMelhorPerformance} margin={{ top: 20, right: 30, left: 20, bottom: 70 }}><CartesianGrid strokeDasharray="3 3" strokeOpacity={0.2} /><XAxis type="category" dataKey="nomeCurso" tick={{ fontSize: 9, fill: '#FFFFFF' }} interval={0} angle={-30} textAnchor="end" height={60} /><YAxis type="number" domain={[0, 'auto']} width={0} tick={false} axisLine={false} tickLine={false} /><Tooltip formatter={(v, n, p: any) => n === 'totalEntreguesNoPrazoCurso' ? [`${v} Ent. Prazo (${p.payload.porcentagemEntreguesNoPrazoCurso.toFixed(1)}%)`, `Total: ${p.payload.totalAtividadesCurso}`] : [v,n]} labelFormatter={(l) => <span style={{fontWeight:'600',color:'#334155'}}>{l}</span>} contentStyle={{backgroundColor:'rgba(255,255,255,0.95)',color:'#334155',border:'1px solid #e2e8f0',borderRadius:'0.5rem',boxShadow:'0 4px 6px rgba(0,0,0,0.1)'}} /><Bar dataKey="totalEntreguesNoPrazoCurso" fill={COR_GRAFICO_POSITIVO}><LabelList dataKey="totalEntreguesNoPrazoCurso" position="top" style={{fill:'#FFFFFF',fontSize:10}} /></Bar></BarChart></ResponsiveContainer>);
     }
     
-    let chartContentCursosAtencao = (
-        <p className="text-sm text-slate-500 dark:text-gray-400">
-            Não há dados suficientes para este ranking...
-        </p>
-    );
+    let chartContentCursosAtencao = <p className="text-sm text-slate-500 dark:text-gray-400">Não há dados suficientes...</p>;
     if (topCursosPontosAtencao.length > 0) {
-        chartContentCursosAtencao = (
-            <>
-                <ResponsiveContainer width="100%" height={300}>
-                    <BarChart data={topCursosPontosAtencao} margin={{ top: 20, right: 30, left: 20, bottom: 70 }}>
-                        <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.2} />
-                        <XAxis type="category" dataKey="nomeCurso" tick={{ fontSize: 9, fill: '#FFFFFF' }} interval={0} angle={-30} textAnchor="end" height={60} />
-                                    <YAxis type="number" domain={[0, 'auto']} width={0} tick={false} axisLine={false} tickLine={false} /> {/* Domain auto, sem formatter de % */}
-                                    <Tooltip 
-                                        formatter={(value: number, name: string, props: any) => {
-                                            if (name === 'totalAtrasadasCurso') {
-                                                return [
-                                                    `${value} Atrasadas (${props.payload.porcentagemAtrasoCurso.toFixed(1)}%)`,
-                                                    `Total Atividades: ${props.payload.totalAtividadesCurso}`
-                                                ];
-                                            }
-                                            return [value, name];
-                                        }}
-                                        labelFormatter={(label: string) => <span style={{ fontWeight: '600', color: '#334155' }}>{label}</span>} 
-                                        contentStyle={{ backgroundColor: 'rgba(255, 255, 255, 0.95)', color: '#334155', border: '1px solid #e2e8f0', borderRadius: '0.5rem', boxShadow: '0 4px 6px rgba(0,0,0,0.1)' }}
-                                    />
-                                    <Bar dataKey="totalAtrasadasCurso" fill={COR_GRAFICO_NEGATIVO} >
-                                        <LabelList dataKey="totalAtrasadasCurso" position="top" style={{ fill: '#fef2f2', fontSize: 10 }} />
-                        </Bar>
-                    </BarChart>
-                </ResponsiveContainer>
-            </>
-        );
+        chartContentCursosAtencao = (<ResponsiveContainer width="100%" height={350}><BarChart data={topCursosPontosAtencao} margin={{ top: 20, right: 30, left: 20, bottom: 70 }}><CartesianGrid strokeDasharray="3 3" strokeOpacity={0.2} /><XAxis type="category" dataKey="nomeCurso" tick={{ fontSize: 9, fill: '#FFFFFF' }} interval={0} angle={-30} textAnchor="end" height={60} /><YAxis type="number" domain={[0, 'auto']} width={0} tick={false} axisLine={false} tickLine={false} /><Tooltip formatter={(v, n, p: any) => n === 'totalAtrasadasCurso' ? [`${v} Atrasadas (${p.payload.porcentagemAtrasoCurso.toFixed(1)}%)`, `Total: ${p.payload.totalAtividadesCurso}`] : [v,n]} labelFormatter={(l) => <span style={{fontWeight:'600',color:'#334155'}}>{l}</span>} contentStyle={{backgroundColor:'rgba(255,255,255,0.95)',color:'#334155',border:'1px solid #e2e8f0',borderRadius:'0.5rem',boxShadow:'0 4px 6px rgba(0,0,0,0.1)'}} /><Bar dataKey="totalAtrasadasCurso" fill={COR_GRAFICO_NEGATIVO}><LabelList dataKey="totalAtrasadasCurso" position="top" style={{fill:'#fef2f2',fontSize:10}} /></Bar></BarChart></ResponsiveContainer>);
     }
 
     return (
@@ -384,14 +214,14 @@ export const RelatorioPeriodo: React.FC = () => {
 
             {/* KPIs Gerais do Período */}
             {kpisPeriodo && (
-            <div className="mt-6 p-4 bg-slate-100 dark:bg-slate-900 rounded-lg shadow"> {/* Cor de fundo do container alterada */}
+            <div className="mt-6 p-4 bg-slate-100 dark:bg-slate-900 rounded-lg shadow">
                 <h3 className="text-xl font-semibold text-slate-800 dark:text-white mb-4">Resumo Geral do Período</h3>
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                     <KpiCard titulo="Total de Atividades" valor={kpisPeriodo.totalAtividadesConsideradas} />
                     <KpiCard titulo="% Entregues no Prazo" valor={kpisPeriodo.porcentagemEntreguesNoPrazo.toFixed(1)} unidade="%" corValor={kpisPeriodo.porcentagemEntreguesNoPrazo >= 70 ? 'text-green-500 dark:text-green-400' : kpisPeriodo.porcentagemEntreguesNoPrazo >= 50 ? 'text-amber-500 dark:text-amber-400' : 'text-red-500 dark:text-red-400'} descricao={`${kpisPeriodo.totalEntreguesNoPrazo} atividades`} />
                     <KpiCard titulo="% Entregues com Atraso" valor={kpisPeriodo.porcentagemComAtraso.toFixed(1)} unidade="%" corValor={kpisPeriodo.porcentagemComAtraso > 20 ? 'text-red-500 dark:text-red-400' : kpisPeriodo.porcentagemComAtraso > 10 ? 'text-amber-500 dark:text-amber-400' : 'text-slate-700 dark:text-white'} descricao={`${kpisPeriodo.totalEntreguesComAtraso} atividades`} />
                     <KpiCard titulo="% Pendentes" valor={kpisPeriodo.porcentagemPendentes.toFixed(1)} unidade="%" corValor={kpisPeriodo.porcentagemPendentes > 15 ? 'text-red-500 dark:text-red-400' : kpisPeriodo.porcentagemPendentes > 5 ? 'text-amber-500 dark:text-amber-400' : 'text-slate-700 dark:text-white'} descricao={`${kpisPeriodo.totalPendentes} atividades`} />
-                    <KpiCard titulo="Média Dias de Atraso" valor={kpisPeriodo.mediaDiasAtraso.toFixed(1)} unidade="dias" descricao="Para atividades entregues com atraso" corValor={kpisPeriodo.mediaDiasAtraso > 7 ? 'text-red-500 dark:text-red-400' : kpisPeriodo.mediaDiasAtraso > 3 ? 'text-amber-500 dark:text-amber-400' : 'text-slate-700 dark:text-white'} />
+                    <KpiCard titulo="Média Dias de Atraso" valor={Math.round(kpisPeriodo.mediaDiasAtraso)} unidade="dias" descricao="Para atividades entregues com atraso" corValor={kpisPeriodo.mediaDiasAtraso > 7 ? 'text-red-500 dark:text-red-400' : kpisPeriodo.mediaDiasAtraso > 3 ? 'text-amber-500 dark:text-amber-400' : 'text-slate-700 dark:text-white'} />
                 </div>
             </div>
             )}
@@ -405,7 +235,7 @@ export const RelatorioPeriodo: React.FC = () => {
                     </div>
 
                     <div className="p-4 bg-white dark:bg-slate-800 rounded-lg shadow min-h-[300px]">
-                        <h4 className="text-lg font-semibold text-slate-700 dark:text-white mb-3">Top 5 Docentes (Maior % de Atraso)</h4>
+                        <h4 className="text-lg font-semibold text-slate-700 dark:text-white mb-3">Top 5 Docentes (Mais Atividades Atrasadas)</h4>
                         {chartContentDocentesAtencao}
                     </div>
                 </div>
@@ -420,7 +250,7 @@ export const RelatorioPeriodo: React.FC = () => {
                     </div>
 
                     <div className="p-4 bg-white dark:bg-slate-800 rounded-lg shadow min-h-[300px]">
-                        <h4 className="text-lg font-semibold text-slate-700 dark:text-white mb-3">Top 5 Cursos (Maior % de Atraso)</h4>
+                        <h4 className="text-lg font-semibold text-slate-700 dark:text-white mb-3">Top 5 Cursos (Mais Atividades Atrasadas)</h4>
                         {chartContentCursosAtencao}
                     </div>
                 </div>
