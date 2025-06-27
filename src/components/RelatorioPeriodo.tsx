@@ -4,12 +4,12 @@ import { useDataContext } from '../contexts/DataContext';
 import { ProcessedData, DocentePerformance, IKpisPeriodo, CursoPerformance } from '../types'; // Removido DisciplinaPerformance
 import { LoadingScreen } from './LoadingScreen';
 import { KpiCard } from './ui/KpiCard';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LabelList } from 'recharts'; // Removido Legend e Cell se não usados
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LabelList } from 'recharts';
 
 // Definição de cores para os gráficos
 const COR_GRAFICO_POSITIVO = "#22c55e"; // green-500
 const COR_GRAFICO_NEGATIVO = "#ef4444"; // red-500
-const COR_GRAFICO_ATENCAO = "#f59e0b";  // amber-500
+// const COR_GRAFICO_ATENCAO = "#f59e0b";  // amber-500 - Não mais usado para disciplinas
 // const COR_GRAFICO_NEUTRO = "#64748b"; // slate-500 - Não usado ainda
 
 export const RelatorioPeriodo: React.FC = () => {
@@ -24,7 +24,7 @@ export const RelatorioPeriodo: React.FC = () => {
     }, [navigate]);
     
     const [anoSelecionado, setAnoSelecionado] = useState<string>(new Date().getFullYear().toString());
-    const [semestreFiltro, setSemestreFiltro] = useState<string>('0');
+    const [semestreFiltro, setSemestreFiltro] = useState<string>('0'); // "0" para Ambos, "1" para 1º, "2" para 2º
     const [modalidadeSelecionada, setModalidadeSelecionada] = useState<string>('Todas');
     const [relatorioGerado, setRelatorioGerado] = useState<ProcessedData[] | null>(null);
     const [topDocentesMelhorPerformance, setTopDocentesMelhorPerformance] = useState<DocentePerformance[]>([]);
@@ -38,9 +38,6 @@ export const RelatorioPeriodo: React.FC = () => {
     const modalidadesUnicas = useMemo(() => {
         return [...new Set(availableData.map(item => item.Modalidade).filter(Boolean).sort())] as string[];
     }, [availableData]);
-
-    // maxPorcentagemDocentesMelhor e maxPorcentagemCursosMelhor foram removidos pois o XAxis.domain 
-    // para os gráficos de melhor performance agora é [0, 'auto'] para quantidades.
 
     const handleGerarRelatorio = () => {
         if (!anoSelecionado) {
@@ -65,95 +62,45 @@ export const RelatorioPeriodo: React.FC = () => {
 
         if (dadosFiltrados.length > 0) {
             const performancesDocentes = calcularPerformanceDocentes(dadosFiltrados);
-            // Ordenar por porcentagemEntreguesNoPrazo DESCENDENTE, depois por totalAtividades DESCENDENTE
-            const melhoresDocentes = [...performancesDocentes].sort((a, b) => {
-                if (b.porcentagemEntreguesNoPrazo !== a.porcentagemEntreguesNoPrazo) {
-                    return b.porcentagemEntreguesNoPrazo - a.porcentagemEntreguesNoPrazo;
-                }
-                return b.totalAtividades - a.totalAtividades;
-            }).slice(0, 5);
+            const melhoresDocentes = [...performancesDocentes].sort((a, b) => (b.porcentagemEntreguesNoPrazo - a.porcentagemEntreguesNoPrazo) || (b.totalAtividades - a.totalAtividades)).slice(0, 5);
             setTopDocentesMelhorPerformance(melhoresDocentes);
-
-            // Ranking de pontos de atenção continua baseado em porcentagemAtraso ASCENDENTE (maior % de atraso é pior)
-            const pontosAtencaoDocentes = [...performancesDocentes].sort((a, b) => {
-                if (b.porcentagemAtraso !== a.porcentagemAtraso) {
-                    return b.porcentagemAtraso - a.porcentagemAtraso;
-                }
-                return b.totalAtividades - a.totalAtividades; // Maior número de atividades como desempate (mais impacto)
-            }).slice(0, 5);
+            const pontosAtencaoDocentes = [...performancesDocentes].sort((a, b) => (b.porcentagemAtraso - a.porcentagemAtraso) || (b.totalAtividades - a.totalAtividades)).slice(0, 5);
             setTopDocentesPontosAtencao(pontosAtencaoDocentes);
 
             const kpis = calcularKpisGerais(dadosFiltrados);
             setKpisPeriodo(kpis);
 
             const performancesCursos = calcularPerformanceCursos(dadosFiltrados);
-            // Ordenar por porcentagemEntreguesNoPrazoCurso DESCENDENTE, depois por totalAtividadesCurso DESCENDENTE
-            const melhoresCursos = [...performancesCursos].sort((a, b) => {
-                if (b.porcentagemEntreguesNoPrazoCurso !== a.porcentagemEntreguesNoPrazoCurso) {
-                    return b.porcentagemEntreguesNoPrazoCurso - a.porcentagemEntreguesNoPrazoCurso;
-                }
-                return b.totalAtividadesCurso - a.totalAtividadesCurso;
-            }).slice(0, 5);
+            const melhoresCursos = [...performancesCursos].sort((a, b) => (b.porcentagemEntreguesNoPrazoCurso - a.porcentagemEntreguesNoPrazoCurso) || (b.totalAtividadesCurso - a.totalAtividadesCurso)).slice(0, 5);
             setTopCursosMelhorPerformance(melhoresCursos);
-
-            // Ranking de pontos de atenção para cursos continua baseado em porcentagemAtrasoCurso ASCENDENTE
-            const pontosAtencaoCursos = [...performancesCursos].sort((a, b) => {
-                if (b.porcentagemAtrasoCurso !== a.porcentagemAtrasoCurso) {
-                    return b.porcentagemAtrasoCurso - a.porcentagemAtrasoCurso;
-                }
-                return b.totalAtividadesCurso - a.totalAtividadesCurso; // Maior número de atividades como desempate (mais impacto)
-            }).slice(0, 5);
+            const pontosAtencaoCursos = [...performancesCursos].sort((a, b) => (b.porcentagemAtrasoCurso - a.porcentagemAtrasoCurso) || (b.totalAtividadesCurso - a.totalAtividadesCurso)).slice(0, 5);
             setTopCursosPontosAtencao(pontosAtencaoCursos);
-
-            // const performanceDisciplinas = calcularPerformanceDisciplinas(dadosFiltrados); // Chamada removida
-            // const problematicasDisciplinas = [...performanceDisciplinas].sort((a, b) => (b.totalProblematicas - a.totalProblematicas) || (b.porcentagemProblematicas - a.porcentagemProblematicas) || (b.totalAtividadesDisciplina - a.totalAtividadesDisciplina)).slice(0, 5); // Lógica dependente removida
-            // setTopDisciplinasProblematicas(problematicasDisciplinas); // Removido
         } else {
             setTopDocentesMelhorPerformance([]);
             setTopDocentesPontosAtencao([]);
             setKpisPeriodo(null);
             setTopCursosMelhorPerformance([]); 
             setTopCursosPontosAtencao([]);
-            // setTopDisciplinasProblematicas([]); // Removido
         }
     };
 
     const calcularPerformanceDocentes = (dados: ProcessedData[]): DocentePerformance[] => {
         if (!dados || dados.length === 0) return [];
-        const performanceMap: Map<string, { 
-            totalAtividades: number; 
-            totalAtrasadas: number;
-            totalEntreguesNoPrazo: number;
-        }> = new Map();
-
+        const performanceMap: Map<string, { totalAtividades: number; totalAtrasadas: number; totalEntreguesNoPrazo: number; }> = new Map();
         dados.forEach(item => {
             if (!item.Docente) return;
-            const stats = performanceMap.get(item.Docente) || { 
-                totalAtividades: 0, 
-                totalAtrasadas: 0,
-                totalEntreguesNoPrazo: 0 
-            };
+            const stats = performanceMap.get(item.Docente) || { totalAtividades: 0, totalAtrasadas: 0, totalEntreguesNoPrazo: 0 };
             stats.totalAtividades++;
-            if (item.isAtrasado) { // Note: isAtrasado pode ser true mesmo se isPendente for true
-                stats.totalAtrasadas++;
-            }
-            if (item.isEntregueNoPrazo) {
-                stats.totalEntreguesNoPrazo++;
-            }
+            if (item.isAtrasado) stats.totalAtrasadas++;
+            if (item.isEntregueNoPrazo) stats.totalEntreguesNoPrazo++;
             performanceMap.set(item.Docente, stats);
         });
-
         const performances: DocentePerformance[] = [];
         performanceMap.forEach((stats, nomeDocente) => {
-            const porcentagemAtraso = stats.totalAtividades > 0 ? (stats.totalAtrasadas / stats.totalAtividades) * 100 : 0;
-            const porcentagemEntreguesNoPrazo = stats.totalAtividades > 0 ? (stats.totalEntreguesNoPrazo / stats.totalAtividades) * 100 : 0;
             performances.push({
-                nomeDocente,
-                totalAtividades: stats.totalAtividades,
-                totalAtrasadas: stats.totalAtrasadas,
-                porcentagemAtraso,
-                totalEntreguesNoPrazo: stats.totalEntreguesNoPrazo,
-                porcentagemEntreguesNoPrazo,
+                nomeDocente, ...stats,
+                porcentagemAtraso: stats.totalAtividades > 0 ? (stats.totalAtrasadas / stats.totalAtividades) * 100 : 0,
+                porcentagemEntreguesNoPrazo: stats.totalAtividades > 0 ? (stats.totalEntreguesNoPrazo / stats.totalAtividades) * 100 : 0,
             });
         });
         return performances;
@@ -162,74 +109,50 @@ export const RelatorioPeriodo: React.FC = () => {
     const calcularKpisGerais = (dados: ProcessedData[]): IKpisPeriodo | null => {
         if (!dados || dados.length === 0) return null;
         const totalAtividadesConsideradas = dados.length;
-        let totalEntreguesNoPrazo = 0, totalEntreguesComAtraso = 0, totalPendentes = 0, somaDiasAtraso = 0, countAtividadesRealmenteAtrasadasParaMedia = 0;
+        let tENP = 0, tECA = 0, tP = 0, sDA = 0, cAATMPM = 0; // Abreviações
         dados.forEach(item => {
-            if (item.isEntregueNoPrazo) totalEntreguesNoPrazo++;
-            if (item.isAtrasado && !item.isPendente) totalEntreguesComAtraso++;
-            if (item.isPendente) totalPendentes++;
+            if (item.isEntregueNoPrazo) tENP++;
+            if (item.isAtrasado && !item.isPendente) tECA++;
+            if (item.isPendente) tP++;
             if (item.isAtrasado && !item.isPendente && item.diasCalculado && item.diasCalculado > 0) {
-                somaDiasAtraso += item.diasCalculado;
-                countAtividadesRealmenteAtrasadasParaMedia++;
+                sDA += item.diasCalculado;
+                cAATMPM++;
             }
         });
         return {
-            totalAtividadesConsideradas, totalEntreguesNoPrazo, totalEntreguesComAtraso, totalPendentes,
-            porcentagemEntreguesNoPrazo: totalAtividadesConsideradas > 0 ? (totalEntreguesNoPrazo / totalAtividadesConsideradas) * 100 : 0,
-            porcentagemComAtraso: totalAtividadesConsideradas > 0 ? (totalEntreguesComAtraso / totalAtividadesConsideradas) * 100 : 0,
-            porcentagemPendentes: totalAtividadesConsideradas > 0 ? (totalPendentes / totalAtividadesConsideradas) * 100 : 0,
-            mediaDiasAtraso: countAtividadesRealmenteAtrasadasParaMedia > 0 ? somaDiasAtraso / countAtividadesRealmenteAtrasadasParaMedia : 0,
+            totalAtividadesConsideradas, totalEntreguesNoPrazo: tENP, totalEntreguesComAtraso: tECA, totalPendentes: tP,
+            porcentagemEntreguesNoPrazo: totalAtividadesConsideradas > 0 ? (tENP / totalAtividadesConsideradas) * 100 : 0,
+            porcentagemComAtraso: totalAtividadesConsideradas > 0 ? (tECA / totalAtividadesConsideradas) * 100 : 0,
+            porcentagemPendentes: totalAtividadesConsideradas > 0 ? (tP / totalAtividadesConsideradas) * 100 : 0,
+            mediaDiasAtraso: cAATMPM > 0 ? sDA / cAATMPM : 0,
         };
     };
 
     const calcularPerformanceCursos = (dados: ProcessedData[]): CursoPerformance[] => {
         if (!dados || dados.length === 0) return [];
-        const performanceMap: Map<string, { 
-            totalAtividadesCurso: number; 
-            totalAtrasadasCurso: number;
-            totalEntreguesNoPrazoCurso: number;
-        }> = new Map();
-
+        const performanceMap: Map<string, { totalAtividadesCurso: number; totalAtrasadasCurso: number; totalEntreguesNoPrazoCurso: number;}> = new Map();
         dados.forEach(item => {
             if (!item.Curso) return;
-            const stats = performanceMap.get(item.Curso) || { 
-                totalAtividadesCurso: 0, 
-                totalAtrasadasCurso: 0,
-                totalEntreguesNoPrazoCurso: 0 
-            };
+            const stats = performanceMap.get(item.Curso) || { totalAtividadesCurso: 0, totalAtrasadasCurso: 0, totalEntreguesNoPrazoCurso: 0 };
             stats.totalAtividadesCurso++;
-            if (item.isAtrasado) {
-                stats.totalAtrasadasCurso++;
-            }
-            if (item.isEntregueNoPrazo) {
-                stats.totalEntreguesNoPrazoCurso++;
-            }
+            if (item.isAtrasado) stats.totalAtrasadasCurso++;
+            if (item.isEntregueNoPrazo) stats.totalEntreguesNoPrazoCurso++;
             performanceMap.set(item.Curso, stats);
         });
-
         const performances: CursoPerformance[] = [];
         performanceMap.forEach((stats, nomeCurso) => {
-            const porcentagemAtrasoCurso = stats.totalAtividadesCurso > 0 ? (stats.totalAtrasadasCurso / stats.totalAtividadesCurso) * 100 : 0;
-            const porcentagemEntreguesNoPrazoCurso = stats.totalAtividadesCurso > 0 ? (stats.totalEntreguesNoPrazoCurso / stats.totalAtividadesCurso) * 100 : 0;
             performances.push({
-                nomeCurso,
-                totalAtividadesCurso: stats.totalAtividadesCurso,
-                totalAtrasadasCurso: stats.totalAtrasadasCurso,
-                porcentagemAtrasoCurso,
-                totalEntreguesNoPrazoCurso: stats.totalEntreguesNoPrazoCurso,
-                porcentagemEntreguesNoPrazoCurso,
+                nomeCurso, ...stats,
+                porcentagemAtrasoCurso: stats.totalAtividadesCurso > 0 ? (stats.totalAtrasadasCurso / stats.totalAtividadesCurso) * 100 : 0,
+                porcentagemEntreguesNoPrazoCurso: stats.totalAtividadesCurso > 0 ? (stats.totalEntreguesNoPrazoCurso / stats.totalAtividadesCurso) * 100 : 0,
             });
         });
         return performances;
     };
 
-    // Função calcularPerformanceDisciplinas removida
-    // if (isLoading) return <LoadingScreen message="Carregando dados para o relatório..." />; // Esta linha está duplicada ou mal colocada, deve estar antes do return principal do componente.
-    // if (dataError) return <div className="p-4 text-red-700 dark:text-red-400 bg-red-100 dark:bg-red-900/30 rounded-md">Erro ao carregar dados: {dataError}</div>; // Idem.
-
     if (isLoading) return <LoadingScreen message="Carregando dados para o relatório..." />;
     if (dataError) return <div className="p-4 text-red-700 dark:text-red-400 bg-red-100 dark:bg-red-900/30 rounded-md">Erro ao carregar dados: {dataError}</div>;
 
-    // JSX do componente
     return (
         <div className="p-6 lg:p-8 space-y-6 bg-gray-100 dark:bg-[#0f172a] text-slate-800 dark:text-gray-200 min-h-screen">
             <header className="space-y-2 mb-6">
@@ -295,10 +218,10 @@ export const RelatorioPeriodo: React.FC = () => {
             {relatorioGerado && relatorioGerado.length > 0 && (
                 <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="p-4 bg-white dark:bg-slate-800 rounded-lg shadow min-h-[300px]">
-                        <h4 className="text-lg font-semibold text-slate-700 dark:text-white mb-3">Top 5 Docentes (Mais Entregas no Prazo)</h4>
+                        <h4 className="text-lg font-semibold text-slate-700 dark:text-white mb-3">Top 5 Docentes (Mais Atividades Entregues no Prazo)</h4>
                         {topDocentesMelhorPerformance.length > 0 ? (
-                            <ResponsiveContainer width="100%" height={300}> {/* Aumentar altura para acomodar rótulos XAxis */}
-                                <BarChart data={topDocentesMelhorPerformance} margin={{ top: 5, right: 5, left: 5, bottom: 100 }}> {/* Aumentar margem inferior */}
+                            <ResponsiveContainer width="100%" height={300}>
+                                <BarChart data={topDocentesMelhorPerformance} margin={{ top: 5, right: 5, left: 5, bottom: 100 }}>
                                     <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.2} />
                                     <XAxis type="category" dataKey="nomeDocente" tick={{ fontSize: 10, fill: '#FFFFFF' }} interval={0} angle={-35} textAnchor="end" height={80} />
                                     <YAxis type="number" domain={[0, 'auto']} tick={{ fill: '#FFFFFF', fontSize: 10 }} /> 
@@ -315,7 +238,7 @@ export const RelatorioPeriodo: React.FC = () => {
                                         labelFormatter={(label: string) => <span style={{ fontWeight: '600', color: '#334155' }}>{label}</span>} 
                                         contentStyle={{ backgroundColor: 'rgba(255, 255, 255, 0.95)', color: '#334155', border: '1px solid #e2e8f0', borderRadius: '0.5rem', boxShadow: '0 4px 6px rgba(0,0,0,0.1)' }}
                                     />
-                                    <Bar dataKey="totalEntreguesNoPrazo" fill={COR_GRAFICO_POSITIVO} /* barSize={30} */ > {/* barSize pode ser ajustado */}
+                                    <Bar dataKey="totalEntreguesNoPrazo" fill={COR_GRAFICO_POSITIVO} >
                                         <LabelList dataKey="totalEntreguesNoPrazo" position="top" style={{ fill: '#FFFFFF', fontSize: 10 }} />
                                     </Bar>
                                 </BarChart>
@@ -326,13 +249,13 @@ export const RelatorioPeriodo: React.FC = () => {
                     <div className="p-4 bg-white dark:bg-slate-800 rounded-lg shadow min-h-[300px]">
                         <h4 className="text-lg font-semibold text-slate-700 dark:text-white mb-3">Top 5 Docentes (Maior % de Atraso)</h4>
                         {topDocentesPontosAtencao.length > 0 ? (
-                             <ResponsiveContainer width="100%" height={300}> {/* Aumentar altura */}
-                                <BarChart data={topDocentesPontosAtencao} margin={{ top: 5, right: 5, left: 5, bottom: 100 }}> {/* Aumentar margem inferior */}
+                             <ResponsiveContainer width="100%" height={300}>
+                                <BarChart data={topDocentesPontosAtencao} margin={{ top: 5, right: 5, left: 5, bottom: 100 }}>
                                     <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.2} />
                                     <XAxis type="category" dataKey="nomeDocente" tick={{ fontSize: 10, fill: '#FFFFFF' }} interval={0} angle={-35} textAnchor="end" height={80} />
                                     <YAxis type="number" domain={[0, 100]} tickFormatter={(value) => `${value.toFixed(0)}%`} tick={{ fill: '#FFFFFF', fontSize: 10 }} />
                                     <Tooltip formatter={(value: number, name: string, props: any) => [`${value.toFixed(1)}% de Atraso`, `Total Atividades: ${props.payload.totalAtividades}`, `Atrasadas: ${props.payload.totalAtrasadas}`]} labelFormatter={(label: string) => <span style={{ fontWeight: '600', color: '#334155' }}>{label}</span>} contentStyle={{ backgroundColor: 'rgba(255, 255, 255, 0.95)', color: '#334155', border: '1px solid #e2e8f0', borderRadius: '0.5rem', boxShadow: '0 4px 6px rgba(0,0,0,0.1)' }}/>
-                                    <Bar dataKey="porcentagemAtraso" fill={COR_GRAFICO_NEGATIVO} /* barSize={30} */ >
+                                    <Bar dataKey="porcentagemAtraso" fill={COR_GRAFICO_NEGATIVO} >
                                         <LabelList dataKey="porcentagemAtraso" position="top" formatter={(value: number) => `${value.toFixed(1)}%`} style={{ fill: '#fef2f2', fontSize: 10 }} />
                                     </Bar>
                                 </BarChart>
@@ -346,10 +269,10 @@ export const RelatorioPeriodo: React.FC = () => {
             {relatorioGerado && relatorioGerado.length > 0 && (
                 <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="p-4 bg-white dark:bg-slate-800 rounded-lg shadow min-h-[300px]">
-                        <h4 className="text-lg font-semibold text-slate-700 dark:text-white mb-3">Top 5 Cursos (Mais Entregas no Prazo)</h4>
+                        <h4 className="text-lg font-semibold text-slate-700 dark:text-white mb-3">Top 5 Cursos (Mais Atividades Entregues no Prazo)</h4>
                         {topCursosMelhorPerformance.length > 0 ? (
-                            <ResponsiveContainer width="100%" height={300}> {/* Aumentar altura */}
-                                <BarChart data={topCursosMelhorPerformance} margin={{ top: 5, right: 5, left: 5, bottom: 100 }}> {/* Aumentar margem inferior */}
+                            <ResponsiveContainer width="100%" height={300}>
+                                <BarChart data={topCursosMelhorPerformance} margin={{ top: 5, right: 5, left: 5, bottom: 100 }}>
                                     <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.2} />
                                     <XAxis type="category" dataKey="nomeCurso" tick={{ fontSize: 10, fill: '#FFFFFF' }} interval={0} angle={-35} textAnchor="end" height={80} />
                                     <YAxis type="number" domain={[0, 'auto']} tick={{ fill: '#FFFFFF', fontSize: 10 }} />
@@ -366,7 +289,7 @@ export const RelatorioPeriodo: React.FC = () => {
                                         labelFormatter={(label: string) => <span style={{ fontWeight: '600', color: '#334155' }}>{label}</span>} 
                                         contentStyle={{ backgroundColor: 'rgba(255, 255, 255, 0.95)', color: '#334155', border: '1px solid #e2e8f0', borderRadius: '0.5rem', boxShadow: '0 4px 6px rgba(0,0,0,0.1)' }}
                                     />
-                                    <Bar dataKey="totalEntreguesNoPrazoCurso" fill={COR_GRAFICO_POSITIVO} /* barSize={30} */ >
+                                    <Bar dataKey="totalEntreguesNoPrazoCurso" fill={COR_GRAFICO_POSITIVO} >
                                         <LabelList dataKey="totalEntreguesNoPrazoCurso" position="top" style={{ fill: '#FFFFFF', fontSize: 10 }} />
                                     </Bar>
                                 </BarChart>
@@ -377,13 +300,13 @@ export const RelatorioPeriodo: React.FC = () => {
                     <div className="p-4 bg-white dark:bg-slate-800 rounded-lg shadow min-h-[300px]">
                         <h4 className="text-lg font-semibold text-slate-700 dark:text-white mb-3">Top 5 Cursos (Maior % de Atraso)</h4>
                         {topCursosPontosAtencao.length > 0 ? (
-                            <ResponsiveContainer width="100%" height={300}> {/* Aumentar altura */}
-                                <BarChart data={topCursosPontosAtencao} margin={{ top: 5, right: 5, left: 5, bottom: 100 }}> {/* Aumentar margem inferior */}
+                            <ResponsiveContainer width="100%" height={300}>
+                                <BarChart data={topCursosPontosAtencao} margin={{ top: 5, right: 5, left: 5, bottom: 100 }}>
                                     <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.2} />
                                     <XAxis type="category" dataKey="nomeCurso" tick={{ fontSize: 10, fill: '#FFFFFF' }} interval={0} angle={-35} textAnchor="end" height={80} />
                                     <YAxis type="number" domain={[0, 100]} tickFormatter={(value) => `${value.toFixed(0)}%`} tick={{ fill: '#FFFFFF', fontSize: 10 }} />
                                     <Tooltip formatter={(value: number, name: string, props: any) => [`${value.toFixed(1)}% de Atraso`, `Total Atividades: ${props.payload.totalAtividadesCurso}`, `Atrasadas: ${props.payload.totalAtrasadasCurso}`]} labelFormatter={(label: string) => <span style={{ fontWeight: '600', color: '#334155' }}>{label}</span>} contentStyle={{ backgroundColor: 'rgba(255, 255, 255, 0.95)', color: '#334155', border: '1px solid #e2e8f0', borderRadius: '0.5rem', boxShadow: '0 4px 6px rgba(0,0,0,0.1)' }}/>
-                                    <Bar dataKey="porcentagemAtrasoCurso" fill={COR_GRAFICO_NEGATIVO} /* barSize={30} */ >
+                                    <Bar dataKey="porcentagemAtrasoCurso" fill={COR_GRAFICO_NEGATIVO} >
                                         <LabelList dataKey="porcentagemAtrasoCurso" position="top" formatter={(value: number) => `${value.toFixed(1)}%`} style={{ fill: '#fef2f2', fontSize: 10 }} />
                                     </Bar>
                                 </BarChart>
