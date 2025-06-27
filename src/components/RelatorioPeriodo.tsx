@@ -153,6 +153,122 @@ export const RelatorioPeriodo: React.FC = () => {
     if (isLoading) return <LoadingScreen message="Carregando dados para o relatório..." />;
     if (dataError) return <div className="p-4 text-red-700 dark:text-red-400 bg-red-100 dark:bg-red-900/30 rounded-md">Erro ao carregar dados: {dataError}</div>;
 
+    let chartContentDocentesMelhor = (
+        <p className="text-sm text-slate-500 dark:text-gray-400">
+            Não há dados suficientes para este ranking...
+        </p>
+    );
+    if (topDocentesMelhorPerformance.length > 0) {
+        chartContentDocentesMelhor = (
+            <>
+                <ResponsiveContainer width="100%" height={350}>
+                    <BarChart data={topDocentesMelhorPerformance} margin={{ top: 20, right: 30, left: 20, bottom: 70 }}>
+                        <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.2} />
+                        <XAxis type="category" dataKey="nomeDocente" tick={{ fontSize: 9, fill: '#FFFFFF' }} interval={0} angle={-30} textAnchor="end" height={60} />
+                        <YAxis type="number" domain={[0, 'auto']} width={0} tick={false} axisLine={false} tickLine={false} />
+                        <Tooltip 
+                            formatter={(value: number, name: string, props: any) => {
+                                if (name === 'totalEntreguesNoPrazo') {
+                                    return [
+                                        `${value} Ent. no Prazo (${props.payload.porcentagemEntreguesNoPrazo.toFixed(1)}%)`,
+                                        `Total Atividades: ${props.payload.totalAtividades}`
+                                    ];
+                                }
+                                return [value, name];
+                            }}
+                            labelFormatter={(label: string) => <span style={{ fontWeight: '600', color: '#334155' }}>{label}</span>} 
+                            contentStyle={{ backgroundColor: 'rgba(255, 255, 255, 0.95)', color: '#334155', border: '1px solid #e2e8f0', borderRadius: '0.5rem', boxShadow: '0 4px 6px rgba(0,0,0,0.1)' }}
+                        />
+                        <Bar dataKey="totalEntreguesNoPrazo" fill={COR_GRAFICO_POSITIVO} >
+                            <LabelList dataKey="totalEntreguesNoPrazo" position="top" style={{ fill: '#FFFFFF', fontSize: 10 }} />
+                        </Bar>
+                    </BarChart>
+                </ResponsiveContainer>
+            </>
+        );
+    }
+
+    let chartContentDocentesAtencao = (
+        <p className="text-sm text-slate-500 dark:text-gray-400">
+            Não há dados suficientes para este ranking...
+        </p>
+    );
+    if (topDocentesPontosAtencao.length > 0) {
+        chartContentDocentesAtencao = (
+            <>
+                <ResponsiveContainer width="100%" height={350}>
+                    <BarChart data={topDocentesPontosAtencao} margin={{ top: 20, right: 30, left: 20, bottom: 70 }}>
+                        <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.2} />
+                        <XAxis type="category" dataKey="nomeDocente" tick={{ fontSize: 9, fill: '#FFFFFF' }} interval={0} angle={-30} textAnchor="end" height={60} />
+                        <YAxis type="number" domain={[0, 100]} tickFormatter={(value) => `${value.toFixed(0)}%`} tick={{ fill: '#FFFFFF', fontSize: 9 }} width={0} tickLine={false} axisLine={false} />
+                        <Tooltip formatter={(value: number, name: string, props: any) => [`${value.toFixed(1)}% de Atraso`, `Total Atividades: ${props.payload.totalAtividades}`, `Atrasadas: ${props.payload.totalAtrasadas}`]} labelFormatter={(label: string) => <span style={{ fontWeight: '600', color: '#334155' }}>{label}</span>} contentStyle={{ backgroundColor: 'rgba(255, 255, 255, 0.95)', color: '#334155', border: '1px solid #e2e8f0', borderRadius: '0.5rem', boxShadow: '0 4px 6px rgba(0,0,0,0.1)' }}/>
+                        <Bar dataKey="porcentagemAtraso" fill={COR_GRAFICO_NEGATIVO} >
+                            <LabelList dataKey="porcentagemAtraso" position="top" formatter={(value: number) => `${value.toFixed(1)}%`} style={{ fill: '#fef2f2', fontSize: 10 }} />
+                        </Bar>
+                    </BarChart>
+                </ResponsiveContainer>
+            </>
+        );
+    }
+
+    let chartContentCursosMelhor = (
+        <p className="text-sm text-slate-500 dark:text-gray-400">
+            Não há dados suficientes para este ranking...
+        </p>
+    );
+    if (topCursosMelhorPerformance.length > 0) {
+        chartContentCursosMelhor = (
+            <>
+                <ResponsiveContainer width="100%" height={300}>
+                    <BarChart data={topCursosMelhorPerformance} margin={{ top: 20, right: 30, left: 20, bottom: 70 }}>
+                        <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.2} />
+                        <XAxis type="category" dataKey="nomeCurso" tick={{ fontSize: 9, fill: '#FFFFFF' }} interval={0} angle={-30} textAnchor="end" height={60} />
+                        <YAxis type="number" domain={[0, 'auto']} width={0} tick={false} axisLine={false} tickLine={false} />
+                        <Tooltip 
+                            formatter={(value: number, name: string, props: any) => {
+                                if (name === 'totalEntreguesNoPrazoCurso') {
+                                    return [
+                                        `${value} Ent. no Prazo (${props.payload.porcentagemEntreguesNoPrazoCurso.toFixed(1)}%)`,
+                                        `Total Atividades: ${props.payload.totalAtividadesCurso}`
+                                    ];
+                                }
+                                return [value, name];
+                            }}
+                            labelFormatter={(label: string) => <span style={{ fontWeight: '600', color: '#334155' }}>{label}</span>} 
+                            contentStyle={{ backgroundColor: 'rgba(255, 255, 255, 0.95)', color: '#334155', border: '1px solid #e2e8f0', borderRadius: '0.5rem', boxShadow: '0 4px 6px rgba(0,0,0,0.1)' }}
+                        />
+                        <Bar dataKey="totalEntreguesNoPrazoCurso" fill={COR_GRAFICO_POSITIVO} >
+                            <LabelList dataKey="totalEntreguesNoPrazoCurso" position="top" style={{ fill: '#FFFFFF', fontSize: 10 }} />
+                        </Bar>
+                    </BarChart>
+                </ResponsiveContainer>
+            </>
+        );
+    }
+    
+    let chartContentCursosAtencao = (
+        <p className="text-sm text-slate-500 dark:text-gray-400">
+            Não há dados suficientes para este ranking...
+        </p>
+    );
+    if (topCursosPontosAtencao.length > 0) {
+        chartContentCursosAtencao = (
+            <>
+                <ResponsiveContainer width="100%" height={300}>
+                    <BarChart data={topCursosPontosAtencao} margin={{ top: 20, right: 30, left: 20, bottom: 70 }}>
+                        <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.2} />
+                        <XAxis type="category" dataKey="nomeCurso" tick={{ fontSize: 9, fill: '#FFFFFF' }} interval={0} angle={-30} textAnchor="end" height={60} />
+                        <YAxis type="number" domain={[0, 100]} tickFormatter={(value) => `${value.toFixed(0)}%`} tick={{ fill: '#FFFFFF', fontSize: 9 }} width={0} tickLine={false} axisLine={false} />
+                        <Tooltip formatter={(value: number, name: string, props: any) => [`${value.toFixed(1)}% de Atraso`, `Total Atividades: ${props.payload.totalAtividadesCurso}`, `Atrasadas: ${props.payload.totalAtrasadasCurso}`]} labelFormatter={(label: string) => <span style={{ fontWeight: '600', color: '#334155' }}>{label}</span>} contentStyle={{ backgroundColor: 'rgba(255, 255, 255, 0.95)', color: '#334155', border: '1px solid #e2e8f0', borderRadius: '0.5rem', boxShadow: '0 4px 6px rgba(0,0,0,0.1)' }}/>
+                        <Bar dataKey="porcentagemAtrasoCurso" fill={COR_GRAFICO_NEGATIVO} >
+                            <LabelList dataKey="porcentagemAtrasoCurso" position="top" formatter={(value: number) => `${value.toFixed(1)}%`} style={{ fill: '#fef2f2', fontSize: 10 }} />
+                        </Bar>
+                    </BarChart>
+                </ResponsiveContainer>
+            </>
+        );
+    }
+
     return (
         <div className="p-6 lg:p-8 space-y-6 bg-gray-100 dark:bg-[#0f172a] text-slate-800 dark:text-gray-200 min-h-screen">
             <header className="space-y-2 mb-6">
@@ -219,48 +335,12 @@ export const RelatorioPeriodo: React.FC = () => {
                 <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="p-4 bg-white dark:bg-slate-800 rounded-lg shadow min-h-[300px]">
                         <h4 className="text-lg font-semibold text-slate-700 dark:text-white mb-3">Top 5 Docentes (Mais Atividades Entregues no Prazo)</h4>
-                        {topDocentesMelhorPerformance.length > 0 ? (
-                            <ResponsiveContainer width="100%" height={300}>
-                                <BarChart data={topDocentesMelhorPerformance} margin={{ top: 5, right: 5, left: 5, bottom: 100 }}>
-                                    <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.2} />
-                                    <XAxis type="category" dataKey="nomeDocente" tick={{ fontSize: 10, fill: '#FFFFFF' }} interval={0} angle={-35} textAnchor="end" height={80} />
-                                    <YAxis type="number" domain={[0, 'auto']} tick={{ fill: '#FFFFFF', fontSize: 10 }} /> 
-                                    <Tooltip 
-                                        formatter={(value: number, name: string, props: any) => {
-                                            if (name === 'totalEntreguesNoPrazo') {
-                                                return [
-                                                    `${value} Ent. no Prazo (${props.payload.porcentagemEntreguesNoPrazo.toFixed(1)}%)`,
-                                                    `Total Atividades: ${props.payload.totalAtividades}`
-                                                ];
-                                            }
-                                            return [value, name];
-                                        }}
-                                        labelFormatter={(label: string) => <span style={{ fontWeight: '600', color: '#334155' }}>{label}</span>} 
-                                        contentStyle={{ backgroundColor: 'rgba(255, 255, 255, 0.95)', color: '#334155', border: '1px solid #e2e8f0', borderRadius: '0.5rem', boxShadow: '0 4px 6px rgba(0,0,0,0.1)' }}
-                                    />
-                                    <Bar dataKey="totalEntreguesNoPrazo" fill={COR_GRAFICO_POSITIVO} >
-                                        <LabelList dataKey="totalEntreguesNoPrazo" position="top" style={{ fill: '#FFFFFF', fontSize: 10 }} />
-                                    </Bar>
-                                </BarChart>
-                            </ResponsiveContainer>
-                        ) : (<p className="text-sm text-slate-500 dark:text-gray-400">Não há dados suficientes para este ranking...</p>)}
+                        {chartContentDocentesMelhor}
                     </div>
 
                     <div className="p-4 bg-white dark:bg-slate-800 rounded-lg shadow min-h-[300px]">
                         <h4 className="text-lg font-semibold text-slate-700 dark:text-white mb-3">Top 5 Docentes (Maior % de Atraso)</h4>
-                        {topDocentesPontosAtencao.length > 0 ? (
-                             <ResponsiveContainer width="100%" height={300}>
-                                <BarChart data={topDocentesPontosAtencao} margin={{ top: 5, right: 5, left: 5, bottom: 100 }}>
-                                    <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.2} />
-                                    <XAxis type="category" dataKey="nomeDocente" tick={{ fontSize: 10, fill: '#FFFFFF' }} interval={0} angle={-35} textAnchor="end" height={80} />
-                                    <YAxis type="number" domain={[0, 100]} tickFormatter={(value) => `${value.toFixed(0)}%`} tick={{ fill: '#FFFFFF', fontSize: 10 }} />
-                                    <Tooltip formatter={(value: number, name: string, props: any) => [`${value.toFixed(1)}% de Atraso`, `Total Atividades: ${props.payload.totalAtividades}`, `Atrasadas: ${props.payload.totalAtrasadas}`]} labelFormatter={(label: string) => <span style={{ fontWeight: '600', color: '#334155' }}>{label}</span>} contentStyle={{ backgroundColor: 'rgba(255, 255, 255, 0.95)', color: '#334155', border: '1px solid #e2e8f0', borderRadius: '0.5rem', boxShadow: '0 4px 6px rgba(0,0,0,0.1)' }}/>
-                                    <Bar dataKey="porcentagemAtraso" fill={COR_GRAFICO_NEGATIVO} >
-                                        <LabelList dataKey="porcentagemAtraso" position="top" formatter={(value: number) => `${value.toFixed(1)}%`} style={{ fill: '#fef2f2', fontSize: 10 }} />
-                                    </Bar>
-                                </BarChart>
-                            </ResponsiveContainer>
-                        ) : (<p className="text-sm text-slate-500 dark:text-gray-400">Não há dados suficientes para este ranking...</p>)}
+                        {chartContentDocentesAtencao}
                     </div>
                 </div>
             )}
@@ -270,48 +350,12 @@ export const RelatorioPeriodo: React.FC = () => {
                 <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="p-4 bg-white dark:bg-slate-800 rounded-lg shadow min-h-[300px]">
                         <h4 className="text-lg font-semibold text-slate-700 dark:text-white mb-3">Top 5 Cursos (Mais Atividades Entregues no Prazo)</h4>
-                        {topCursosMelhorPerformance.length > 0 ? (
-                            <ResponsiveContainer width="100%" height={300}>
-                                <BarChart data={topCursosMelhorPerformance} margin={{ top: 5, right: 5, left: 5, bottom: 100 }}>
-                                    <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.2} />
-                                    <XAxis type="category" dataKey="nomeCurso" tick={{ fontSize: 10, fill: '#FFFFFF' }} interval={0} angle={-35} textAnchor="end" height={80} />
-                                    <YAxis type="number" domain={[0, 'auto']} tick={{ fill: '#FFFFFF', fontSize: 10 }} />
-                                    <Tooltip 
-                                        formatter={(value: number, name: string, props: any) => {
-                                            if (name === 'totalEntreguesNoPrazoCurso') {
-                                                return [
-                                                    `${value} Ent. no Prazo (${props.payload.porcentagemEntreguesNoPrazoCurso.toFixed(1)}%)`,
-                                                    `Total Atividades: ${props.payload.totalAtividadesCurso}`
-                                                ];
-                                            }
-                                            return [value, name];
-                                        }}
-                                        labelFormatter={(label: string) => <span style={{ fontWeight: '600', color: '#334155' }}>{label}</span>} 
-                                        contentStyle={{ backgroundColor: 'rgba(255, 255, 255, 0.95)', color: '#334155', border: '1px solid #e2e8f0', borderRadius: '0.5rem', boxShadow: '0 4px 6px rgba(0,0,0,0.1)' }}
-                                    />
-                                    <Bar dataKey="totalEntreguesNoPrazoCurso" fill={COR_GRAFICO_POSITIVO} >
-                                        <LabelList dataKey="totalEntreguesNoPrazoCurso" position="top" style={{ fill: '#FFFFFF', fontSize: 10 }} />
-                                    </Bar>
-                                </BarChart>
-                            </ResponsiveContainer>
-                        ) : (<p className="text-sm text-slate-500 dark:text-gray-400">Não há dados suficientes para este ranking...</p>)}
+                        {chartContentCursosMelhor}
                     </div>
 
                     <div className="p-4 bg-white dark:bg-slate-800 rounded-lg shadow min-h-[300px]">
                         <h4 className="text-lg font-semibold text-slate-700 dark:text-white mb-3">Top 5 Cursos (Maior % de Atraso)</h4>
-                        {topCursosPontosAtencao.length > 0 ? (
-                            <ResponsiveContainer width="100%" height={300}>
-                                <BarChart data={topCursosPontosAtencao} margin={{ top: 5, right: 5, left: 5, bottom: 100 }}>
-                                    <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.2} />
-                                    <XAxis type="category" dataKey="nomeCurso" tick={{ fontSize: 10, fill: '#FFFFFF' }} interval={0} angle={-35} textAnchor="end" height={80} />
-                                    <YAxis type="number" domain={[0, 100]} tickFormatter={(value) => `${value.toFixed(0)}%`} tick={{ fill: '#FFFFFF', fontSize: 10 }} />
-                                    <Tooltip formatter={(value: number, name: string, props: any) => [`${value.toFixed(1)}% de Atraso`, `Total Atividades: ${props.payload.totalAtividadesCurso}`, `Atrasadas: ${props.payload.totalAtrasadasCurso}`]} labelFormatter={(label: string) => <span style={{ fontWeight: '600', color: '#334155' }}>{label}</span>} contentStyle={{ backgroundColor: 'rgba(255, 255, 255, 0.95)', color: '#334155', border: '1px solid #e2e8f0', borderRadius: '0.5rem', boxShadow: '0 4px 6px rgba(0,0,0,0.1)' }}/>
-                                    <Bar dataKey="porcentagemAtrasoCurso" fill={COR_GRAFICO_NEGATIVO} >
-                                        <LabelList dataKey="porcentagemAtrasoCurso" position="top" formatter={(value: number) => `${value.toFixed(1)}%`} style={{ fill: '#fef2f2', fontSize: 10 }} />
-                                    </Bar>
-                                </BarChart>
-                            </ResponsiveContainer>
-                        ) : (<p className="text-sm text-slate-500 dark:text-gray-400">Não há dados suficientes para este ranking...</p>)}
+                        {chartContentCursosAtencao}
                     </div>
                 </div>
             )}
