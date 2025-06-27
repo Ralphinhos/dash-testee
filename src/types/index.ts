@@ -111,11 +111,4 @@ export interface CursoPerformance {
   porcentagemEntreguesNoPrazoCurso: number;
 }
 
-export interface DisciplinaPerformance {
-  nomeDisciplina: string;
-  totalAtividadesDisciplina: number;
-  totalPendentes: number;
-  totalEntreguesComAtraso: number; // Atividades que foram entregues, mas fora do prazo
-  totalProblematicas: number; // Soma de totalPendentes + totalEntreguesComAtraso
-  porcentagemProblematicas: number; // (totalProblematicas / totalAtividadesDisciplina) * 100
-}
+// Interface DisciplinaPerformance removida conforme solicitação.

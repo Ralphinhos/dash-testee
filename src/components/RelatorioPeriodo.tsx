@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useDataContext } from '../contexts/DataContext';
-import { ProcessedData, DocentePerformance, IKpisPeriodo, CursoPerformance, DisciplinaPerformance } from '../types';
+import { ProcessedData, DocentePerformance, IKpisPeriodo, CursoPerformance } from '../types'; // Removido DisciplinaPerformance
 import { LoadingScreen } from './LoadingScreen';
 import { KpiCard } from './ui/KpiCard';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LabelList } from 'recharts'; // Removido Legend e Cell se não usados
@@ -32,7 +32,6 @@ export const RelatorioPeriodo: React.FC = () => {
     const [kpisPeriodo, setKpisPeriodo] = useState<IKpisPeriodo | null>(null);
     const [topCursosMelhorPerformance, setTopCursosMelhorPerformance] = useState<CursoPerformance[]>([]);
     const [topCursosPontosAtencao, setTopCursosPontosAtencao] = useState<CursoPerformance[]>([]);
-    const [topDisciplinasProblematicas, setTopDisciplinasProblematicas] = useState<DisciplinaPerformance[]>([]);
 
     const availableData = allData; 
 
@@ -106,16 +105,16 @@ export const RelatorioPeriodo: React.FC = () => {
             }).slice(0, 5);
             setTopCursosPontosAtencao(pontosAtencaoCursos);
 
-            const performanceDisciplinas = calcularPerformanceDisciplinas(dadosFiltrados);
-            const problematicasDisciplinas = [...performanceDisciplinas].sort((a, b) => (b.totalProblematicas - a.totalProblematicas) || (b.porcentagemProblematicas - a.porcentagemProblematicas) || (b.totalAtividadesDisciplina - a.totalAtividadesDisciplina)).slice(0, 5);
-            setTopDisciplinasProblematicas(problematicasDisciplinas);
+            // const performanceDisciplinas = calcularPerformanceDisciplinas(dadosFiltrados); // Chamada removida
+            // const problematicasDisciplinas = [...performanceDisciplinas].sort((a, b) => (b.totalProblematicas - a.totalProblematicas) || (b.porcentagemProblematicas - a.porcentagemProblematicas) || (b.totalAtividadesDisciplina - a.totalAtividadesDisciplina)).slice(0, 5); // Lógica dependente removida
+            // setTopDisciplinasProblematicas(problematicasDisciplinas); // Removido
         } else {
             setTopDocentesMelhorPerformance([]);
             setTopDocentesPontosAtencao([]);
             setKpisPeriodo(null);
             setTopCursosMelhorPerformance([]); 
             setTopCursosPontosAtencao([]);
-            setTopDisciplinasProblematicas([]); 
+            // setTopDisciplinasProblematicas([]); // Removido
         }
     };
 
@@ -223,27 +222,9 @@ export const RelatorioPeriodo: React.FC = () => {
         return performances;
     };
 
-    const calcularPerformanceDisciplinas = (dados: ProcessedData[]): DisciplinaPerformance[] => {
-        if (!dados || dados.length === 0) return [];
-        const map: Map<string, { totalAtividadesDisciplina: number, totalPendentes: number, totalEntreguesComAtraso: number }> = new Map();
-        dados.forEach(item => {
-            if (!item.Disciplina) return;
-            const stats = map.get(item.Disciplina) || { totalAtividadesDisciplina: 0, totalPendentes: 0, totalEntreguesComAtraso: 0 };
-            stats.totalAtividadesDisciplina++;
-            if (item.isPendente) stats.totalPendentes++;
-            else if (item.isAtrasado) stats.totalEntreguesComAtraso++;
-            map.set(item.Disciplina, stats);
-        });
-        const performances: DisciplinaPerformance[] = [];
-        map.forEach((stats, nomeDisciplina) => {
-            const totalProblematicas = stats.totalPendentes + stats.totalEntreguesComAtraso;
-            performances.push({
-                nomeDisciplina, ...stats, totalProblematicas,
-                porcentagemProblematicas: stats.totalAtividadesDisciplina > 0 ? (totalProblematicas / stats.totalAtividadesDisciplina) * 100 : 0,
-            });
-        });
-        return performances;
-    };
+    // Função calcularPerformanceDisciplinas removida
+    // if (isLoading) return <LoadingScreen message="Carregando dados para o relatório..." />; // Esta linha está duplicada ou mal colocada, deve estar antes do return principal do componente.
+    // if (dataError) return <div className="p-4 text-red-700 dark:text-red-400 bg-red-100 dark:bg-red-900/30 rounded-md">Erro ao carregar dados: {dataError}</div>; // Idem.
 
     if (isLoading) return <LoadingScreen message="Carregando dados para o relatório..." />;
     if (dataError) return <div className="p-4 text-red-700 dark:text-red-400 bg-red-100 dark:bg-red-900/30 rounded-md">Erro ao carregar dados: {dataError}</div>;
@@ -316,12 +297,11 @@ export const RelatorioPeriodo: React.FC = () => {
                     <div className="p-4 bg-white dark:bg-slate-800 rounded-lg shadow min-h-[300px]">
                         <h4 className="text-lg font-semibold text-slate-700 dark:text-white mb-3">Top 5 Docentes (Mais Entregas no Prazo)</h4>
                         {topDocentesMelhorPerformance.length > 0 ? (
-                            <ResponsiveContainer width="100%" height={250}>
-                                <BarChart layout="vertical" data={topDocentesMelhorPerformance} margin={{ top: 5, right: 35, left: 100, bottom: 5 }}>
+                            <ResponsiveContainer width="100%" height={300}> {/* Aumentar altura para acomodar rótulos XAxis */}
+                                <BarChart data={topDocentesMelhorPerformance} margin={{ top: 5, right: 5, left: 5, bottom: 100 }}> {/* Aumentar margem inferior */}
                                     <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.2} />
-                                    {/* XAxis agora para quantidades, não porcentagem */}
-                                    <XAxis type="number" domain={[0, 'auto']} tick={{ fill: '#475569', fontSize: 10 }} /> 
-                                    <YAxis type="category" dataKey="nomeDocente" width={150} tick={{ fontSize: 10, fill: '#475569' }} interval={0} />
+                                    <XAxis type="category" dataKey="nomeDocente" tick={{ fontSize: 10, fill: '#FFFFFF' }} interval={0} angle={-35} textAnchor="end" height={80} />
+                                    <YAxis type="number" domain={[0, 'auto']} tick={{ fill: '#FFFFFF', fontSize: 10 }} /> 
                                     <Tooltip 
                                         formatter={(value: number, name: string, props: any) => {
                                             if (name === 'totalEntreguesNoPrazo') {
@@ -335,8 +315,8 @@ export const RelatorioPeriodo: React.FC = () => {
                                         labelFormatter={(label: string) => <span style={{ fontWeight: '600', color: '#334155' }}>{label}</span>} 
                                         contentStyle={{ backgroundColor: 'rgba(255, 255, 255, 0.95)', color: '#334155', border: '1px solid #e2e8f0', borderRadius: '0.5rem', boxShadow: '0 4px 6px rgba(0,0,0,0.1)' }}
                                     />
-                                    <Bar dataKey="totalEntreguesNoPrazo" fill={COR_GRAFICO_POSITIVO} barSize={20}>
-                                        <LabelList dataKey="totalEntreguesNoPrazo" position="right" style={{ fill: '#166534', fontSize: 10 }} />
+                                    <Bar dataKey="totalEntreguesNoPrazo" fill={COR_GRAFICO_POSITIVO} /* barSize={30} */ > {/* barSize pode ser ajustado */}
+                                        <LabelList dataKey="totalEntreguesNoPrazo" position="top" style={{ fill: '#FFFFFF', fontSize: 10 }} />
                                     </Bar>
                                 </BarChart>
                             </ResponsiveContainer>
@@ -346,14 +326,14 @@ export const RelatorioPeriodo: React.FC = () => {
                     <div className="p-4 bg-white dark:bg-slate-800 rounded-lg shadow min-h-[300px]">
                         <h4 className="text-lg font-semibold text-slate-700 dark:text-white mb-3">Top 5 Docentes (Maior % de Atraso)</h4>
                         {topDocentesPontosAtencao.length > 0 ? (
-                             <ResponsiveContainer width="100%" height={250}>
-                                <BarChart layout="vertical" data={topDocentesPontosAtencao} margin={{ top: 5, right: 35, left: 100, bottom: 5 }}>
+                             <ResponsiveContainer width="100%" height={300}> {/* Aumentar altura */}
+                                <BarChart data={topDocentesPontosAtencao} margin={{ top: 5, right: 5, left: 5, bottom: 100 }}> {/* Aumentar margem inferior */}
                                     <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.2} />
-                                    <XAxis type="number" domain={[0, 100]} tickFormatter={(value) => `${value.toFixed(0)}%`} tick={{ fill: '#475569', fontSize: 10 }} />
-                                    <YAxis type="category" dataKey="nomeDocente" width={150} tick={{ fontSize: 10, fill: '#475569' }} interval={0} />
+                                    <XAxis type="category" dataKey="nomeDocente" tick={{ fontSize: 10, fill: '#FFFFFF' }} interval={0} angle={-35} textAnchor="end" height={80} />
+                                    <YAxis type="number" domain={[0, 100]} tickFormatter={(value) => `${value.toFixed(0)}%`} tick={{ fill: '#FFFFFF', fontSize: 10 }} />
                                     <Tooltip formatter={(value: number, name: string, props: any) => [`${value.toFixed(1)}% de Atraso`, `Total Atividades: ${props.payload.totalAtividades}`, `Atrasadas: ${props.payload.totalAtrasadas}`]} labelFormatter={(label: string) => <span style={{ fontWeight: '600', color: '#334155' }}>{label}</span>} contentStyle={{ backgroundColor: 'rgba(255, 255, 255, 0.95)', color: '#334155', border: '1px solid #e2e8f0', borderRadius: '0.5rem', boxShadow: '0 4px 6px rgba(0,0,0,0.1)' }}/>
-                                    <Bar dataKey="porcentagemAtraso" fill={COR_GRAFICO_NEGATIVO} barSize={20}>
-                                        <LabelList dataKey="porcentagemAtraso" position="right" formatter={(value: number) => `${value.toFixed(1)}%`} style={{ fill: '#fef2f2', fontSize: 10 }} />
+                                    <Bar dataKey="porcentagemAtraso" fill={COR_GRAFICO_NEGATIVO} /* barSize={30} */ >
+                                        <LabelList dataKey="porcentagemAtraso" position="top" formatter={(value: number) => `${value.toFixed(1)}%`} style={{ fill: '#fef2f2', fontSize: 10 }} />
                                     </Bar>
                                 </BarChart>
                             </ResponsiveContainer>
@@ -368,12 +348,11 @@ export const RelatorioPeriodo: React.FC = () => {
                     <div className="p-4 bg-white dark:bg-slate-800 rounded-lg shadow min-h-[300px]">
                         <h4 className="text-lg font-semibold text-slate-700 dark:text-white mb-3">Top 5 Cursos (Mais Entregas no Prazo)</h4>
                         {topCursosMelhorPerformance.length > 0 ? (
-                            <ResponsiveContainer width="100%" height={250}>
-                                <BarChart layout="vertical" data={topCursosMelhorPerformance} margin={{ top: 5, right: 35, left: 100, bottom: 5 }}>
+                            <ResponsiveContainer width="100%" height={300}> {/* Aumentar altura */}
+                                <BarChart data={topCursosMelhorPerformance} margin={{ top: 5, right: 5, left: 5, bottom: 100 }}> {/* Aumentar margem inferior */}
                                     <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.2} />
-                                    {/* XAxis agora para quantidades, não porcentagem */}
-                                    <XAxis type="number" domain={[0, 'auto']} tick={{ fill: '#475569', fontSize: 10 }} />
-                                    <YAxis type="category" dataKey="nomeCurso" width={150} tick={{ fontSize: 10, fill: '#475569' }} interval={0} />
+                                    <XAxis type="category" dataKey="nomeCurso" tick={{ fontSize: 10, fill: '#FFFFFF' }} interval={0} angle={-35} textAnchor="end" height={80} />
+                                    <YAxis type="number" domain={[0, 'auto']} tick={{ fill: '#FFFFFF', fontSize: 10 }} />
                                     <Tooltip 
                                         formatter={(value: number, name: string, props: any) => {
                                             if (name === 'totalEntreguesNoPrazoCurso') {
@@ -387,8 +366,8 @@ export const RelatorioPeriodo: React.FC = () => {
                                         labelFormatter={(label: string) => <span style={{ fontWeight: '600', color: '#334155' }}>{label}</span>} 
                                         contentStyle={{ backgroundColor: 'rgba(255, 255, 255, 0.95)', color: '#334155', border: '1px solid #e2e8f0', borderRadius: '0.5rem', boxShadow: '0 4px 6px rgba(0,0,0,0.1)' }}
                                     />
-                                    <Bar dataKey="totalEntreguesNoPrazoCurso" fill={COR_GRAFICO_POSITIVO} barSize={20}>
-                                        <LabelList dataKey="totalEntreguesNoPrazoCurso" position="right" style={{ fill: '#166534', fontSize: 10 }} />
+                                    <Bar dataKey="totalEntreguesNoPrazoCurso" fill={COR_GRAFICO_POSITIVO} /* barSize={30} */ >
+                                        <LabelList dataKey="totalEntreguesNoPrazoCurso" position="top" style={{ fill: '#FFFFFF', fontSize: 10 }} />
                                     </Bar>
                                 </BarChart>
                             </ResponsiveContainer>
@@ -398,14 +377,14 @@ export const RelatorioPeriodo: React.FC = () => {
                     <div className="p-4 bg-white dark:bg-slate-800 rounded-lg shadow min-h-[300px]">
                         <h4 className="text-lg font-semibold text-slate-700 dark:text-white mb-3">Top 5 Cursos (Maior % de Atraso)</h4>
                         {topCursosPontosAtencao.length > 0 ? (
-                            <ResponsiveContainer width="100%" height={250}>
-                                <BarChart layout="vertical" data={topCursosPontosAtencao} margin={{ top: 5, right: 35, left: 100, bottom: 5 }}>
+                            <ResponsiveContainer width="100%" height={300}> {/* Aumentar altura */}
+                                <BarChart data={topCursosPontosAtencao} margin={{ top: 5, right: 5, left: 5, bottom: 100 }}> {/* Aumentar margem inferior */}
                                     <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.2} />
-                                    <XAxis type="number" domain={[0, 100]} tickFormatter={(value) => `${value.toFixed(0)}%`} tick={{ fill: '#475569', fontSize: 10 }} />
-                                    <YAxis type="category" dataKey="nomeCurso" width={150} tick={{ fontSize: 10, fill: '#475569' }} interval={0} />
+                                    <XAxis type="category" dataKey="nomeCurso" tick={{ fontSize: 10, fill: '#FFFFFF' }} interval={0} angle={-35} textAnchor="end" height={80} />
+                                    <YAxis type="number" domain={[0, 100]} tickFormatter={(value) => `${value.toFixed(0)}%`} tick={{ fill: '#FFFFFF', fontSize: 10 }} />
                                     <Tooltip formatter={(value: number, name: string, props: any) => [`${value.toFixed(1)}% de Atraso`, `Total Atividades: ${props.payload.totalAtividadesCurso}`, `Atrasadas: ${props.payload.totalAtrasadasCurso}`]} labelFormatter={(label: string) => <span style={{ fontWeight: '600', color: '#334155' }}>{label}</span>} contentStyle={{ backgroundColor: 'rgba(255, 255, 255, 0.95)', color: '#334155', border: '1px solid #e2e8f0', borderRadius: '0.5rem', boxShadow: '0 4px 6px rgba(0,0,0,0.1)' }}/>
-                                    <Bar dataKey="porcentagemAtrasoCurso" fill={COR_GRAFICO_NEGATIVO} barSize={20}>
-                                        <LabelList dataKey="porcentagemAtrasoCurso" position="right" formatter={(value: number) => `${value.toFixed(1)}%`} style={{ fill: '#fef2f2', fontSize: 10 }} />
+                                    <Bar dataKey="porcentagemAtrasoCurso" fill={COR_GRAFICO_NEGATIVO} /* barSize={30} */ >
+                                        <LabelList dataKey="porcentagemAtrasoCurso" position="top" formatter={(value: number) => `${value.toFixed(1)}%`} style={{ fill: '#fef2f2', fontSize: 10 }} />
                                     </Bar>
                                 </BarChart>
                             </ResponsiveContainer>
@@ -414,45 +393,7 @@ export const RelatorioPeriodo: React.FC = () => {
                 </div>
             )}
 
-            {/* Ranking de Disciplinas Problemáticas */}
-            {relatorioGerado && relatorioGerado.length > 0 && (
-                 <div className="mt-6 p-4 bg-white dark:bg-slate-800 rounded-lg shadow md:col-span-2 min-h-[300px]"> 
-                    <h4 className="text-lg font-semibold text-slate-700 dark:text-white mb-3">Top 5 Disciplinas (Mais Atividades Problemáticas)</h4>
-                    {topDisciplinasProblematicas.length > 0 ? (
-                        <ResponsiveContainer width="100%" height={250}>
-                            <BarChart layout="vertical" data={topDisciplinasProblematicas} margin={{ top: 5, right: 35, left: 100, bottom: 5 }}>
-                                <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.2} />
-                                <XAxis type="number" tick={{ fill: '#475569', fontSize: 10 }} />
-                                <YAxis type="category" dataKey="nomeDisciplina" width={150} tick={{ fontSize: 10, fill: '#475569' }} interval={0} />
-                                <Tooltip 
-                                    formatter={(value: number, name: string, props: any) => {
-                                        if (name === 'totalProblematicas') { 
-                                            return [
-                                                `${value} atividades (${props.payload.porcentagemProblematicas.toFixed(1)}%)`, 
-                                                `Problemáticas (Pend: ${props.payload.totalPendentes}, Atras: ${props.payload.totalEntreguesComAtraso})`
-                                            ];
-                                        }
-                                        return [value, name];
-                                    }}
-                                    labelFormatter={(label: string) => <span style={{ fontWeight: '600', color: '#334155' }}>{label}</span>}
-                                    contentStyle={{ 
-                                        backgroundColor: 'rgba(255, 255, 255, 0.95)', 
-                                        color: '#334155', 
-                                        border: '1px solid #e2e8f0', 
-                                        borderRadius: '0.5rem', 
-                                        boxShadow: '0 4px 6px rgba(0,0,0,0.1)' 
-                                    }}
-                                />
-                                <Bar dataKey="totalProblematicas" fill={COR_GRAFICO_ATENCAO} barSize={20}>
-                                    <LabelList dataKey="totalProblematicas" position="right" style={{ fill: '#b45309', fontSize: 10 }} />
-                                </Bar>
-                            </BarChart>
-                        </ResponsiveContainer>
-                    ) : (
-                        <p className="text-sm text-slate-500 dark:text-gray-400">Nenhuma disciplina com atividades problemáticas encontradas ou dados insuficientes.</p>
-                    )}
-                </div>
-            )}
+            {/* Ranking de Disciplinas Problemáticas Removido */}
         </div>
     );
 };
