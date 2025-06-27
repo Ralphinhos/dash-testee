@@ -40,15 +40,8 @@ export const RelatorioPeriodo: React.FC = () => {
         return [...new Set(availableData.map(item => item.Modalidade).filter(Boolean).sort())] as string[];
     }, [availableData]);
 
-    const maxPorcentagemDocentesMelhor = useMemo(() => {
-        if (!topDocentesMelhorPerformance || topDocentesMelhorPerformance.length === 0) return 0;
-        return Math.max(...topDocentesMelhorPerformance.map(d => d.porcentagemAtraso), 0);
-    }, [topDocentesMelhorPerformance]);
-
-    const maxPorcentagemCursosMelhor = useMemo(() => {
-        if (!topCursosMelhorPerformance || topCursosMelhorPerformance.length === 0) return 0;
-        return Math.max(...topCursosMelhorPerformance.map(c => c.porcentagemAtrasoCurso), 0);
-    }, [topCursosMelhorPerformance]);
+    // maxPorcentagemDocentesMelhor e maxPorcentagemCursosMelhor foram removidos pois o XAxis.domain 
+    // para os gráficos de melhor performance agora é [0, 'auto'] para quantidades.
 
     const handleGerarRelatorio = () => {
         if (!anoSelecionado) {
@@ -321,16 +314,29 @@ export const RelatorioPeriodo: React.FC = () => {
             {relatorioGerado && relatorioGerado.length > 0 && (
                 <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="p-4 bg-white dark:bg-slate-800 rounded-lg shadow min-h-[300px]">
-                        <h4 className="text-lg font-semibold text-slate-700 dark:text-white mb-3">Top 5 Docentes (Menor % de Atraso)</h4>
+                        <h4 className="text-lg font-semibold text-slate-700 dark:text-white mb-3">Top 5 Docentes (Mais Entregas no Prazo)</h4>
                         {topDocentesMelhorPerformance.length > 0 ? (
                             <ResponsiveContainer width="100%" height={250}>
                                 <BarChart layout="vertical" data={topDocentesMelhorPerformance} margin={{ top: 5, right: 35, left: 100, bottom: 5 }}>
                                     <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.2} />
-                                    <XAxis type="number" domain={[0, maxPorcentagemDocentesMelhor > 0 ? 'auto' : 5]} tickFormatter={(value) => `${value.toFixed(0)}%`} tick={{ fill: '#475569', fontSize: 10 }} />
+                                    {/* XAxis agora para quantidades, não porcentagem */}
+                                    <XAxis type="number" domain={[0, 'auto']} tick={{ fill: '#475569', fontSize: 10 }} /> 
                                     <YAxis type="category" dataKey="nomeDocente" width={150} tick={{ fontSize: 10, fill: '#475569' }} interval={0} />
-                                    <Tooltip formatter={(value: number, name: string, props: any) => [`${value.toFixed(1)}% de Atraso`, `Total Atividades: ${props.payload.totalAtividades}`, `Atrasadas: ${props.payload.totalAtrasadas}`]} labelFormatter={(label: string) => <span style={{ fontWeight: '600', color: '#334155' }}>{label}</span>} contentStyle={{ backgroundColor: 'rgba(255, 255, 255, 0.95)', color: '#334155', border: '1px solid #e2e8f0', borderRadius: '0.5rem', boxShadow: '0 4px 6px rgba(0,0,0,0.1)' }}/>
-                                    <Bar dataKey="porcentagemAtraso" fill={COR_GRAFICO_POSITIVO} barSize={20}>
-                                        <LabelList dataKey="porcentagemAtraso" position="right" formatter={(value: number) => `${value.toFixed(1)}%`} style={{ fill: '#166534', fontSize: 10 }} />
+                                    <Tooltip 
+                                        formatter={(value: number, name: string, props: any) => {
+                                            if (name === 'totalEntreguesNoPrazo') {
+                                                return [
+                                                    `${value} Ent. no Prazo (${props.payload.porcentagemEntreguesNoPrazo.toFixed(1)}%)`,
+                                                    `Total Atividades: ${props.payload.totalAtividades}`
+                                                ];
+                                            }
+                                            return [value, name];
+                                        }}
+                                        labelFormatter={(label: string) => <span style={{ fontWeight: '600', color: '#334155' }}>{label}</span>} 
+                                        contentStyle={{ backgroundColor: 'rgba(255, 255, 255, 0.95)', color: '#334155', border: '1px solid #e2e8f0', borderRadius: '0.5rem', boxShadow: '0 4px 6px rgba(0,0,0,0.1)' }}
+                                    />
+                                    <Bar dataKey="totalEntreguesNoPrazo" fill={COR_GRAFICO_POSITIVO} barSize={20}>
+                                        <LabelList dataKey="totalEntreguesNoPrazo" position="right" style={{ fill: '#166534', fontSize: 10 }} />
                                     </Bar>
                                 </BarChart>
                             </ResponsiveContainer>
@@ -360,16 +366,29 @@ export const RelatorioPeriodo: React.FC = () => {
             {relatorioGerado && relatorioGerado.length > 0 && (
                 <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="p-4 bg-white dark:bg-slate-800 rounded-lg shadow min-h-[300px]">
-                        <h4 className="text-lg font-semibold text-slate-700 dark:text-white mb-3">Top 5 Cursos (Menor % de Atraso)</h4>
+                        <h4 className="text-lg font-semibold text-slate-700 dark:text-white mb-3">Top 5 Cursos (Mais Entregas no Prazo)</h4>
                         {topCursosMelhorPerformance.length > 0 ? (
                             <ResponsiveContainer width="100%" height={250}>
                                 <BarChart layout="vertical" data={topCursosMelhorPerformance} margin={{ top: 5, right: 35, left: 100, bottom: 5 }}>
                                     <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.2} />
-                                    <XAxis type="number" domain={[0, maxPorcentagemCursosMelhor > 0 ? 'auto' : 5]} tickFormatter={(value) => `${value.toFixed(0)}%`} tick={{ fill: '#475569', fontSize: 10 }} />
+                                    {/* XAxis agora para quantidades, não porcentagem */}
+                                    <XAxis type="number" domain={[0, 'auto']} tick={{ fill: '#475569', fontSize: 10 }} />
                                     <YAxis type="category" dataKey="nomeCurso" width={150} tick={{ fontSize: 10, fill: '#475569' }} interval={0} />
-                                    <Tooltip formatter={(value: number, name: string, props: any) => [`${value.toFixed(1)}% de Atraso`, `Total Atividades: ${props.payload.totalAtividadesCurso}`, `Atrasadas: ${props.payload.totalAtrasadasCurso}`]} labelFormatter={(label: string) => <span style={{ fontWeight: '600', color: '#334155' }}>{label}</span>} contentStyle={{ backgroundColor: 'rgba(255, 255, 255, 0.95)', color: '#334155', border: '1px solid #e2e8f0', borderRadius: '0.5rem', boxShadow: '0 4px 6px rgba(0,0,0,0.1)' }}/>
-                                    <Bar dataKey="porcentagemAtrasoCurso" fill={COR_GRAFICO_POSITIVO} barSize={20}>
-                                        <LabelList dataKey="porcentagemAtrasoCurso" position="right" formatter={(value: number) => `${value.toFixed(1)}%`} style={{ fill: '#166534', fontSize: 10 }} />
+                                    <Tooltip 
+                                        formatter={(value: number, name: string, props: any) => {
+                                            if (name === 'totalEntreguesNoPrazoCurso') {
+                                                return [
+                                                    `${value} Ent. no Prazo (${props.payload.porcentagemEntreguesNoPrazoCurso.toFixed(1)}%)`,
+                                                    `Total Atividades: ${props.payload.totalAtividadesCurso}`
+                                                ];
+                                            }
+                                            return [value, name];
+                                        }}
+                                        labelFormatter={(label: string) => <span style={{ fontWeight: '600', color: '#334155' }}>{label}</span>} 
+                                        contentStyle={{ backgroundColor: 'rgba(255, 255, 255, 0.95)', color: '#334155', border: '1px solid #e2e8f0', borderRadius: '0.5rem', boxShadow: '0 4px 6px rgba(0,0,0,0.1)' }}
+                                    />
+                                    <Bar dataKey="totalEntreguesNoPrazoCurso" fill={COR_GRAFICO_POSITIVO} barSize={20}>
+                                        <LabelList dataKey="totalEntreguesNoPrazoCurso" position="right" style={{ fill: '#166534', fontSize: 10 }} />
                                     </Bar>
                                 </BarChart>
                             </ResponsiveContainer>
