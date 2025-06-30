@@ -370,7 +370,7 @@ export default function Index() {
                             {userRole === 'admin' && (
                                 <button
                                     onClick={() => navigate('/relatorio-periodo')}
-                                    title="Relatório do Período"
+                                    title="Relatório do Semestre"
                                     className="p-2 rounded-md text-slate-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-slate-700 transition-colors"
                                 >
                                     <FileText size={20} />

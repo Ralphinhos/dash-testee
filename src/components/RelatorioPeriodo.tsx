@@ -344,7 +344,7 @@ export const RelatorioPeriodo: React.FC = () => {
         <div className="p-6 lg:p-8 space-y-6 bg-gray-100 dark:bg-[#0f172a] text-slate-800 dark:text-gray-200 min-h-screen">
             <header className="space-y-2 mb-6">
                 <div className="flex justify-between items-center">
-                    <h2 className="text-2xl font-bold text-slate-800 dark:text-white">Semestre</h2>
+                    <h2 className="text-2xl font-bold text-slate-800 dark:text-white">Relatório do Semestre</h2>
                     <button
                         onClick={() => navigate('/')}
                         className="px-4 py-2 text-sm font-medium text-cyan-700 dark:text-cyan-500 bg-cyan-100 dark:bg-cyan-700/30 rounded-md hover:bg-cyan-200 dark:hover:bg-cyan-700/50 transition-colors focus:outline-none focus:ring-2 focus:ring-cyan-500"

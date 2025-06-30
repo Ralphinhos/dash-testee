@@ -104,7 +104,7 @@ export const Sidebar: FC<SidebarProps> = ({ kpis, userRole, onNotification }) =>
         {kpis.docenteMaisPendencias ? (
           <>
             <p className="text-base font-semibold text-indigo-400">{shortenName(kpis.docenteMaisPendencias.nome)}</p>
-            <p className="text-xl font-bold text-indigo-400">{kpis.docenteMaisPendencias.quantidade} pendências</p>
+            <p className="text-xl font-bold text-indigo-400">{kpis.docenteMaisPendencias.quantidade} pendência(s)</p>
           </>
         ) : (
           <p className="text-xl font-bold text-indigo-400">{kpis.docenteMaisPendencias === undefined ? "Selec. Mod." : "-"}</p>
@@ -117,7 +117,7 @@ export const Sidebar: FC<SidebarProps> = ({ kpis, userRole, onNotification }) =>
           <>
             <p className="text-base font-semibold text-teal-400">{shortenName(kpis.docenteMenosAcesso.nome)}</p>
             {/* <p className="text-sm text-gray-300">Média: {kpis.docenteMenosAcesso.mediaDiasSemAcesso}d s/acesso</p> REMOVIDO */}
-            <p className="text-sm text-gray-400 truncate" title={`${kpis.docenteMenosAcesso.disciplinaDestaque} (${kpis.docenteMenosAcesso.diasDisciplinaDestaque}d)`}>
+            <p className="text-xs text-gray-400" title={`${kpis.docenteMenosAcesso.disciplinaDestaque} (${kpis.docenteMenosAcesso.diasDisciplinaDestaque}d)`}>
                 Destaque: {kpis.docenteMenosAcesso.disciplinaDestaque} ({kpis.docenteMenosAcesso.diasDisciplinaDestaque}d)
             </p>
           </>
