@@ -50,7 +50,7 @@ export default function Index() {
     }, [navigate]);
 
     // 4. Hooks que podem depender de callbacks ou estados (como useIdleTimer)
-    const IDLE_TIMEOUT = 1 * 60 * 1000; // 1 minuto
+    const IDLE_TIMEOUT = 20 * 60 * 1000; // 20 minutos
     useIdleTimer(IDLE_TIMEOUT, handleLogout);
 
     // useEffect para carregar dados foi removido, pois agora é gerenciado pelo DataProvider.
@@ -91,20 +91,23 @@ export default function Index() {
         }
         // Para coordenador, ou se userRole ainda não estiver definido (fallback seguro)
         const loggedInCoordinatorUsername = localStorage.getItem('loggedInCoordinatorUsername');
-        const coordinatorCoursesStr = localStorage.getItem('coordinatorCourses');
-        if (!loggedInCoordinatorUsername || !coordinatorCoursesStr) return [];
+        // const coordinatorCoursesStr = localStorage.getItem('coordinatorCourses'); // REMOVIDO
+        if (!loggedInCoordinatorUsername) return []; // Se não houver username de coordenador, retorna vazio
         
-        let coordinatorCourses: string[] = [];
-        try {
-            coordinatorCourses = JSON.parse(coordinatorCoursesStr);
-        } catch (e) {
-            console.error("Erro ao parsear coordinatorCourses em Index.tsx:", e);
-            return [];
-        }
-        if (coordinatorCourses.length === 0) return [];
+        // REMOVIDO Bloco de parse de coordinatorCourses
+        // let coordinatorCourses: string[] = [];
+        // try {
+        //     coordinatorCourses = JSON.parse(coordinatorCoursesStr);
+        // } catch (e) {
+        //     console.error("Erro ao parsear coordinatorCourses em Index.tsx:", e);
+        //     return [];
+        // }
+        // if (coordinatorCourses.length === 0) return [];
 
+        // Agora filtra apenas pelo Login do coordenador, sem filtro de cursos específico
         return allData.filter(row => 
-            row.Login === loggedInCoordinatorUsername && coordinatorCourses.includes(row.Curso)
+            row.Login === loggedInCoordinatorUsername
+            // && coordinatorCourses.includes(row.Curso) // REMOVIDO
         );
     }, [allData, userRole]);
 
@@ -257,13 +260,15 @@ export default function Index() {
 
             if (nomeDocenteMenosAcessoGlobal && dadosDiasAcesso[nomeDocenteMenosAcessoGlobal]) {
                 const infoDocente = dadosDiasAcesso[nomeDocenteMenosAcessoGlobal];
-                const mediaDiasSemAcesso = infoDocente.countEntradas > 0 
-                    ? Math.round(infoDocente.totalDias / infoDocente.countEntradas) 
-                    : 0;
-                // Atribuição à variável local correta
+                // const mediaDiasSemAcesso = infoDocente.countEntradas > 0 
+                //     ? Math.round(infoDocente.totalDias / infoDocente.countEntradas) 
+                //     : 0; // REMOVIDO - Média de dias não é mais necessária
+                // Atribuição à variável local correta, sem mediaDiasSemAcesso
                 docenteMenosAcesso = { 
                     nome: nomeDocenteMenosAcessoGlobal,
-                    mediaDiasSemAcesso: mediaDiasSemAcesso,
+                    mediaDiasSemAcesso: infoDocente.countEntradas > 0 
+                        ? Math.round(infoDocente.totalDias / infoDocente.countEntradas) 
+                        : 0,
                     disciplinaDestaque: infoDocente.disciplinaDestaque,
                     diasDisciplinaDestaque: Math.round(infoDocente.maxDiasIndividual)
                 };

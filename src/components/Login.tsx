@@ -90,7 +90,7 @@ export const Login: React.FC = () => {
         localStorage.setItem('userRole', 'coordinator');
         localStorage.setItem('loggedInCoordinator', coordinator.fullName);
         localStorage.setItem('loggedInCoordinatorUsername', coordinator.username);
-        localStorage.setItem('coordinatorCourses', JSON.stringify(coordinator.courses));
+        // localStorage.setItem('coordinatorCourses', JSON.stringify(coordinator.courses)); // REMOVIDO
         // Limpar userRole se for de admin
         // localStorage.removeItem('userRole'); // Não é necessário, pois já setamos para 'coordinator'
         navigate('/');
@@ -133,7 +133,7 @@ export const Login: React.FC = () => {
             <input
               id="username-input"
               type="text"
-              placeholder="Login"
+              placeholder="Login (ex: nome.sobrenome)"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               className="w-full p-3 pl-10 bg-[#1e293b] rounded-md text-gray-200 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-cyan-500" // Adicionado pl-10 para padding à esquerda do ícone

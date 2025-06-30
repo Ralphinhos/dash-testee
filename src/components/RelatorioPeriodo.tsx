@@ -25,7 +25,7 @@ export const RelatorioPeriodo: React.FC = () => {
     const navigate = useNavigate();
     const { allData, isLoading, error: dataError } = useDataContext();
 
-    const IDLE_TIMEOUT_RELATORIO = 1 * 60 * 1000; // 1 minuto para teste
+    const IDLE_TIMEOUT_RELATORIO = 20 * 60 * 1000; // 20 minutos
     const handleRelatorioIdleLogout = useCallback(() => {
         localStorage.removeItem('isLoggedIn');
         localStorage.removeItem('loggedInCoordinator');
@@ -170,8 +170,8 @@ export const RelatorioPeriodo: React.FC = () => {
                     <YAxis 
                         type="number" 
                         domain={[0, 100]} 
-                        width={40} 
-                        tick={{ fontSize: 9, fill: '#FFFFFF' }} 
+                        width={0} 
+                        tick={false} 
                         axisLine={{ stroke: '#FFFFFF', strokeOpacity: 0.5 }}
                         tickLine={{ stroke: '#FFFFFF', strokeOpacity: 0.5 }}
                         tickFormatter={(value) => `${value.toFixed(0)}%`} 
@@ -192,7 +192,7 @@ export const RelatorioPeriodo: React.FC = () => {
                     <Bar dataKey="porcentagemEntreguesNoPrazo" fill={COR_GRAFICO_POSITIVO} >
                         <LabelList 
                             dataKey="porcentagemEntreguesNoPrazo" 
-                            position="top" 
+                            position="center" 
                             style={{ fill: '#FFFFFF', fontSize: 10 }} 
                             formatter={(value: number) => `${value.toFixed(1)}%`}
                         />
@@ -212,8 +212,8 @@ export const RelatorioPeriodo: React.FC = () => {
                     <YAxis 
                         type="number" 
                         domain={[0, 'auto']} 
-                        width={40} 
-                        tick={{ fontSize: 9, fill: '#FFFFFF' }} 
+                        width={0} 
+                        tick={false} 
                         axisLine={{ stroke: '#FFFFFF', strokeOpacity: 0.5 }}
                         tickLine={{ stroke: '#FFFFFF', strokeOpacity: 0.5 }}
                         allowDecimals={false}
@@ -247,7 +247,7 @@ export const RelatorioPeriodo: React.FC = () => {
                     <Bar dataKey="totalAtrasadas" fill={COR_GRAFICO_NEGATIVO}>
                         <LabelList 
                             dataKey="totalAtrasadas" // Show the quantity on the bar
-                            position="top" 
+                            position="center" 
                             style={{ fill: '#fef2f2', fontSize: 10 }} 
                             // No formatter needed if we want to show the raw number
                         />
@@ -267,8 +267,8 @@ export const RelatorioPeriodo: React.FC = () => {
                     <YAxis 
                         type="number" 
                         domain={[0, 100]} 
-                        width={40} 
-                        tick={{ fontSize: 9, fill: '#FFFFFF' }} 
+                        width={0} 
+                        tick={false} 
                         axisLine={{ stroke: '#FFFFFF', strokeOpacity: 0.5 }}
                         tickLine={{ stroke: '#FFFFFF', strokeOpacity: 0.5 }}
                         tickFormatter={(value) => `${value.toFixed(0)}%`}
@@ -289,7 +289,7 @@ export const RelatorioPeriodo: React.FC = () => {
                     <Bar dataKey="porcentagemEntreguesNoPrazoCurso" fill={COR_GRAFICO_POSITIVO} >
                         <LabelList 
                             dataKey="porcentagemEntreguesNoPrazoCurso" 
-                            position="top" 
+                            position="center" 
                             style={{ fill: '#FFFFFF', fontSize: 10 }} 
                             formatter={(value: number) => `${value.toFixed(1)}%`}
                         />
@@ -309,8 +309,8 @@ export const RelatorioPeriodo: React.FC = () => {
                     <YAxis 
                         type="number" 
                         domain={[0, 'auto']} 
-                        width={40} 
-                        tick={{ fontSize: 9, fill: '#FFFFFF' }} 
+                        width={0} 
+                        tick={false} 
                         axisLine={{ stroke: '#FFFFFF', strokeOpacity: 0.5 }}
                         tickLine={{ stroke: '#FFFFFF', strokeOpacity: 0.5 }}
                         allowDecimals={false}
@@ -331,7 +331,7 @@ export const RelatorioPeriodo: React.FC = () => {
                     <Bar dataKey="totalAtrasadasCurso" fill={COR_GRAFICO_NEGATIVO}>
                         <LabelList 
                             dataKey="totalAtrasadasCurso" 
-                            position="top" 
+                            position="center" 
                             style={{ fill: '#fef2f2', fontSize: 10 }}
                         />
                     </Bar>
@@ -344,7 +344,7 @@ export const RelatorioPeriodo: React.FC = () => {
         <div className="p-6 lg:p-8 space-y-6 bg-gray-100 dark:bg-[#0f172a] text-slate-800 dark:text-gray-200 min-h-screen">
             <header className="space-y-2 mb-6">
                 <div className="flex justify-between items-center">
-                    <h2 className="text-2xl font-bold text-slate-800 dark:text-white">Relatório do Período</h2>
+                    <h2 className="text-2xl font-bold text-slate-800 dark:text-white">Semestre</h2>
                     <button
                         onClick={() => navigate('/')}
                         className="px-4 py-2 text-sm font-medium text-cyan-700 dark:text-cyan-500 bg-cyan-100 dark:bg-cyan-700/30 rounded-md hover:bg-cyan-200 dark:hover:bg-cyan-700/50 transition-colors focus:outline-none focus:ring-2 focus:ring-cyan-500"
@@ -390,7 +390,7 @@ export const RelatorioPeriodo: React.FC = () => {
             {/* KPIs Gerais do Período */}
             {kpisPeriodo && (
             <div className="mt-6 p-4 bg-slate-100 dark:bg-slate-900 rounded-lg shadow">
-                <h3 className="text-xl font-semibold text-slate-800 dark:text-white mb-4">Resumo Geral do Período</h3>
+                <h3 className="text-xl font-semibold text-slate-800 dark:text-white mb-4">Resumo Geral do Semestre</h3>
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                     <KpiCard titulo="Total de Atividades" valor={kpisPeriodo.totalAtividadesConsideradas} />
                     <KpiCard titulo="% Entregues no Prazo" valor={kpisPeriodo.porcentagemEntreguesNoPrazo.toFixed(1)} unidade="%" corValor={kpisPeriodo.porcentagemEntreguesNoPrazo >= 70 ? 'text-green-500 dark:text-green-400' : kpisPeriodo.porcentagemEntreguesNoPrazo >= 50 ? 'text-amber-500 dark:text-amber-400' : 'text-red-500 dark:text-red-400'} descricao={`${kpisPeriodo.totalEntreguesNoPrazo} atividades`} />
