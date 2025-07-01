@@ -194,24 +194,36 @@ export const PerformanceAnalysis: FC<PerformanceAnalysisProps> = ({ data, onAnal
                         <div className="space-y-4">
                             {renderPieChart(selectedDocenteStats)}
                             <div className={statsDetailCardClasses}>
-                                <h5 className={`font-semibold text-slate-700 dark:text-white mb-2 text-base`}>Estatísticas Detalhadas</h5>
-                                <div className="grid grid-cols-2 gap-4 text-sm">
-                                    <div>
+                                <h5 className={`font-semibold text-slate-700 dark:text-white mb-3 text-base`}>Estatísticas Detalhadas</h5>
+                                <div className="space-y-2 text-sm"> {/* Alterado para space-y-2 (empilhamento vertical) */}
+                                    <div className="flex justify-between">
                                         <span className={detailLabel}>Taxa de Entrega:</span>
                                         <span className="text-green-400 font-medium ml-2">
                                             {selectedDocenteStats.score.toFixed(1)}%
                                         </span>
                                     </div>
-                                    <div>
-                                        <span className={detailLabel}>Criticidade:</span>
-                                        <span className="text-orange-400 font-medium ml-2">
-                                            {selectedDocenteStats.criticality}
+                                    <div className="flex justify-between">
+                                        <span className={detailLabel}>Total de Atividades:</span>
+                                        <span className="text-slate-700 dark:text-white font-medium ml-2">
+                                            {selectedDocenteStats.stats.total}
                                         </span>
                                     </div>
-                                    <div>
-                                        <span className={detailLabel}>Dias s/ Acesso:</span>
-                                        <span className="text-red-400 font-medium ml-2">
-                                            {selectedDocenteStats.stats.diasSemAcesso}
+                                    <div className="flex justify-between">
+                                        <span className={detailLabel}>Entregues no Prazo:</span>
+                                        <span className="text-green-500 font-medium ml-2">
+                                            {selectedDocenteStats.stats.entregue}
+                                        </span>
+                                    </div>
+                                    <div className="flex justify-between">
+                                        <span className={detailLabel}>Entregues com Atraso:</span>
+                                        <span className="text-amber-500 font-medium ml-2">
+                                            {selectedDocenteStats.stats.atrasado}
+                                        </span>
+                                    </div>
+                                    <div className="flex justify-between">
+                                        <span className={detailLabel}>Pendentes:</span>
+                                        <span className="text-red-500 font-medium ml-2">
+                                            {selectedDocenteStats.stats.pendente}
                                         </span>
                                     </div>
                                 </div>

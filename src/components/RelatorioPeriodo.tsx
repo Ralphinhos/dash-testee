@@ -25,7 +25,7 @@ export const RelatorioPeriodo: React.FC = () => {
     const navigate = useNavigate();
     const { allData, isLoading, error: dataError } = useDataContext();
 
-    const IDLE_TIMEOUT_RELATORIO = 20 * 60 * 1000; // 20 minutos
+    const IDLE_TIMEOUT_RELATORIO = 10 * 60 * 1000; // 10 minutos
     const handleRelatorioIdleLogout = useCallback(() => {
         localStorage.removeItem('isLoggedIn');
         localStorage.removeItem('loggedInCoordinator');

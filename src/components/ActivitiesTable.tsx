@@ -14,43 +14,47 @@ export const ActivitiesTable: FC<ActivitiesTableProps> = ({ data, onDocenteSelec
     const [activityFilter, setActivityFilter] = useState<ActivityFilter>("all");
 
     const { docentesData, selectedDocenteActivities } = useMemo(() => {
-        const filteredData = data.filter(row => row.isPendente || row.isAtrasado);
-        
-        // Agrupa por docente
+        // Agrupa por docente e calcula pendentes/atrasadas a partir de 'data' completo
         const docentesMap = new Map<string, { pendentes: number; atrasadas: number; activities: ProcessedData[] }>();
         
-        filteredData.forEach(row => {
+        data.forEach(row => {
             if (!docentesMap.has(row.Docente)) {
                 docentesMap.set(row.Docente, { pendentes: 0, atrasadas: 0, activities: [] });
             }
             const docenteData = docentesMap.get(row.Docente)!;
-            docenteData.activities.push(row);
+            docenteData.activities.push(row); // Adiciona todas as atividades do docente
             
             if (row.isPendente) docenteData.pendentes++;
             if (row.isAtrasado) docenteData.atrasadas++;
         });
 
-        const docentesArray = Array.from(docentesMap.entries()).map(([docente, stats]) => ({
-            docente,
-            ...stats,
-            criticality: stats.atrasadas * 2 + stats.pendentes // Atrasos têm peso maior
-        })).sort((a, b) => b.criticality - a.criticality);
+        // Filtra docentes que têm pelo menos uma pendência ou atraso para a lista da esquerda
+        const docentesArray = Array.from(docentesMap.entries())
+            .filter(([_, stats]) => stats.pendentes > 0 || stats.atrasadas > 0)
+            .map(([docente, stats]) => ({
+                docente,
+                ...stats,
+                criticality: stats.atrasadas * 2 + stats.pendentes
+            })).sort((a, b) => b.criticality - a.criticality);
 
-        let selectedActivities = selectedDocente && docentesMap.has(selectedDocente) 
+        // Obtém todas as atividades do docente selecionado
+        let activitiesForSelectedDocente = selectedDocente && docentesMap.has(selectedDocente) 
             ? docentesMap.get(selectedDocente)!.activities 
             : [];
 
+        // Aplica o filtro de "pending" ou "late" na lista de atividades do docente selecionado
         if (selectedDocente) {
             if (activityFilter === "pending") {
-                selectedActivities = selectedActivities.filter(activity => activity.isPendente);
+                activitiesForSelectedDocente = activitiesForSelectedDocente.filter(activity => activity.isPendente);
             } else if (activityFilter === "late") {
-                selectedActivities = selectedActivities.filter(activity => activity.isAtrasado);
+                activitiesForSelectedDocente = activitiesForSelectedDocente.filter(activity => activity.isAtrasado);
             }
+            // Se 'all', não faz nada, já tem todas as atividades (pendentes, atrasadas ou não)
         }
 
         return { 
             docentesData: docentesArray,
-            selectedDocenteActivities: selectedActivities
+            selectedDocenteActivities: activitiesForSelectedDocente
         };
     }, [data, selectedDocente, activityFilter]);
 
