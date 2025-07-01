@@ -13,8 +13,9 @@ export const PerformanceAnalysis: FC<PerformanceAnalysisProps> = ({ data, onAnal
         const ranking = data.reduce((acc, row) => {
             if (!acc[row.Docente]) acc[row.Docente] = { entregue: 0, atrasado: 0, pendente: 0, total: 0, diasSemAcesso: 0 };
             acc[row.Docente].total++;
+            // Usar as flags do useDataProcessor que já refletem a lógica de "entregue com atraso" etc.
             if (row.isPendente) acc[row.Docente].pendente++;
-            else if (row.isAtrasado) acc[row.Docente].atrasado++;
+            else if (row.isAtrasado) acc[row.Docente].atrasado++; // isAtrasado agora é "entregue com atraso"
             else if (row.isEntregueNoPrazo) acc[row.Docente].entregue++;
            
             const dias = parseInt(String(row['Dias s/ Acesso']), 10) || 0;
@@ -28,7 +29,10 @@ export const PerformanceAnalysis: FC<PerformanceAnalysisProps> = ({ data, onAnal
             docente,
             stats,
             score: stats.total > 0 ? (stats.entregue / stats.total) * 100 : 0,
-            criticality: stats.atrasado * 2 + stats.pendente
+            // A criticidade para ordenação dos 'bottomPerformers' pode continuar usando a lógica original
+            // ou ser ajustada se a nova definição de 'atrasado' (apenas entregue com atraso) for preferida aqui também.
+            // Por enquanto, mantém a lógica original de `atrasado * 2 + pendente` para ordenação.
+            criticality: stats.atrasado * 2 + stats.pendente 
         }));
 
         const top = comScore.filter(d => d.score >= 60).sort((a, b) => b.score - a.score).slice(0, 5);
@@ -39,18 +43,11 @@ export const PerformanceAnalysis: FC<PerformanceAnalysisProps> = ({ data, onAnal
         return { topPerformers: top, bottomPerformers: bottom, selectedDocenteStats: selectedStats };
     }, [data, selectedDocente]);
 
-    const handleSummary = (type: 'top' | 'bottom') => {
-        const list = type === 'top' ? topPerformers : bottomPerformers;
-        const title = type === 'top' ? 'Análise de Top Performers' : 'Análise de Pontos de Atenção';
-        const prompt = `Como gestor acadêmico, elabore um resumo sobre o seguinte grupo de docentes: ${JSON.stringify(list.map(p => ({docente: p.docente, score: p.score, stats: p.stats})))}. Para os de alta performance, destaque os pontos positivos. Para os que requerem atenção, detalhe as pendências e atrasos de forma clara e objetiva.`;
-        onAnalysis(prompt, title);
-    };
-
     const renderPerfCard = (docenteData: DocenteStats) => {
         const { docente, stats, score } = docenteData;
         const total = stats.total;
         const pEntregue = total > 0 ? (stats.entregue / total) * 100 : 0;
-        const pAtrasado = total > 0 ? (stats.atrasado / total) * 100 : 0;
+        const pAtrasado = total > 0 ? (stats.atrasado / total) * 100 : 0; // stats.atrasado é "entregue com atraso"
         const pPendente = total > 0 ? (stats.pendente / total) * 100 : 0;
         const shortenName = (name: string) => { 
             const parts = (name || "").trim().split(/\s+/); 
@@ -75,10 +72,11 @@ export const PerformanceAnalysis: FC<PerformanceAnalysisProps> = ({ data, onAnal
     };
 
     const renderPieChart = (docenteData: DocenteStats) => {
-        const { stats } = docenteData;
+        const { stats, score } = docenteData; // Adicionado score aqui
         const chartData = [
-            { name: 'Entregue', value: stats.entregue, color: '#22c55e' },
-            { name: 'Atrasado', value: stats.atrasado, color: '#f59e0b' },
+            // Usar stats.entregue (que é efetivamente entregue no prazo), stats.atrasado (entregue com atraso), stats.pendente
+            { name: 'Entregue no Prazo', value: stats.entregue, color: '#22c55e' },
+            { name: 'Entregue c/ Atraso', value: stats.atrasado, color: '#f59e0b' },
             { name: 'Pendente', value: stats.pendente, color: '#ef4444' }
         ].filter(item => item.value > 0);
 
@@ -91,8 +89,8 @@ export const PerformanceAnalysis: FC<PerformanceAnalysisProps> = ({ data, onAnal
             if (active && payload && payload.length) {
                 const data = payload[0];
                 return (
-                    <div className={tooltipClasses}> {/* Aplicando classe de tooltip */}
-                        <p>{`${data.name}: ${data.value}`}</p> {/* Cor do texto virá da classe tooltipClasses */}
+                    <div className={tooltipClasses}>
+                        <p>{`${data.name}: ${data.value}`}</p>
                     </div>
                 );
             }
@@ -100,7 +98,7 @@ export const PerformanceAnalysis: FC<PerformanceAnalysisProps> = ({ data, onAnal
         };
 
         return (
-            <div className={pieChartCardClasses}> {/* Aplicando classe do card do gráfico */}
+            <div className={pieChartCardClasses}>
                 <div className="text-center mb-3">
                     <h4 className={pieChartTitle}>{shortenName(docenteData.docente)}</h4>
                     <p className={pieChartSubtitle}>Total: {stats.total} atividades</p>
@@ -139,83 +137,56 @@ export const PerformanceAnalysis: FC<PerformanceAnalysisProps> = ({ data, onAnal
                         </div>
                     ))}
                 </div>
+                {/* Adicionando Taxa de Entrega abaixo da legenda */}
+                <div className="mt-4 pt-3 border-t border-gray-200 dark:border-slate-600 text-center">
+                    <span className={`${detailLabel} mr-2`}>Taxa de Entrega (no prazo):</span>
+                    <span className={`font-bold text-lg ${score >= 80 ? 'text-green-500' : score >= 60 ? 'text-amber-500' : 'text-red-500'}`}>
+                        {score.toFixed(1)}%
+                    </span>
+                </div>
             </div>
         );
     };
 
     // --- Classes de Estilo ---
-    // cardBaseClasses não é mais usado diretamente para os cards principais, suas propriedades são incorporadas em themedCardClasses
     const themedCardClasses = "bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 flex flex-col p-6 rounded-lg shadow-sm dark:shadow-md";
-    
     const titleClasses = "text-lg font-semibold text-slate-700 dark:text-white mb-4";
     const placeholderTextClasses = "text-slate-600 dark:text-gray-400 text-center py-10";
-    
-    const btnAiClasses = "bg-transparent border border-cyan-500 text-cyan-500 hover:bg-cyan-500/10 "+
-                         "dark:border-cyan-400 dark:text-cyan-400 dark:hover:bg-cyan-400/10 "+
-                         "font-semibold text-xs md:text-sm py-2 px-3 md:px-4 rounded-md transition-colors";
-
     const innerCardClasses = "p-3 rounded-lg bg-gray-50 dark:bg-slate-700/50 border border-gray-200 dark:border-slate-600";
     const pieChartCardClasses = "p-4 rounded-lg bg-gray-50 dark:bg-slate-700/50 border border-gray-200 dark:border-slate-600";
-    const statsDetailCardClasses = "p-4 rounded-lg bg-gray-50 dark:bg-slate-700/30 border border-gray-200 dark:border-slate-600";
-
+    // statsDetailCardClasses não é mais usado
     const tooltipClasses = "bg-white text-slate-700 border border-gray-300 dark:bg-slate-800 dark:text-white dark:border-slate-600 p-2 rounded shadow-lg text-sm";
-    
     const perfCardDocenteName = "font-bold text-slate-700 dark:text-white";
     const perfCardProgressBarBg = "bg-gray-200 dark:bg-slate-700";
-
     const pieChartTitle = "font-bold text-slate-700 dark:text-white";
-    const pieChartSubtitle = "text-sm text-slate-600 dark:text-gray-400"; // Ajustado
+    const pieChartSubtitle = "text-sm text-slate-600 dark:text-gray-400";
     const pieLegendText = "text-slate-600 dark:text-gray-300";
     const pieLegendValue = "text-slate-700 dark:text-white font-medium";
-    
-    const detailLabel = "text-slate-600 dark:text-gray-400"; // Ajustado
+    const detailLabel = "text-slate-600 dark:text-gray-400";
 
 
     return (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <div className={themedCardClasses}> {/* Usando themedCardClasses */}
+            <div className={themedCardClasses}>
                 <h3 className={titleClasses}>Top 5 - Análise de Performance</h3>
                 <div className="flex-grow overflow-y-auto space-y-4">
                     {topPerformers.length > 0 ? (
                         topPerformers.map(renderPerfCard)
                     ) : (
-                        <p className={placeholderTextClasses}>Nenhum docente com performance {'≥'} 60%.</p>
+                        <p className={placeholderTextClasses}>Nenhum docente com performance {'>='} 60%.</p>
                     )}
                 </div>
             </div>
 
-            <div className={themedCardClasses}> {/* Usando themedCardClasses */}
+            <div className={themedCardClasses}>
                 <h3 className={titleClasses}>
                     {selectedDocente ? `Detalhes: ${selectedDocente.split(' ')[0]} ${selectedDocente.split(' ').slice(-1)[0]}` : 'Top 5 - Pontos de Atenção'}
                 </h3>
                 <div className="flex-grow overflow-y-auto space-y-4">
                     {selectedDocenteStats ? (
-                        <div className="space-y-4">
-                            {renderPieChart(selectedDocenteStats)}
-                            <div className={statsDetailCardClasses}>
-                                <h5 className={`font-semibold text-slate-700 dark:text-white mb-2 text-base`}>Estatísticas Detalhadas</h5>
-                                <div className="grid grid-cols-2 gap-4 text-sm">
-                                    <div>
-                                        <span className={detailLabel}>Taxa de Entrega:</span>
-                                        <span className="text-green-400 font-medium ml-2">
-                                            {selectedDocenteStats.score.toFixed(1)}%
-                                        </span>
-                                    </div>
-                                    <div>
-                                        <span className={detailLabel}>Criticidade:</span>
-                                        <span className="text-orange-400 font-medium ml-2">
-                                            {selectedDocenteStats.criticality}
-                                        </span>
-                                    </div>
-                                    <div>
-                                        <span className={detailLabel}>Dias s/ Acesso:</span>
-                                        <span className="text-red-400 font-medium ml-2">
-                                            {selectedDocenteStats.stats.diasSemAcesso}
-                                        </span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
+                        // O card de Estatísticas Detalhadas foi removido.
+                        // O gráfico de pizza (que agora inclui a taxa de entrega) será renderizado diretamente.
+                        renderPieChart(selectedDocenteStats)
                     ) : bottomPerformers.length > 0 ? (
                         bottomPerformers.map(renderPerfCard)
                     ) : (
