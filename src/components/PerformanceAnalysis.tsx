@@ -1,5 +1,5 @@
 
-import React, { useMemo, FC, useState } from 'react';
+import React, { useMemo, FC } from 'react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import { ProcessedData, DocenteStats } from '../types';
 
@@ -9,11 +9,7 @@ interface PerformanceAnalysisProps {
     selectedDocente: string | null;
 }
 
-type FilterMode = "all" | "pending" | "late";
-
 export const PerformanceAnalysis: FC<PerformanceAnalysisProps> = ({ data, onAnalysis, selectedDocente }) => {
-    const [filterMode, setFilterMode] = useState<FilterMode>("all");
-
     const { topPerformers, bottomPerformers, selectedDocenteStats } = useMemo(() => {
         const ranking = data.reduce((acc, row) => {
             if (!acc[row.Docente]) acc[row.Docente] = { entregue: 0, atrasado: 0, pendente: 0, total: 0, diasSemAcesso: 0 };
@@ -37,21 +33,12 @@ export const PerformanceAnalysis: FC<PerformanceAnalysisProps> = ({ data, onAnal
         }));
 
         const top = comScore.filter(d => d.score >= 60).sort((a, b) => b.score - a.score).slice(0, 5);
-        
-        let bottom = comScore.filter(d => d.score < 60);
-
-        if (filterMode === "pending") {
-            bottom = bottom.filter(d => d.stats.pendente > 0);
-        } else if (filterMode === "late") {
-            bottom = bottom.filter(d => d.stats.atrasado > 0);
-        }
-
-        bottom = bottom.sort((a, b) => b.criticality - a.criticality).slice(0, 5);
+        const bottom = comScore.filter(d => d.score < 60).sort((a, b) => b.criticality - a.criticality).slice(0, 5);
         
         const selectedStats = selectedDocente ? comScore.find(d => d.docente === selectedDocente) : null;
 
         return { topPerformers: top, bottomPerformers: bottom, selectedDocenteStats: selectedStats };
-    }, [data, selectedDocente, filterMode]);
+    }, [data, selectedDocente]);
 
     const handleSummary = (type: 'top' | 'bottom') => {
         const list = type === 'top' ? topPerformers : bottomPerformers;
@@ -184,12 +171,6 @@ export const PerformanceAnalysis: FC<PerformanceAnalysisProps> = ({ data, onAnal
     
     const detailLabel = "text-slate-600 dark:text-gray-400"; // Ajustado
 
-    const filterButtonClasses = (isActive: boolean) => 
-        `px-3 py-1 text-sm rounded-md transition-colors ${
-            isActive 
-                ? 'bg-cyan-500 text-white dark:bg-cyan-400 dark:text-slate-900' 
-                : 'bg-gray-200 text-slate-700 hover:bg-gray-300 dark:bg-slate-700 dark:text-gray-300 dark:hover:bg-slate-600'
-        }`;
 
     return (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -205,33 +186,9 @@ export const PerformanceAnalysis: FC<PerformanceAnalysisProps> = ({ data, onAnal
             </div>
 
             <div className={themedCardClasses}> {/* Usando themedCardClasses */}
-                <div className="flex justify-between items-center mb-4">
-                    <h3 className={titleClasses}>
-                        {selectedDocente ? `Detalhes: ${selectedDocente.split(' ')[0]} ${selectedDocente.split(' ').slice(-1)[0]}` : 'Top 5 - Pontos de Atenção'}
-                    </h3>
-                    {!selectedDocente && (
-                        <div className="flex space-x-2">
-                            <button 
-                                className={filterButtonClasses(filterMode === 'all')}
-                                onClick={() => setFilterMode('all')}
-                            >
-                                Todos
-                            </button>
-                            <button 
-                                className={filterButtonClasses(filterMode === 'pending')}
-                                onClick={() => setFilterMode('pending')}
-                            >
-                                Pendentes
-                            </button>
-                            <button 
-                                className={filterButtonClasses(filterMode === 'late')}
-                                onClick={() => setFilterMode('late')}
-                            >
-                                Atrasados
-                            </button>
-                        </div>
-                    )}
-                </div>
+                <h3 className={titleClasses}>
+                    {selectedDocente ? `Detalhes: ${selectedDocente.split(' ')[0]} ${selectedDocente.split(' ').slice(-1)[0]}` : 'Top 5 - Pontos de Atenção'}
+                </h3>
                 <div className="flex-grow overflow-y-auto space-y-4">
                     {selectedDocenteStats ? (
                         <div className="space-y-4">
@@ -263,11 +220,7 @@ export const PerformanceAnalysis: FC<PerformanceAnalysisProps> = ({ data, onAnal
                     ) : bottomPerformers.length > 0 ? (
                         bottomPerformers.map(renderPerfCard)
                     ) : (
-                        <p className={placeholderTextClasses}>
-                            {filterMode === 'all' && "Nenhum docente com performance < 60%."}
-                            {filterMode === 'pending' && "Nenhum docente com pendências."}
-                            {filterMode === 'late' && "Nenhum docente com atrasos."}
-                        </p>
+                        <p className={placeholderTextClasses}>Nenhum docente com performance {'<'} 60%.</p>
                     )}
                 </div>
             </div>

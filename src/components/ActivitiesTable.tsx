@@ -1,5 +1,5 @@
 
-import React, { useMemo, FC } from 'react';
+import React, { useMemo, FC, useState } from 'react';
 import { ProcessedData } from '../types';
 
 interface ActivitiesTableProps {
@@ -8,7 +8,11 @@ interface ActivitiesTableProps {
     selectedDocente: string | null;
 }
 
+type ActivityFilter = "all" | "pending" | "late";
+
 export const ActivitiesTable: FC<ActivitiesTableProps> = ({ data, onDocenteSelect, selectedDocente }) => {
+    const [activityFilter, setActivityFilter] = useState<ActivityFilter>("all");
+
     const { docentesData, selectedDocenteActivities } = useMemo(() => {
         const filteredData = data.filter(row => row.isPendente || row.isAtrasado);
         
@@ -32,15 +36,23 @@ export const ActivitiesTable: FC<ActivitiesTableProps> = ({ data, onDocenteSelec
             criticality: stats.atrasadas * 2 + stats.pendentes // Atrasos têm peso maior
         })).sort((a, b) => b.criticality - a.criticality);
 
-        const selectedActivities = selectedDocente && docentesMap.has(selectedDocente) 
+        let selectedActivities = selectedDocente && docentesMap.has(selectedDocente) 
             ? docentesMap.get(selectedDocente)!.activities 
             : [];
+
+        if (selectedDocente) {
+            if (activityFilter === "pending") {
+                selectedActivities = selectedActivities.filter(activity => activity.isPendente);
+            } else if (activityFilter === "late") {
+                selectedActivities = selectedActivities.filter(activity => activity.isAtrasado);
+            }
+        }
 
         return { 
             docentesData: docentesArray,
             selectedDocenteActivities: selectedActivities
         };
-    }, [data, selectedDocente]);
+    }, [data, selectedDocente, activityFilter]);
 
     const shortenName = (name: string) => {
         const parts = (name || "").trim().split(/\s+/);
@@ -88,7 +100,10 @@ export const ActivitiesTable: FC<ActivitiesTableProps> = ({ data, onDocenteSelec
                         docentesData.map(({ docente, pendentes, atrasadas }) => (
                             <button
                                 key={docente}
-                                onClick={() => onDocenteSelect(docente)}
+                                onClick={() => {
+                                    onDocenteSelect(docente);
+                                    setActivityFilter("all"); // Reset filter when selecting a new docente
+                                }}
                                 className={`${docenteButtonBase} ${
                                     selectedDocente === docente 
                                         ? docenteButtonSelected
@@ -118,13 +133,32 @@ export const ActivitiesTable: FC<ActivitiesTableProps> = ({ data, onDocenteSelec
 
             {/* Detalhes do Docente Selecionado */}
             <div className={cardClasses}>
-                <h3 className={titleClasses}>
-                    {selectedDocente ? `Atividades de ${shortenName(selectedDocente)}` : 'Selecione um docente'}
-                </h3>
-                <div className="max-h-96 overflow-y-auto">
+                <div className="flex justify-between items-center mb-4">
+                    <h3 className={titleClasses}>
+                        {selectedDocente ? `Atividades de ${shortenName(selectedDocente)}` : 'Selecione um docente'}
+                    </h3>
+                    {selectedDocente && (
+                        <select 
+                            value={activityFilter} 
+                            onChange={(e) => setActivityFilter(e.target.value as ActivityFilter)}
+                            className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-cyan-500 focus:border-cyan-500 block p-1.5 dark:bg-slate-700 dark:border-slate-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-cyan-500 dark:focus:border-cyan-500"
+                        >
+                            <option value="all">Todas</option>
+                            <option value="pending">Pendentes</option>
+                            <option value="late">Atrasadas</option>
+                        </select>
+                    )}
+                </div>
+                <div className="max-h-[calc(24rem-3rem)] overflow-y-auto"> {/* Adjusted max-h to account for header */}
                     {selectedDocenteActivities.length === 0 ? (
                         <p className={placeholderTextClasses}>
-                            {selectedDocente ? 'Nenhuma atividade encontrada.' : 'Clique em um docente para ver suas atividades.'}
+                            {selectedDocente 
+                                ? (activityFilter === "pending" 
+                                    ? "Nenhuma atividade pendente para este docente." 
+                                    : activityFilter === "late" 
+                                        ? "Nenhuma atividade atrasada para este docente."
+                                        : "Nenhuma atividade encontrada para este docente.")
+                                : 'Clique em um docente para ver suas atividades.'}
                         </p>
                     ) : (
                         <div className="space-y-3">
