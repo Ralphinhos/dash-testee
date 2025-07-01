@@ -32,6 +32,7 @@ export const RelatorioPeriodo: React.FC = () => {
         localStorage.removeItem('coordinatorCourses');
         localStorage.removeItem('loggedInCoordinatorUsername');
         localStorage.removeItem('userRole');
+        localStorage.removeItem('sessionExpireTime'); // Limpar o timestamp de expiração do idle timer
         navigate('/login');
     }, [navigate]);
     useIdleTimer(IDLE_TIMEOUT_RELATORIO, handleRelatorioIdleLogout);

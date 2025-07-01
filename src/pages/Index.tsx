@@ -46,6 +46,7 @@ export default function Index() {
         localStorage.removeItem('coordinatorCourses');
         localStorage.removeItem('loggedInCoordinatorUsername');
         localStorage.removeItem('userRole'); // Adicionado para limpar userRole
+        localStorage.removeItem('sessionExpireTime'); // Limpar o timestamp de expiração do idle timer
         navigate('/login');
     }, [navigate]);
 
