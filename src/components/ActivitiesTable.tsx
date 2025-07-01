@@ -1,5 +1,5 @@
 
-import React, { useMemo, FC, useState } from 'react';
+import React, { useMemo, FC, useState } from 'react'; // Adicionado useState
 import { ProcessedData } from '../types';
 
 interface ActivitiesTableProps {
@@ -8,33 +8,37 @@ interface ActivitiesTableProps {
     selectedDocente: string | null;
 }
 
-type ActivityFilter = "all" | "pending" | "late";
+type ActivityFilter = "all" | "pending" | "late"; // Adicionado tipo de filtro
 
 export const ActivitiesTable: FC<ActivitiesTableProps> = ({ data, onDocenteSelect, selectedDocente }) => {
-    const [activityFilter, setActivityFilter] = useState<ActivityFilter>("all");
+    const [activityFilter, setActivityFilter] = useState<ActivityFilter>("all"); // Adicionado estado do filtro
 
     const { docentesData, selectedDocenteActivities } = useMemo(() => {
-        // Agrupa por docente e calcula pendentes/atrasadas a partir de 'data' completo
+        // const filteredData = data.filter(row => row.isPendente || row.isAtrasado); // Removido filtro inicial aqui
+        
+        // Agrupa por docente e recalcula contagens baseadas nas definições atualizadas de isPendente/isAtrasado
         const docentesMap = new Map<string, { pendentes: number; atrasadas: number; activities: ProcessedData[] }>();
         
-        data.forEach(row => {
+        data.forEach(row => { // Itera sobre 'data' original
             if (!docentesMap.has(row.Docente)) {
                 docentesMap.set(row.Docente, { pendentes: 0, atrasadas: 0, activities: [] });
             }
             const docenteData = docentesMap.get(row.Docente)!;
             docenteData.activities.push(row); // Adiciona todas as atividades do docente
             
+            // As contagens de pendentes/atrasadas para a lista de docentes são baseadas nas flags do useDataProcessor
             if (row.isPendente) docenteData.pendentes++;
-            if (row.isAtrasado) docenteData.atrasadas++;
+            if (row.isAtrasado) docenteData.atrasadas++; // isAtrasado agora significa "entregue com atraso"
         });
 
-        // Filtra docentes que têm pelo menos uma pendência ou atraso para a lista da esquerda
+        // Filtra docentes que têm pelo menos uma pendência ou atraso (entregue com atraso)
         const docentesArray = Array.from(docentesMap.entries())
             .filter(([_, stats]) => stats.pendentes > 0 || stats.atrasadas > 0)
             .map(([docente, stats]) => ({
                 docente,
                 ...stats,
-                criticality: stats.atrasadas * 2 + stats.pendentes
+                // A criticidade aqui pode precisar de revisão se as definições de pendente/atrasado mudaram muito seu significado
+                criticality: stats.atrasadas * 2 + stats.pendentes 
             })).sort((a, b) => b.criticality - a.criticality);
 
         // Obtém todas as atividades do docente selecionado
@@ -42,21 +46,23 @@ export const ActivitiesTable: FC<ActivitiesTableProps> = ({ data, onDocenteSelec
             ? docentesMap.get(selectedDocente)!.activities 
             : [];
 
-        // Aplica o filtro de "pending" ou "late" na lista de atividades do docente selecionado
+        // Aplica o filtro de "pending", "late" ou "all" na lista de atividades do docente selecionado
         if (selectedDocente) {
             if (activityFilter === "pending") {
                 activitiesForSelectedDocente = activitiesForSelectedDocente.filter(activity => activity.isPendente);
             } else if (activityFilter === "late") {
                 activitiesForSelectedDocente = activitiesForSelectedDocente.filter(activity => activity.isAtrasado);
+            } else if (activityFilter === "all") {
+                // "All" agora significa Pendentes OU Atrasadas (entregues com atraso)
+                activitiesForSelectedDocente = activitiesForSelectedDocente.filter(activity => activity.isPendente || activity.isAtrasado);
             }
-            // Se 'all', não faz nada, já tem todas as atividades (pendentes, atrasadas ou não)
         }
 
         return { 
             docentesData: docentesArray,
             selectedDocenteActivities: activitiesForSelectedDocente
         };
-    }, [data, selectedDocente, activityFilter]);
+    }, [data, selectedDocente, activityFilter]); // Adicionado activityFilter às dependências
 
     const shortenName = (name: string) => {
         const parts = (name || "").trim().split(/\s+/);
@@ -76,13 +82,13 @@ export const ActivitiesTable: FC<ActivitiesTableProps> = ({ data, onDocenteSelec
 
     const cardClasses = "bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg shadow-sm dark:shadow-md p-6";
     const titleClasses = "text-lg font-semibold text-slate-700 dark:text-white mb-4";
-    const placeholderTextClasses = "text-center p-8 text-slate-600 dark:text-gray-400"; // Ajustado para text-slate-600
+    const placeholderTextClasses = "text-center p-8 text-slate-600 dark:text-gray-400"; 
 
     const docenteButtonBase = "w-full p-3 rounded-lg text-left transition-colors";
     const docenteButtonNormal = "bg-gray-100 hover:bg-gray-200 border border-gray-200 dark:bg-slate-700/50 dark:hover:bg-slate-600/50 dark:border-slate-600";
     const docenteButtonSelected = "bg-cyan-500 text-white border border-cyan-500 dark:bg-[#2b466d] dark:text-white dark:border-cyan-400";
     
-    const docenteNameClasses = "font-medium text-slate-700 dark:text-white";
+    const docenteNameClasses = "font-medium text-slate-700 dark:text-white"; // Mantido, mas verificar se o tema dark precisa de ajuste com nova cor de selected
     const badgeAtrasadasClasses = "bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-300 px-2 py-1 rounded text-xs";
     const badgePendentesClasses = "bg-red-100 text-red-700 dark:bg-red-500/20 dark:text-red-300 px-2 py-1 rounded text-xs";
 
@@ -137,31 +143,31 @@ export const ActivitiesTable: FC<ActivitiesTableProps> = ({ data, onDocenteSelec
 
             {/* Detalhes do Docente Selecionado */}
             <div className={cardClasses}>
-                <div className="flex justify-between items-center mb-4">
-                    <h3 className={titleClasses}>
+                <div className="flex justify-between items-center mb-4"> {/* Container para título e dropdown */}
+                    <h3 className={titleClasses} style={{ marginBottom: 0 }}> {/* Removido mb-4 do título */}
                         {selectedDocente ? `Atividades de ${shortenName(selectedDocente)}` : 'Selecione um docente'}
                     </h3>
-                    {selectedDocente && (
+                    {selectedDocente && ( // Dropdown só aparece se um docente estiver selecionado
                         <select 
                             value={activityFilter} 
                             onChange={(e) => setActivityFilter(e.target.value as ActivityFilter)}
-                            className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-cyan-500 focus:border-cyan-500 block p-1.5 dark:bg-slate-700 dark:border-slate-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-cyan-500 dark:focus:border-cyan-500"
+                            className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-cyan-500 focus:border-cyan-500 block p-1.5 dark:bg-slate-700 dark:border-slate-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-cyan-500 dark:focus:border-cyan-500 ml-4" // Adicionado ml-4
                         >
-                            <option value="all">Todas</option>
+                            <option value="all">Todas (Pend./Atr.)</option>
                             <option value="pending">Pendentes</option>
                             <option value="late">Atrasadas</option>
                         </select>
                     )}
                 </div>
-                <div className="max-h-[calc(24rem-3rem)] overflow-y-auto"> {/* Adjusted max-h to account for header */}
+                <div className="max-h-[calc(24rem-3rem)] overflow-y-auto">  {/* Ajustar altura se necessário por causa do header com dropdown */}
                     {selectedDocenteActivities.length === 0 ? (
                         <p className={placeholderTextClasses}>
                             {selectedDocente 
                                 ? (activityFilter === "pending" 
-                                    ? "Nenhuma atividade pendente para este docente." 
+                                    ? "Nenhuma atividade pendente." 
                                     : activityFilter === "late" 
-                                        ? "Nenhuma atividade atrasada para este docente."
-                                        : "Nenhuma atividade encontrada para este docente.")
+                                        ? "Nenhuma atividade entregue com atraso."
+                                        : "Nenhuma atividade pendente ou entregue com atraso.")
                                 : 'Clique em um docente para ver suas atividades.'}
                         </p>
                     ) : (

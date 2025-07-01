@@ -42,42 +42,50 @@ export const useDataProcessor = () => {
       let isAtrasado = false;
       let isEntregueNoPrazo = false;
 
-      if (dataEntrega) { 
-        isPendente = false; 
-        if (dataLimite && dataEntrega > dataLimite) {
+      // Nova lógica conforme solicitado:
+      // isPendente: Entregue !== 'SIM'
+      // isAtrasado: Entregue === 'SIM' E dataEntrega > dataLimite
+      // isEntregueNoPrazo: Entregue === 'SIM' E dataEntrega <= dataLimite
+
+      const entregueSim = dataEntrega !== null; // Considera que se dataEntrega existe, foi entregue.
+
+      if (entregueSim) {
+        isPendente = false;
+        if (dataLimite && dataEntrega! > dataLimite) {
           isAtrasado = true;
           isEntregueNoPrazo = false;
-          diasCalculado = Math.ceil((dataEntrega.getTime() - dataLimite.getTime()) / (1000 * 60 * 60 * 24));
+          diasCalculado = Math.ceil((dataEntrega!.getTime() - dataLimite.getTime()) / (1000 * 60 * 60 * 24));
           statusCalculado = `Entregue com ${diasCalculado} dia(s) de atraso`;
-        } else {
+        } else { // Entregue no prazo ou adiantado (ou sem data limite, mas entregue)
           isAtrasado = false;
           isEntregueNoPrazo = true;
           statusCalculado = 'Entregue no prazo';
           if (dataLimite) {
-             diasCalculado = Math.ceil((dataEntrega.getTime() - dataLimite.getTime()) / (1000 * 60 * 60 * 24));
-             // diasCalculado será <= 0 se entregue no prazo ou adiantado
+            // Calcula a diferença, pode ser negativa se adiantado.
+            diasCalculado = Math.ceil((dataEntrega!.getTime() - dataLimite.getTime()) / (1000 * 60 * 60 * 24));
+          } else {
+            diasCalculado = 0; // Entregue, mas sem data limite para comparar
           }
         }
-      } else if (dataLimite) { 
+      } else { // Não foi entregue (dataEntrega é null)
         isPendente = true;
-        isAtrasado = false; 
+        isAtrasado = false; // Não pode estar 'atrasado' no sentido de 'entregue com atraso' se não foi entregue
         isEntregueNoPrazo = false;
-        if (hoje > dataLimite) {
-          isAtrasado = true; // Pendente E Atrasado
+        if (dataLimite && hoje > dataLimite) {
+          // Está pendente E o prazo passou
           diasCalculado = Math.ceil((hoje.getTime() - dataLimite.getTime()) / (1000 * 60 * 60 * 24));
           statusCalculado = `Pendente há ${diasCalculado} dia(s)`;
+        } else if (dataLimite) {
+          // Está pendente mas dentro do prazo
+          statusCalculado = 'Pendente';
+          diasCalculado = 0; // Ou calcular dias restantes se preferir
         } else {
-          statusCalculado = 'Pendente'; // Pendente mas dentro do prazo
+          // Pendente e sem data limite
+          statusCalculado = 'Pendente (sem data limite)';
+          diasCalculado = 0;
         }
-      } else {
-        // Sem data de entrega e sem data limite
-        isPendente = true; 
-        isAtrasado = false;
-        isEntregueNoPrazo = false;
-        statusCalculado = 'Pendente (sem data limite)'; // Ou apenas 'Pendente'
-        diasCalculado = 0; 
       }
-
+            
       // Converter 'Dias s/ Acesso' para número
       const diasSemAcessoStr = row['Dias s/ Acesso'];
       let diasSemAcessoNum = 0; // Valor padrão se não for um número ou estiver ausente
