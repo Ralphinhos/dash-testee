@@ -31,8 +31,7 @@ export default function Index() {
     const [filters, setFilters] = useState<FilterState>({ semestre: 'Todos', modalidade: 'Todos', modulo: 'Todos', curso: 'Todos' });
     const [selectedDocente, setSelectedDocente] = useState<string | null>(null);
     
-    // GOOGLE_SHEET_URL removido, pois o fetch é feito no DataProvider
-    const GOOGLE_APPS_SCRIPT_URL = import.meta.env.VITE_GOOGLE_APPS_SCRIPT_URL;
+    const NETLIFY_FUNCTIONS_URL = '/.netlify/functions'; // URL base para Netlify Functions
 
     useEffect(() => {
         const role = localStorage.getItem('userRole');
@@ -305,14 +304,20 @@ export default function Index() {
         setModalContent('Processando e enviando e-mails...');
         try {
             const dadosParaEnvio = { action: action, dadosDetalhados: filteredData };
-            const response = await fetch(GOOGLE_APPS_SCRIPT_URL, {
+            // Chamar a Netlify Function em vez do Google Apps Script
+            const response = await fetch(`${NETLIFY_FUNCTIONS_URL}/send-email`, { // Modificado aqui
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', },
                 body: JSON.stringify(dadosParaEnvio)
             });
-            if (!response.ok) throw new Error(`Erro HTTP: ${response.status} - ${response.statusText}`);
+            if (!response.ok) {
+                // Tentar ler a mensagem de erro do corpo da resposta, se houver
+                const errorData = await response.json().catch(() => null);
+                const errorMessage = errorData?.error || `Erro HTTP: ${response.status} - ${response.statusText}`;
+                throw new Error(errorMessage);
+            }
             const result = await response.json();
-            setModalContent(`✅ ${result.message}`);
+            setModalContent(`✅ ${result.message || 'E-mails enviados com sucesso!'}`); // Mensagem de sucesso genérica se não houver
         } catch (error: any) {
             console.error('Erro ao enviar notificação:', error);
             setModalContent(`❌ Erro ao enviar notificação:\n\n${error.message}`);
