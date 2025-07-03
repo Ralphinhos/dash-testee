@@ -45,7 +45,7 @@ const COLUNAS = {
   COORDENADOR: 'Coordenador', 
   EMAIL_COORDENADOR: 'email_coordenador',
   DISCIPLINA: 'Disciplina',
-  ATIVIDADE: 'Nome da Atividade', // Ou a chave correspondente à descrição da UA/atividade
+  ATIVIDADE: 'Atividade', // Ou a chave correspondente à descrição da UA/atividade
   STATUS_CALCULADO: 'statusCalculado',
   IS_PENDENTE: 'isPendente', // Chave que indica se a atividade está pendente
   CURSO: 'Curso'
