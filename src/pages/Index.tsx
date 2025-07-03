@@ -334,7 +334,7 @@ export default function Index() {
             const result = await response.json();
             sonnerToast.success("Sucesso!", {
                 description: result.message || 'E-mails processados com sucesso!',
-                duration: 2000,
+                duration: 4000, // Aumentado para 4 segundos
             });
 
         } catch (error: any) {
