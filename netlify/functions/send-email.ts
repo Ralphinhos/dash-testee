@@ -84,9 +84,9 @@ async function sendEmailWithNodemailer(to: string, subject: string, htmlBody: st
 async function handleCobrarUas(dados: any[], senderEmail: string, appPassword: string): Promise<string> {
   console.log(`Iniciando cobrança de UAs pendentes com ${dados.length} itens.`);
   const uasPendentesRaw = dados.filter(item => 
-    item[COLUNAS.ATIVIDADE] === "UA'S ENVIADAS" && item[COLUNAS.IS_PENDENTE] === true
+    item[COLUNAS.ATIVIDADE] === "UA'S" && item[COLUNAS.IS_PENDENTE] === true
   );
-  console.log(`Número de UAs 'UA'S ENVIADAS' e isPendente=true: ${uasPendentesRaw.length}`);
+  console.log(`Número de UAs 'UA'S e isPendente=true: ${uasPendentesRaw.length}`);
 
   const uasPorDocente: UasPorDocente = {};
   for (const item of uasPendentesRaw) {
