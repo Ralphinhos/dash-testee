@@ -304,7 +304,7 @@ export default function Index() {
         setModalContent('Processando e enviando e-mails...');
         try {
             const dadosParaEnvio = { action: action, dadosDetalhados: filteredData };
-            // Chamar a Netlify Function em vez do Google Apps Script
+            console.log("Dados sendo enviados para a função Netlify:", JSON.stringify(dadosParaEnvio, null, 2));
             const response = await fetch(`${NETLIFY_FUNCTIONS_URL}/send-email`, { // Modificado aqui
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', },
