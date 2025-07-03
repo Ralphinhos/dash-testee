@@ -15,21 +15,24 @@ import { useNavigate } from 'react-router-dom';
 import { LogOut, Sun, Moon, FileText } from 'lucide-react'; // Adicionado FileText
 import { ThemeSwitcher } from '../components/ThemeSwitcher';
 import useIdleTimer from '../hooks/useIdleTimer';
+import { useToast } from "@/components/ui/use-toast"; // Importar useToast
 
 export default function Index() {
     // 1. Hooks e Contexto
     const navigate = useNavigate();
+    const { toast } = useToast(); // Hook para notificações Toast
     const { allData, isLoading, error: dataError } = useDataContext(); // Consumir DataContext
     // const { processData } = useDataProcessor(); // Removido, pois o fetch está no DataProvider
     const [userRole, setUserRole] = useState<string | null>(null);
 
     // 2. Definições de estado local (filtros, UI)
     const [filteredData, setFilteredData] = useState<ProcessedData[]>([]);
-    const [isModalOpen, setIsModalOpen] = useState(false);
-    const [modalTitle, setModalTitle] = useState('');
-    const [modalContent, setModalContent] = useState('');
+    // const [isModalOpen, setIsModalOpen] = useState(false); // Removido - substituído por Toasts
+    // const [modalTitle, setModalTitle] = useState(''); // Removido
+    // const [modalContent, setModalContent] = useState(''); // Removido
     const [filters, setFilters] = useState<FilterState>({ semestre: 'Todos', modalidade: 'Todos', modulo: 'Todos', curso: 'Todos' });
     const [selectedDocente, setSelectedDocente] = useState<string | null>(null);
+    const [isNotifying, setIsNotifying] = useState(false); // Estado para controlar o carregamento da notificação
     
     const NETLIFY_FUNCTIONS_URL = '/.netlify/functions'; // URL base para Netlify Functions
 
@@ -295,32 +298,62 @@ export default function Index() {
     };
    
     const handleNotification = async (action: string) => {
-        if (filteredData.length === 0) { // Usará o filteredData do useState, que pode estar vazio ou com allData
-            alert('Nenhum dado selecionado. Por favor, aplique os filtros de Semestre e Modalidade primeiro.');
+        if (filteredData.length === 0) {
+            toast({
+                title: "Atenção",
+                description: "Nenhum dado selecionado. Por favor, aplique os filtros de Semestre e Modalidade primeiro.",
+                variant: "destructive",
+            });
             return;
         }
-        setIsModalOpen(true);
-        setModalTitle('Enviando Notificação');
-        setModalContent('Processando e enviando e-mails...');
+
+        setIsNotifying(true); // Ativa o estado de carregamento
+        // Exibe um toast inicial de "Enviando..."
+        const sendingToast = toast({
+            title: "Enviando Notificações",
+            description: "Processando e enviando e-mails...",
+        });
+
         try {
             const dadosParaEnvio = { action: action, dadosDetalhados: filteredData };
             console.log("Dados sendo enviados para a função Netlify:", JSON.stringify(dadosParaEnvio, null, 2));
-            const response = await fetch(`${NETLIFY_FUNCTIONS_URL}/send-email`, { // Modificado aqui
+            
+            const response = await fetch(`${NETLIFY_FUNCTIONS_URL}/send-email`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', },
                 body: JSON.stringify(dadosParaEnvio)
             });
+
+            // Independentemente do resultado, remove o toast de "Enviando..."
+            // O toast de sucesso ou erro será exibido em seu lugar.
+            // No entanto, o sistema de toast atual pode não ter um método `dismiss` fácil.
+            // Vamos confiar que o novo toast irá sobrepor ou que a duração curta do "enviando" é aceitável.
+            // Se o `sonner` for usado, ele tem `toast.dismiss(id)`. O `useToast` atual não parece ter isso de forma simples.
+
             if (!response.ok) {
-                // Tentar ler a mensagem de erro do corpo da resposta, se houver
                 const errorData = await response.json().catch(() => null);
                 const errorMessage = errorData?.error || `Erro HTTP: ${response.status} - ${response.statusText}`;
                 throw new Error(errorMessage);
             }
+
             const result = await response.json();
-            setModalContent(`✅ ${result.message || 'E-mails enviados com sucesso!'}`); // Mensagem de sucesso genérica se não houver
+            toast({
+                title: "Sucesso!",
+                description: result.message || 'E-mails processados com sucesso!',
+                variant: "default", // Ou "success" se tiver um estilo definido
+            });
+
         } catch (error: any) {
             console.error('Erro ao enviar notificação:', error);
-            setModalContent(`❌ Erro ao enviar notificação:\n\n${error.message}`);
+            toast({
+                title: "Erro ao Enviar",
+                description: `Falha ao enviar notificações: ${error.message}`,
+                variant: "destructive",
+            });
+        } finally {
+            setIsNotifying(false); // Desativa o estado de carregamento
+            // Se o toast de "Enviando" tiver um ID, pode ser removido aqui.
+            // Ex: if (sendingToast?.id) toast.dismiss(sendingToast.id); - Isso depende da implementação do toast.
         }
     };
 
@@ -367,7 +400,7 @@ export default function Index() {
                 .table-container { height: calc(30vh); min-height: 200px; }
                 .status-badge { font-size: 0.75rem; line-height: 1rem; font-weight: 500; padding: 0.25rem 0.625rem; border-radius: 9999px; white-space: nowrap; }
             `}</style>
-            <Sidebar kpis={kpis} userRole={userRole} onNotification={handleNotification} /> {/* Passando onNotification novamente */}
+            <Sidebar kpis={kpis} userRole={userRole} onNotification={handleNotification} isNotifying={isNotifying} /> {/* Passando isNotifying */}
             <main className="flex-1 p-6 lg:p-8 space-y-6 overflow-y-auto bg-gray-100 dark:bg-[#0f172a] text-slate-800 dark:text-gray-200">
                 <header className="space-y-4">
                     <div className="flex justify-between items-center gap-4">
@@ -441,7 +474,8 @@ export default function Index() {
                     </TabsContent>
                 </Tabs>
             </main>
-            <AIModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={modalTitle} content={modalContent} />
+            {/* AIModal removido, pois as notificações agora são tratadas por Toasts */}
+            {/* <AIModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={modalTitle} content={modalContent} /> */}
         </div>
     );
 }
