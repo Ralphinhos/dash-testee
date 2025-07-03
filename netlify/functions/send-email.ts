@@ -52,7 +52,7 @@ const COLUNAS = {
 };
 
 // Função auxiliar para enviar e-mail
-async function sendEmailWithNodemailer(to: string, subject: string, htmlBody: string, senderEmail: string, appPassword: string) {
+async function sendEmailWithNodemailer(to: string, subject: string, htmlBody: string, senderEmail: string, appPassword: string, cc?: string | string[]) {
   const transporter = nodemailer.createTransport({
     host: "smtp.gmail.com",
     port: 465,
@@ -63,16 +63,20 @@ async function sendEmailWithNodemailer(to: string, subject: string, htmlBody: st
     },
   });
 
-  const mailOptions = {
+  const mailOptions: nodemailer.SendMailOptions = {
     from: senderEmail,
     to: to, 
     subject: subject,
     html: htmlBody,
   };
 
+  if (cc && cc.length > 0) { // Adicionado verificação para cc não ser vazio
+    mailOptions.cc = cc;
+  }
+
   try {
     await transporter.sendMail(mailOptions);
-    console.log(`Email sent successfully to ${to}`);
+    console.log(`Email sent successfully to ${to}` + (mailOptions.cc ? ` and CC to ${Array.isArray(mailOptions.cc) ? mailOptions.cc.join(', ') : mailOptions.cc}` : ""));
     return true;
   } catch (error) {
     console.error(`Failed to send email to ${to}:`, error);
@@ -80,24 +84,34 @@ async function sendEmailWithNodemailer(to: string, subject: string, htmlBody: st
   }
 }
 
+// Função auxiliar para obter e-mails de Cc das variáveis de ambiente
+function getCcEmails(envVarName: string): string[] | undefined {
+  const ccEmailsString = process.env[envVarName];
+  if (ccEmailsString && ccEmailsString.trim() !== "") {
+    return ccEmailsString.split(',').map(email => email.trim());
+  }
+  return undefined;
+}
+
 // Lógica para 'cobrarUasPendentes'
 async function handleCobrarUas(dados: any[], senderEmail: string, appPassword: string): Promise<string> {
   console.log(`[handleCobrarUas] Iniciando. Total de itens recebidos: ${dados.length}`);
   
+  const ccEmails = getCcEmails("TEST_CC_COBRANCA_UAS_EMAILS");
+  if (ccEmails) {
+    console.log(`[handleCobrarUas] E-mails para Cc (Cobrança UAs): ${ccEmails.join(', ')}`);
+  } else {
+    console.log("[handleCobrarUas] Nenhuma variável de ambiente TEST_CC_COBRANCA_UAS_EMAILS configurada para Cc.");
+  }
+
   if (dados.length === 0) {
     console.log("[handleCobrarUas] Nenhum dado recebido para processar.");
     return "Nenhum dado recebido para processar cobrança de UAs.";
   }
 
-  // Log de algumas amostras dos dados recebidos para verificar a estrutura e valores
-  // console.log("[handleCobrarUas] Amostra de dados (primeiros 5 itens):", JSON.stringify(dados.slice(0, 5), null, 2));
-  // console.log(`[handleCobrarUas] Verificando chaves: COLUNAS.ATIVIDADE = '${COLUNAS.ATIVIDADE}', COLUNAS.IS_PENDENTE = '${COLUNAS.IS_PENDENTE}'`);
-
   const uasPendentesRaw = dados.filter(item => {
     const atividadeMatch = item[COLUNAS.ATIVIDADE] === "UA'S";
     const pendenteMatch = item[COLUNAS.IS_PENDENTE] === true;
-    // Log detalhado por item (pode ser muito verboso, usar com cautela)
-    // console.log(`[handleCobrarUas] Item: ${JSON.stringify(item)}, Atividade: ${item[COLUNAS.ATIVIDADE]} (Match: ${atividadeMatch}), Pendente: ${item[COLUNAS.IS_PENDENTE]} (Match: ${pendenteMatch})`);
     return atividadeMatch && pendenteMatch;
   });
   console.log(`[handleCobrarUas] Número de itens filtrados como UA'S pendentes: ${uasPendentesRaw.length}`);
@@ -106,7 +120,6 @@ async function handleCobrarUas(dados: any[], senderEmail: string, appPassword: s
     console.log("[handleCobrarUas] Nenhum item 'UA\\'S' pendente encontrado após o filtro inicial.");
     return "Nenhuma UA pendente encontrada para cobrança.";
   }
-  // console.log("[handleCobrarUas] Itens UA'S pendentes filtrados:", JSON.stringify(uasPendentesRaw, null, 2));
 
   const uasPorDocente: UasPorDocente = {};
   for (const item of uasPendentesRaw) {
@@ -114,18 +127,14 @@ async function handleCobrarUas(dados: any[], senderEmail: string, appPassword: s
     const emailDocente = item[COLUNAS.EMAIL_DOCENTE];
     const disciplina = item[COLUNAS.DISCIPLINA];
 
-    // console.log(`[handleCobrarUas] Processando item para docente: ${nomeDocente}, email: ${emailDocente}, disciplina: ${disciplina}`);
-
     if (!nomeDocente || !emailDocente || !disciplina) {
       console.log(`[handleCobrarUas] Item de UA ignorado por dados ausentes (docente, email ou disciplina): ${JSON.stringify(item)}`);
       continue;
     }
     if (!uasPorDocente[nomeDocente]) {
       uasPorDocente[nomeDocente] = { email: emailDocente, disciplinas: new Set<string>() };
-      // console.log(`[handleCobrarUas] Novo docente adicionado para cobrança de UA: ${nomeDocente}`);
     }
     uasPorDocente[nomeDocente].disciplinas.add(disciplina);
-    // console.log(`[handleCobrarUas] Disciplina '${disciplina}' adicionada para docente ${nomeDocente}. Total disciplinas para este docente: ${uasPorDocente[nomeDocente].disciplinas.size}`);
   }
 
   let docentesCobrados = 0;
@@ -139,13 +148,13 @@ async function handleCobrarUas(dados: any[], senderEmail: string, appPassword: s
 
   for (const nomeDocente in uasPorDocente) {
     const info = uasPorDocente[nomeDocente];
-    // console.log(`[handleCobrarUas] Preparando e-mail para docente: ${nomeDocente}, Email: ${info.email}, Disciplinas: ${Array.from(info.disciplinas)}`);
+    console.log(`[handleCobrarUas] Preparando e-mail para docente: ${nomeDocente}, Email: ${info.email}, Disciplinas: ${Array.from(info.disciplinas)}`);
     if (info.disciplinas.size === 0) {
-      // console.log(`[handleCobrarUas] Docente ${nomeDocente} não tem disciplinas listadas para cobrança de UA, pulando.`);
       continue;
     }
 
     const listaDisciplinasHtml = `<ul>${Array.from(info.disciplinas).sort().map(d => `<li>${d}</li>`).join('')}</ul>`;
+    console.log(`[handleCobrarUas] Lista de disciplinas HTML para ${nomeDocente}: ${listaDisciplinasHtml}`);
     const corpoHtml = 
       `<p>Olá, Professor(a) ${nomeDocente}, tudo bem?</p>
        <p>Sabemos que o dia a dia é sempre uma correria e, para te ajudar a organizar, estamos passando para verificar o andamento do envio do material das UAs (Unidades de Aprendizagem).</p>
@@ -155,38 +164,40 @@ async function handleCobrarUas(dados: any[], senderEmail: string, appPassword: s
        <p>Se precisar de qualquer ajuda, é só nos chamar!</p>
        <p>Um abraço,<br>Equipe NED</p>`;
     
-    // console.log(`[handleCobrarUas] Corpo do e-mail para ${nomeDocente}:\n${corpoHtml}`);
-    if (await sendEmailWithNodemailer(info.email, "Sobre o envio do material (UAs)", corpoHtml, senderEmail, appPassword)) {
+    console.log(`[handleCobrarUas] Corpo do e-mail para ${nomeDocente}:\n${corpoHtml}`);
+    if (await sendEmailWithNodemailer(info.email, "Sobre o envio do material (UAs)", corpoHtml, senderEmail, appPassword, ccEmails)) {
       docentesCobrados++;
-      // console.log(`[handleCobrarUas] E-mail de cobrança de UA enviado com sucesso para ${nomeDocente} (${info.email})`);
-    } else {
-      // console.log(`[handleCobrarUas] Falha ao enviar e-mail de cobrança de UA para ${nomeDocente} (${info.email})`);
     }
   }
 
   console.log(`[handleCobrarUas] Finalizado. Docentes cobrados: ${docentesCobrados} de ${totalDocentesParaCobrar}`);
   if (docentesCobrados === 0 && totalDocentesParaCobrar > 0) {
-    return `Tentativa de cobrar ${totalDocentesParaCobrar} docente(s) sobre UAs pendentes, mas nenhum e-mail pôde ser enviado. Verifique os logs da função para mais detalhes.`;
+    return `Falha ao cobrar ${totalDocentesParaCobrar} docente(s) sobre UAs pendentes. Verifique os logs.`;
   }
-  return `E-mails de cobrança de UAs para ${docentesCobrados} de ${totalDocentesParaCobrar} docente(s) com UAs pendentes processados.`;
+  return `${docentesCobrados}/${totalDocentesParaCobrar} docente(s) notificados sobre UAs pendentes.`;
 }
 
-// --- Implementar handleNotificarDocentes e handleNotificarCoordenadores aqui ---
 async function handleNotificarDocentes(dados: any[], senderEmail: string, appPassword: string): Promise<string> {
-  console.log(`Iniciando notificação de docentes com ${dados.length} itens.`);
+  console.log(`[handleNotificarDocentes] Iniciando notificação de docentes com ${dados.length} itens.`);
+  const ccEmails = getCcEmails("TEST_CC_NOTIFICACAO_GERAL_EMAILS");
+  if (ccEmails) {
+    console.log(`[handleNotificarDocentes] E-mails para Cc (Notificação Docentes): ${ccEmails.join(', ')}`);
+  } else {
+    console.log("[handleNotificarDocentes] Nenhuma variável de ambiente TEST_CC_NOTIFICACAO_GERAL_EMAILS configurada para Cc.");
+  }
+  
   const pendenciasPorDocente: PendenciasPorDocente = {};
 
   for (const item of dados) {
     const nomeDocente = item[COLUNAS.DOCENTE];
     const emailDocente = item[COLUNAS.EMAIL_DOCENTE];
     if (!nomeDocente || !emailDocente) {
-      console.log(`Item ignorado para notificação (docente) por falta de nome/email: ${JSON.stringify(item)}`);
+      console.log(`[handleNotificarDocentes] Item ignorado por falta de nome/email: ${JSON.stringify(item)}`);
       continue;
     }
     if (!pendenciasPorDocente[nomeDocente]) {
       pendenciasPorDocente[nomeDocente] = { email: emailDocente, atividades: [] };
     }
-    // Filtrar para incluir apenas atividades pendentes
     if (item[COLUNAS.IS_PENDENTE] === true) {
       pendenciasPorDocente[nomeDocente].atividades.push(item);
     }
@@ -194,11 +205,11 @@ async function handleNotificarDocentes(dados: any[], senderEmail: string, appPas
 
   let docentesNotificados = 0;
   const totalDocentes = Object.keys(pendenciasPorDocente).length;
-  console.log(`Total de docentes para notificar: ${totalDocentes}`);
+  console.log(`[handleNotificarDocentes] Total de docentes para notificar: ${totalDocentes}`);
 
   for (const nomeDocente in pendenciasPorDocente) {
     const info = pendenciasPorDocente[nomeDocente];
-    if (info.atividades.length > 0) { // Somente processa e envia e-mail se houver atividades pendentes
+    if (info.atividades.length > 0) {
       let atividadesHtml = "";
       info.atividades.forEach(item => {
         atividadesHtml += 
@@ -218,20 +229,26 @@ async function handleNotificarDocentes(dados: any[], senderEmail: string, appPas
          <p>Caso já tenha realizado os ajustes, por favor, desconsidere esta notificação.</p>
          <p>Atenciosamente,<br>Equipe NED</p>`;
 
-      if (await sendEmailWithNodemailer(info.email, "Notificação de Pendências em Atividades Acadêmicas", corpoHtml, senderEmail, appPassword)) {
+      if (await sendEmailWithNodemailer(info.email, "Notificação de Pendências em Atividades Acadêmicas", corpoHtml, senderEmail, appPassword, ccEmails)) {
         docentesNotificados++;
       }
     }
   }
   if (totalDocentes > 0 && docentesNotificados === 0 && Object.keys(pendenciasPorDocente).some(docente => pendenciasPorDocente[docente].atividades.length > 0) ) {
-    // Se havia docentes para notificar (com pendências reais) mas nenhum e-mail foi enviado.
-    return `Tentativa de notificar ${totalDocentes} docente(s) com pendências, mas nenhum e-mail pôde ser enviado. Verifique os logs.`;
+    return `Falha ao notificar ${totalDocentes} docente(s) com pendências. Verifique os logs.`;
   }
-  return `E-mails de notificação para ${docentesNotificados} de ${totalDocentes} docente(s) com pendências relevantes processados.`;
+  return `${docentesNotificados}/${totalDocentes} docente(s) notificados sobre pendências.`;
 }
 
 async function handleNotificarCoordenadores(dados: any[], senderEmail: string, appPassword: string): Promise<string> {
-  console.log(`Iniciando notificação de coordenadores com ${dados.length} itens.`);
+  console.log(`[handleNotificarCoordenadores] Iniciando notificação de coordenadores com ${dados.length} itens.`);
+  const ccEmails = getCcEmails("TEST_CC_NOTIFICACAO_GERAL_EMAILS");
+  if (ccEmails) {
+    console.log(`[handleNotificarCoordenadores] E-mails para Cc (Notificação Coordenadores): ${ccEmails.join(', ')}`);
+  } else {
+    console.log("[handleNotificarCoordenadores] Nenhuma variável de ambiente TEST_CC_NOTIFICACAO_GERAL_EMAILS configurada para Cc.");
+  }
+
   const pendenciasPorCoordenador: PendenciasPorCoordenador = {};
 
   for (const item of dados) {
@@ -241,7 +258,7 @@ async function handleNotificarCoordenadores(dados: any[], senderEmail: string, a
     const nomeDocente = item[COLUNAS.DOCENTE];
 
     if (!nomeCoordenador || !emailCoordenador || !nomeCurso || !nomeDocente) {
-      console.log(`Item ignorado (coordenador) por falta de dados: ${JSON.stringify(item)}`);
+      console.log(`[handleNotificarCoordenadores] Item ignorado por falta de dados: ${JSON.stringify(item)}`);
       continue;
     }
 
@@ -254,7 +271,6 @@ async function handleNotificarCoordenadores(dados: any[], senderEmail: string, a
     if (!pendenciasPorCoordenador[emailCoordenador].cursos[nomeCurso][nomeDocente]) {
       pendenciasPorCoordenador[emailCoordenador].cursos[nomeCurso][nomeDocente] = [];
     }
-    // Filtrar para incluir apenas atividades pendentes
     if (item[COLUNAS.IS_PENDENTE] === true) {
       pendenciasPorCoordenador[emailCoordenador].cursos[nomeCurso][nomeDocente].push(item);
     }
@@ -262,11 +278,11 @@ async function handleNotificarCoordenadores(dados: any[], senderEmail: string, a
   
   let coordenadoresNotificados = 0;
   const totalCoordenadores = Object.keys(pendenciasPorCoordenador).length;
-  console.log(`Total de coordenadores para notificar: ${totalCoordenadores}`);
+  console.log(`[handleNotificarCoordenadores] Total de coordenadores para notificar: ${totalCoordenadores}`);
 
   for (const emailCoordenador in pendenciasPorCoordenador) {
     const infoCoordenador = pendenciasPorCoordenador[emailCoordenador];
-    let corpoEmailHtmlParcial = ""; // Usado para construir o corpo do e-mail apenas com cursos/docentes que têm pendências
+    let corpoEmailHtmlParcial = ""; 
     let existemPendenciasParaEsteCoordenador = false;
 
     for (const nomeCurso in infoCoordenador.cursos) {
@@ -276,8 +292,8 @@ async function handleNotificarCoordenadores(dados: any[], senderEmail: string, a
 
       for (const nomeDocente in docentesDoCurso) {
         const atividadesDoDocente = docentesDoCurso[nomeDocente];
-        if (atividadesDoDocente.length > 0) { // Somente adiciona o docente se ele tiver atividades pendentes
-          if (!existemPendenciasNesteCurso) { // Adiciona o cabeçalho do curso apenas uma vez
+        if (atividadesDoDocente.length > 0) { 
+          if (!existemPendenciasNesteCurso) { 
             corpoCursoHtml += `<hr><p><b>RESUMO DO CURSO: ${nomeCurso}</b></p>`;
             existemPendenciasNesteCurso = true;
             existemPendenciasParaEsteCoordenador = true;
@@ -309,18 +325,16 @@ async function handleNotificarCoordenadores(dados: any[], senderEmail: string, a
       
       const corpoEmailCompleto = cabecalhoEmail + corpoEmailHtmlParcial + rodapeEmail;
       
-      if (await sendEmailWithNodemailer(emailCoordenador, "Acompanhamento de pendências dos cursos", corpoEmailCompleto, senderEmail, appPassword)) {
+      if (await sendEmailWithNodemailer(emailCoordenador, "Acompanhamento de pendências dos cursos", corpoEmailCompleto, senderEmail, appPassword, ccEmails)) {
         coordenadoresNotificados++;
       }
     }
   }
   if (totalCoordenadores > 0 && coordenadoresNotificados === 0 && Object.keys(pendenciasPorCoordenador).some(coord => Object.values(pendenciasPorCoordenador[coord].cursos).some(curso => Object.values(curso).some(docente => docente.length > 0)) ) ) {
-    // Se havia coordenadores para notificar (com pendências reais) mas nenhum e-mail foi enviado.
-    return `Tentativa de notificar ${totalCoordenadores} coordenador(es) com pendências, mas nenhum e-mail pôde ser enviado. Verifique os logs.`;
+    return `Falha ao notificar ${totalCoordenadores} coordenador(es) com pendências. Verifique os logs.`;
   }
-  return `E-mails de acompanhamento para ${coordenadoresNotificados} de ${totalCoordenadores} coordenador(es) com pendências relevantes processados.`;
+  return `${coordenadoresNotificados}/${totalCoordenadores} coordenador(es) notificados sobre pendências.`;
 }
-// --- Fim das implementações das ações ---
 
 const handler: Handler = async (event: HandlerEvent, context: HandlerContext) => {
   if (event.httpMethod !== "POST") {

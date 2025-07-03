@@ -338,9 +338,9 @@ export default function Index() {
 
             const result = await response.json();
             toast({
-                title: "Sucesso!",
+                title: "✅ Sucesso!",
                 description: result.message || 'E-mails processados com sucesso!',
-                variant: "default", // Ou "success" se tiver um estilo definido
+                variant: "default", 
             });
 
         } catch (error: any) {
