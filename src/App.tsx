@@ -1,5 +1,5 @@
-import { Toaster } from "@/components/ui/toaster";
-import { Toaster as Sonner } from "@/components/ui/sonner";
+// import { Toaster } from "@/components/ui/toaster"; // Comentado - Usando Sonner
+import { Toaster as Sonner } from "@/components/ui/sonner"; // Mantido - Sonner é o sistema de toast ativo
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { QueryClient } from "@tanstack/query-core";
@@ -128,8 +128,8 @@ const App = () => {
     <QueryClientProvider client={queryClient}>
       <ThemeProvider> {/* Envolver com ThemeProvider */}
         <TooltipProvider>
-          <Toaster />
-          <Sonner />
+          {/* <Toaster /> */} {/* Comentado - Usando Sonner */}
+          <Sonner /> {/* Mantido - Sonner é o sistema de toast ativo */}
           <DataProvider> {/* Envolver BrowserRouter com DataProvider */}
             <BrowserRouter>
               <Routes>

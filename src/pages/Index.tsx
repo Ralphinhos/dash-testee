@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useDataContext } from '../contexts/DataContext'; // Importar useDataContext
 // import { useDataProcessor } from '../hooks/useDataProcessor'; // Será removido se processData não for mais usado
 import { LoadingScreen } from '../components/LoadingScreen';
-import { AIModal } from '../components/AIModal';
+// import { AIModal } from '../components/AIModal'; // AIModal não é mais usada, toasts Sonner no lugar
 import { Sidebar } from '../components/Sidebar';
 import { FilterControls } from '../components/FilterControls';
 import { AccessTable } from '../components/AccessTable';
@@ -15,12 +15,12 @@ import { useNavigate } from 'react-router-dom';
 import { LogOut, Sun, Moon, FileText } from 'lucide-react'; // Adicionado FileText
 import { ThemeSwitcher } from '../components/ThemeSwitcher';
 import useIdleTimer from '../hooks/useIdleTimer';
-import { useToast } from "@/components/ui/use-toast"; // Importar useToast
+import { toast as sonnerToast } from "@/components/ui/sonner"; // Importar toast do Sonner
 
 export default function Index() {
     // 1. Hooks e Contexto
     const navigate = useNavigate();
-    const { toast } = useToast(); // Hook para notificações Toast
+    // const { toast } = useToast(); // Removido - Usaremos Sonner
     const { allData, isLoading, error: dataError } = useDataContext(); // Consumir DataContext
     // const { processData } = useDataProcessor(); // Removido, pois o fetch está no DataProvider
     const [userRole, setUserRole] = useState<string | null>(null);
@@ -299,20 +299,15 @@ export default function Index() {
    
     const handleNotification = async (action: string) => {
         if (filteredData.length === 0) {
-            toast({
-                title: "Atenção",
+            sonnerToast.error("Atenção", {
                 description: "Nenhum dado selecionado. Por favor, aplique os filtros de Semestre e Modalidade primeiro.",
-                variant: "destructive",
+                duration: 4000,
             });
             return;
         }
 
         setIsNotifying(true); // Ativa o estado de carregamento
-        // Exibe um toast inicial de "Enviando..."
-        const sendingToast = toast({
-            title: "Enviando Notificações",
-            description: "Processando e enviando e-mails...",
-        });
+        // sonnerToast.loading("Enviando Notificações...", { description: "Processando e enviando e-mails..." }); // Opcional: Toast de carregamento
 
         try {
             const dadosParaEnvio = { action: action, dadosDetalhados: filteredData };
@@ -337,23 +332,19 @@ export default function Index() {
             }
 
             const result = await response.json();
-            toast({
-                title: "✅ Sucesso!",
+            sonnerToast.success("Sucesso!", {
                 description: result.message || 'E-mails processados com sucesso!',
-                variant: "default", 
+                duration: 2000,
             });
 
         } catch (error: any) {
             console.error('Erro ao enviar notificação:', error);
-            toast({
-                title: "Erro ao Enviar",
+            sonnerToast.error("Erro ao Enviar", {
                 description: `Falha ao enviar notificações: ${error.message}`,
-                variant: "destructive",
+                duration: 4000,
             });
         } finally {
             setIsNotifying(false); // Desativa o estado de carregamento
-            // Se o toast de "Enviando" tiver um ID, pode ser removido aqui.
-            // Ex: if (sendingToast?.id) toast.dismiss(sendingToast.id); - Isso depende da implementação do toast.
         }
     };
 
@@ -474,8 +465,7 @@ export default function Index() {
                     </TabsContent>
                 </Tabs>
             </main>
-            {/* AIModal removido, pois as notificações agora são tratadas por Toasts */}
-            {/* <AIModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={modalTitle} content={modalContent} /> */}
+            {/* AIModal e referências a isModalOpen, modalTitle, modalContent foram removidas, pois as notificações agora são tratadas por Sonner Toasts */}
         </div>
     );
 }
