@@ -147,7 +147,10 @@ async function handleNotificarDocentes(dados: any[], senderEmail: string, appPas
     if (!pendenciasPorDocente[nomeDocente]) {
       pendenciasPorDocente[nomeDocente] = { email: emailDocente, atividades: [] };
     }
-    pendenciasPorDocente[nomeDocente].atividades.push(item);
+    // Filtrar para incluir apenas atividades pendentes
+    if (item[COLUNAS.IS_PENDENTE] === true) {
+      pendenciasPorDocente[nomeDocente].atividades.push(item);
+    }
   }
 
   let docentesNotificados = 0;
@@ -206,7 +209,10 @@ async function handleNotificarCoordenadores(dados: any[], senderEmail: string, a
     if (!pendenciasPorCoordenador[emailCoordenador].cursos[nomeCurso][nomeDocente]) {
       pendenciasPorCoordenador[emailCoordenador].cursos[nomeCurso][nomeDocente] = [];
     }
-    pendenciasPorCoordenador[emailCoordenador].cursos[nomeCurso][nomeDocente].push(item);
+    // Filtrar para incluir apenas atividades pendentes
+    if (item[COLUNAS.IS_PENDENTE] === true) {
+      pendenciasPorCoordenador[emailCoordenador].cursos[nomeCurso][nomeDocente].push(item);
+    }
   }
   
   let coordenadoresNotificados = 0;
