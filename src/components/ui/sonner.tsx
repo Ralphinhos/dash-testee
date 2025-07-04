@@ -10,26 +10,6 @@ const Toaster = ({ ...props }: ToasterProps) => {
     <Sonner
       theme={theme as ToasterProps["theme"]}
       className="toaster group"
-      toastOptions={{
-        classNames: {
-          toast:
-            "group toast group-[.toaster]:bg-background group-[.toaster]:text-foreground group-[.toaster]:border-border group-[.toaster]:shadow-lg",
-          description: "group-[.toast]:text-muted-foreground",
-          actionButton:
-            "group-[.toast]:bg-primary group-[.toast]:text-primary-foreground",
-          cancelButton:
-            "group-[.toast]:bg-muted group-[.toast]:text-muted-foreground",
-          // Assuming sonner provides a way to add a class to the progress bar,
-          // or we manually add an element. If sonner has a built-in but hidden progress bar,
-          // the CSS would target its existing classes/attributes.
-          // For a custom element, we'd add it here or within the component's render method if Sonner allows customization.
-        },
-      }}
-      // If Sonner allows rendering a custom component for the toast body or a progress bar specifically:
-      // components={{
-      //   progressBar: ({ progress }) => <div style={{ width: `${progress * 100}%` }} className="my-custom-progress-bar" />,
-      // }}
-      {...props}
     >
       {/* This is a conceptual placement. Sonner's actual API for custom elements might differ.
           If Sonner doesn't directly support adding child elements here for progress,
