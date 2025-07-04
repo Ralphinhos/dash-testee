@@ -298,10 +298,16 @@ export default function Index() {
     };
    
     const handleNotification = async (action: string) => {
+        const toastDuration = 4000;
+        // A progressBarStyle não é mais necessária aqui, pois será controlada pelo CSS do pseudo-elemento
+
         if (filteredData.length === 0) {
             sonnerToast.error("Atenção", {
                 description: "Nenhum dado selecionado. Por favor, aplique os filtros de Semestre e Modalidade primeiro.",
-                duration: 4000,
+                duration: toastDuration,
+                className: 'custom-toast-progress', // Classe para aplicar o pseudo-elemento
+                style: { '--toast-duration': `${toastDuration / 1000}s` } as React.CSSProperties, // Define a variável CSS
+                descriptionClassName: 'pb-2', 
             });
             return;
         }
@@ -334,14 +340,20 @@ export default function Index() {
             const result = await response.json();
             sonnerToast.success("Sucesso!", {
                 description: result.message || 'E-mails processados com sucesso!',
-                duration: 4000, // Aumentado para 4 segundos
+                duration: toastDuration,
+                className: 'custom-toast-progress',
+                style: { '--toast-duration': `${toastDuration / 1000}s` } as React.CSSProperties,
+                descriptionClassName: 'pb-2',
             });
 
         } catch (error: any) {
             console.error('Erro ao enviar notificação:', error);
             sonnerToast.error("Erro ao Enviar", {
                 description: `Falha ao enviar notificações: ${error.message}`,
-                duration: 4000,
+                duration: toastDuration,
+                className: 'custom-toast-progress',
+                style: { '--toast-duration': `${toastDuration / 1000}s` } as React.CSSProperties,
+                descriptionClassName: 'pb-2',
             });
         } finally {
             setIsNotifying(false); // Desativa o estado de carregamento
@@ -376,6 +388,32 @@ export default function Index() {
     return (
         <div className="flex h-screen bg-[#0f172a] font-sans overflow-hidden">
             <style>{`
+                @keyframes sonner-progress-bar-animation {
+                  from {
+                    transform: scaleX(1);
+                  }
+                  to {
+                    transform: scaleX(0);
+                  }
+                }
+                .custom-toast-progress {
+                  position: relative;
+                  overflow: hidden;
+                }
+                .custom-toast-progress::after {
+                  content: '';
+                  position: absolute;
+                  bottom: 0;
+                  left: 0;
+                  height: 4px; /* Altura da barra */
+                  width: 100%; /* Começa em 100% */
+                  background-color: rgba(255, 255, 255, 0.7); /* Cor da barra (branca com opacidade) */
+                  transform-origin: left; /* Animação da esquerda para a direita */
+                  animation-name: sonner-progress-bar-animation;
+                  animation-timing-function: linear;
+                  animation-fill-mode: forwards;
+                  animation-duration: var(--toast-duration, 4s); /* Usa variável CSS com fallback */
+                }
                 :root { 
                     --scrollbar-thumb: #475569; 
                     --scrollbar-track: transparent; 
