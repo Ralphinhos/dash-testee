@@ -305,8 +305,8 @@ export default function Index() {
             sonnerToast.error("Atenção", {
                 description: "Nenhum dado selecionado. Por favor, aplique os filtros de Semestre e Modalidade primeiro.",
                 duration: toastDuration,
-                className: 'custom-toast-progress', // Classe para aplicar o pseudo-elemento
-                style: { '--toast-duration': `${toastDuration / 1000}s` } as React.CSSProperties, // Define a variável CSS
+                className: 'custom-toast-progress toast-progress-error', // Adiciona classe de erro
+                style: { '--toast-duration': `${toastDuration / 1000}s` } as React.CSSProperties, 
                 descriptionClassName: 'pb-2', 
             });
             return;
@@ -341,7 +341,7 @@ export default function Index() {
             sonnerToast.success("Sucesso!", {
                 description: result.message || 'E-mails processados com sucesso!',
                 duration: toastDuration,
-                className: 'custom-toast-progress',
+                className: 'custom-toast-progress toast-progress-success', // Adiciona classe de sucesso
                 style: { '--toast-duration': `${toastDuration / 1000}s` } as React.CSSProperties,
                 descriptionClassName: 'pb-2',
             });
@@ -351,7 +351,7 @@ export default function Index() {
             sonnerToast.error("Erro ao Enviar", {
                 description: `Falha ao enviar notificações: ${error.message}`,
                 duration: toastDuration,
-                className: 'custom-toast-progress',
+                className: 'custom-toast-progress toast-progress-error', // Adiciona classe de erro
                 style: { '--toast-duration': `${toastDuration / 1000}s` } as React.CSSProperties,
                 descriptionClassName: 'pb-2',
             });
@@ -400,19 +400,27 @@ export default function Index() {
                   position: relative;
                   overflow: hidden;
                 }
-                .custom-toast-progress::after {
+                .custom-toast-progress::after, 
+                .toast-progress-error::after, 
+                .toast-progress-success::after {
                   content: '';
                   position: absolute;
                   bottom: 0;
                   left: 0;
                   height: 4px; /* Altura da barra */
                   width: 100%; /* Começa em 100% */
-                  background-color: rgba(255, 255, 255, 0.7); /* Cor da barra (branca com opacidade) */
+                  background-color: rgba(255, 255, 255, 0.7); /* Cor padrão (branca com opacidade) */
                   transform-origin: left; /* Animação da esquerda para a direita */
                   animation-name: sonner-progress-bar-animation;
                   animation-timing-function: linear;
                   animation-fill-mode: forwards;
                   animation-duration: var(--toast-duration, 4s); /* Usa variável CSS com fallback */
+                }
+                .toast-progress-error::after {
+                  background-color: rgba(220, 53, 69, 0.8); /* Vermelho para erro (ex: Bootstrap danger color com opacidade) */
+                }
+                .toast-progress-success::after {
+                  background-color: rgba(25, 135, 84, 0.8); /* Verde para sucesso (ex: Bootstrap success color com opacidade) */
                 }
                 :root { 
                     --scrollbar-thumb: #475569; 
