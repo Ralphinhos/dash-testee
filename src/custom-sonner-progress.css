@@ -1,0 +1,37 @@
+/* src/custom-sonner-progress.css */
+[data-sonner-toast] [data-progress] {
+  background: linear-gradient(to right, #00ff00, #008000) !important; /* Green gradient for testing */
+  height: 4px !important;
+  position: absolute !important;
+  bottom: 0 !important;
+  left: 0 !important;
+  width: var(--progress); /* Sonner should provide this CSS variable */
+  animation: sonner-progress-animation 1s linear; /* Example animation */
+  opacity: 1 !important; /* Force visibility */
+  visibility: visible !important; /* Force visibility */
+  z-index: 1000; /* Ensure it's on top */
+}
+
+/* Attempt to force the progress bar element itself to be visible if Sonner hides it by default */
+[data-sonner-toast] > div[role="status"] + div[data-progress-bar-container] {
+    opacity: 1 !important;
+    visibility: visible !important;
+    height: 4px !important; /* Ensure container has height */
+}
+
+
+/* Keyframes for a simple progress animation (optional, Sonner might handle this) */
+@keyframes sonner-progress-animation {
+  from {
+    width: 0%;
+  }
+  to {
+    width: 100%; /* This will be controlled by --progress variable from Sonner */
+  }
+}
+
+/* Additional styles to ensure the toast itself is visible and positioned correctly if needed */
+.group.toast {
+  /* Ensure the toast container allows overflow if the progress bar is positioned absolutely inside it */
+  overflow: visible !important;
+}
