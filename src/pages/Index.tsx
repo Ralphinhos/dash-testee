@@ -398,7 +398,7 @@ export default function Index() {
                 }
                 .custom-toast-progress {
                   position: relative;
-                  overflow: hidden;
+                  /* overflow: hidden; */ /* Comentado temporariamente para testar o empilhamento */
                 }
                 .custom-toast-progress::after, 
                 .toast-progress-error::after, 
@@ -410,6 +410,7 @@ export default function Index() {
                   height: 4px; /* Altura da barra */
                   width: 100%; /* Começa em 100% */
                   background-color: rgba(255, 255, 255, 0.7); /* Cor padrão (branca com opacidade) */
+                  box-shadow: 0 0 6px 1px rgba(255, 255, 255, 0.4); /* Glow padrão */
                   transform-origin: left; /* Animação da esquerda para a direita */
                   animation-name: sonner-progress-bar-animation;
                   animation-timing-function: linear;
@@ -417,10 +418,12 @@ export default function Index() {
                   animation-duration: var(--toast-duration, 4s); /* Usa variável CSS com fallback */
                 }
                 .toast-progress-error::after {
-                  background-color: rgba(220, 53, 69, 0.8); /* Vermelho para erro (ex: Bootstrap danger color com opacidade) */
+                  background-color: rgba(220, 53, 69, 0.8); /* Vermelho para erro */
+                  box-shadow: 0 0 6px 1px rgba(220, 53, 69, 0.5); /* Glow vermelho */
                 }
                 .toast-progress-success::after {
-                  background-color: rgba(25, 135, 84, 0.8); /* Verde para sucesso (ex: Bootstrap success color com opacidade) */
+                  background-color: rgba(25, 135, 84, 0.8); /* Verde para sucesso */
+                  box-shadow: 0 0 6px 1px rgba(25, 135, 84, 0.5); /* Glow verde */
                 }
                 :root { 
                     --scrollbar-thumb: #475569; 
