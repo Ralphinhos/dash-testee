@@ -2,6 +2,17 @@
 import { Handler, HandlerEvent, HandlerContext } from "@netlify/functions";
 import nodemailer from "nodemailer";
 
+// Função auxiliar para sanitizar texto para HTML
+function sanitizeHTML(text: string | undefined | null): string {
+  if (text === undefined || text === null) {
+    return '';
+  }
+  return text.toString()
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+}
+
 // Interface para o payload esperado (ajuste conforme necessário)
 interface EmailPayload {
   action: string;
@@ -123,18 +134,25 @@ async function handleCobrarUas(dados: any[], senderEmail: string, appPassword: s
 
   const uasPorDocente: UasPorDocente = {};
   for (const item of uasPendentesRaw) {
-    const nomeDocente = item[COLUNAS.DOCENTE];
-    const emailDocente = item[COLUNAS.EMAIL_DOCENTE];
-    const disciplina = item[COLUNAS.DISCIPLINA];
+    const nomeDocente = sanitizeHTML(item[COLUNAS.DOCENTE]);
+    const emailDocente = item[COLUNAS.EMAIL_DOCENTE]; // Email não precisa de sanitização HTML
+    const disciplina = sanitizeHTML(item[COLUNAS.DISCIPLINA]);
 
     if (!nomeDocente || !emailDocente || !disciplina) {
       console.log(`[handleCobrarUas] Item de UA ignorado por dados ausentes (docente, email ou disciplina): ${JSON.stringify(item)}`);
       continue;
     }
-    if (!uasPorDocente[nomeDocente]) {
-      uasPorDocente[nomeDocente] = { email: emailDocente, disciplinas: new Set<string>() };
+    // Use nomeDocente original (não sanitizado) como chave se necessário manter consistência com dados originais,
+    // mas para exibição no email, use a versão sanitizada.
+    // Para este caso, como nomeDocente é usado como chave e depois no corpo do email, vamos usar o original para a chave
+    // e sanitizar na hora de construir o corpo do email.
+    const originalNomeDocente = item[COLUNAS.DOCENTE]; 
+    if (!originalNomeDocente) continue; // Garantir que o original exista
+
+    if (!uasPorDocente[originalNomeDocente]) {
+      uasPorDocente[originalNomeDocente] = { email: emailDocente, disciplinas: new Set<string>() };
     }
-    uasPorDocente[nomeDocente].disciplinas.add(disciplina);
+    uasPorDocente[originalNomeDocente].disciplinas.add(item[COLUNAS.DISCIPLINA]); // Adiciona disciplina original
   }
 
   let docentesCobrados = 0;
@@ -146,17 +164,18 @@ async function handleCobrarUas(dados: any[], senderEmail: string, appPassword: s
     return "Nenhum docente encontrado com UAs pendentes para cobrança.";
   }
 
-  for (const nomeDocente in uasPorDocente) {
-    const info = uasPorDocente[nomeDocente];
-    console.log(`[handleCobrarUas] Preparando e-mail para docente: ${nomeDocente}, Email: ${info.email}, Disciplinas: ${Array.from(info.disciplinas)}`);
+  for (const originalNomeDocente in uasPorDocente) {
+    const info = uasPorDocente[originalNomeDocente];
+    const nomeDocenteSanitized = sanitizeHTML(originalNomeDocente); // Sanitiza para exibição
+    console.log(`[handleCobrarUas] Preparando e-mail para docente: ${nomeDocenteSanitized}, Email: ${info.email}, Disciplinas: ${Array.from(info.disciplinas)}`);
     if (info.disciplinas.size === 0) {
       continue;
     }
 
-    const listaDisciplinasHtml = `<ul>${Array.from(info.disciplinas).sort().map(d => `<li>${d}</li>`).join('')}</ul>`;
-    console.log(`[handleCobrarUas] Lista de disciplinas HTML para ${nomeDocente}: ${listaDisciplinasHtml}`);
+    const listaDisciplinasHtml = `<ul>${Array.from(info.disciplinas).sort().map(d => `<li>${sanitizeHTML(d)}</li>`).join('')}</ul>`;
+    console.log(`[handleCobrarUas] Lista de disciplinas HTML para ${nomeDocenteSanitized}: ${listaDisciplinasHtml}`);
     const corpoHtml = 
-      `<p>Olá, Professor(a) ${nomeDocente}, tudo bem?</p>
+      `<p>Olá, Professor(a) ${nomeDocenteSanitized}, tudo bem?</p>
        <p>Sabemos que o dia a dia é sempre uma correria e, para te ajudar a organizar, estamos passando para verificar o andamento do envio do material das UAs (Unidades de Aprendizagem).</p>
        <p>Para que possamos preparar o Ambiente Virtual de Aprendizagem para os alunos, <strong>estamos aguardando o material das seguintes disciplinas:</strong></p>
        ${listaDisciplinasHtml}
@@ -164,17 +183,18 @@ async function handleCobrarUas(dados: any[], senderEmail: string, appPassword: s
        <p>Se precisar de qualquer ajuda, é só nos chamar!</p>
        <p>Um abraço,<br>Equipe NED</p>`;
     
-    console.log(`[handleCobrarUas] Corpo do e-mail para ${nomeDocente}:\n${corpoHtml}`);
+    console.log(`[handleCobrarUas] Corpo do e-mail para ${nomeDocenteSanitized}:\n${corpoHtml}`);
+    console.log(`[handleCobrarUas] Tamanho estimado do corpo HTML para ${nomeDocenteSanitized}: ${corpoHtml.length} caracteres.`);
     if (await sendEmailWithNodemailer(info.email, "Sobre o envio do material (UAs)", corpoHtml, senderEmail, appPassword, ccEmails)) {
       docentesCobrados++;
     }
   }
 
-  console.log(`[handleCobrarUas] Finalizado. Docentes cobrados: ${docentesCobrados} de ${totalDocentesParaCobrar}`);
-  if (docentesCobrados === 0 && totalDocentesParaCobrar > 0) {
-    return `Falha ao cobrar ${totalDocentesParaCobrar} docente(s) sobre UAs pendentes. Verifique os logs.`;
+  console.log(`[handleCobrarUas] Finalizado. Docentes cobrados: ${docentesCobrados} de ${Object.keys(uasPorDocente).length}`);
+  if (docentesCobrados === 0 && Object.keys(uasPorDocente).length > 0) {
+    return `Falha ao cobrar ${Object.keys(uasPorDocente).length} docente(s) sobre UAs pendentes. Verifique os logs.`;
   }
-  return `${docentesCobrados}/${totalDocentesParaCobrar} docente(s) notificados sobre UAs pendentes.`;
+  return `${docentesCobrados}/${Object.keys(uasPorDocente).length} docente(s) notificados sobre UAs pendentes.`;
 }
 
 async function handleNotificarDocentes(dados: any[], senderEmail: string, appPassword: string): Promise<string> {
@@ -189,55 +209,58 @@ async function handleNotificarDocentes(dados: any[], senderEmail: string, appPas
   const pendenciasPorDocente: PendenciasPorDocente = {};
 
   for (const item of dados) {
-    const nomeDocente = item[COLUNAS.DOCENTE];
-    const emailDocente = item[COLUNAS.EMAIL_DOCENTE];
-    if (!nomeDocente || !emailDocente) {
+    const originalNomeDocente = item[COLUNAS.DOCENTE];
+    const emailDocente = item[COLUNAS.EMAIL_DOCENTE]; // Email não precisa de sanitização
+    if (!originalNomeDocente || !emailDocente) {
       console.log(`[handleNotificarDocentes] Item ignorado por falta de nome/email: ${JSON.stringify(item)}`);
       continue;
     }
-    if (!pendenciasPorDocente[nomeDocente]) {
-      pendenciasPorDocente[nomeDocente] = { email: emailDocente, atividades: [] };
+    if (!pendenciasPorDocente[originalNomeDocente]) {
+      pendenciasPorDocente[originalNomeDocente] = { email: emailDocente, atividades: [] };
     }
     if (item[COLUNAS.IS_PENDENTE] === true) {
-      pendenciasPorDocente[nomeDocente].atividades.push(item);
+      pendenciasPorDocente[originalNomeDocente].atividades.push(item);
     }
   }
 
   let docentesNotificados = 0;
-  const totalDocentes = Object.keys(pendenciasPorDocente).length;
-  console.log(`[handleNotificarDocentes] Total de docentes para notificar: ${totalDocentes}`);
+  const totalDocentesAgrupados = Object.keys(pendenciasPorDocente).length;
+  console.log(`[handleNotificarDocentes] Total de docentes para notificar: ${totalDocentesAgrupados}`);
 
-  for (const nomeDocente in pendenciasPorDocente) {
-    const info = pendenciasPorDocente[nomeDocente];
+  for (const originalNomeDocente in pendenciasPorDocente) {
+    const info = pendenciasPorDocente[originalNomeDocente];
+    const nomeDocenteSanitized = sanitizeHTML(originalNomeDocente);
+
     if (info.atividades.length > 0) {
       let atividadesHtml = "";
       info.atividades.forEach(item => {
         atividadesHtml += 
           `<p>
-            <b>› Disciplina:</b> ${item[COLUNAS.DISCIPLINA]}<br>
-            &nbsp;&nbsp;- Atividade: ${item[COLUNAS.ATIVIDADE]}<br>
-            &nbsp;&nbsp;- Situação: ${item[COLUNAS.STATUS_CALCULADO]}
+            <b>› Disciplina:</b> ${sanitizeHTML(item[COLUNAS.DISCIPLINA])}<br>
+            &nbsp;&nbsp;- Atividade: ${sanitizeHTML(item[COLUNAS.ATIVIDADE])}<br>
+            &nbsp;&nbsp;- Situação: ${sanitizeHTML(item[COLUNAS.STATUS_CALCULADO])}
           </p>`;
       });
 
       const corpoHtml = 
-        `<p>Prezado(a) Professor(a) ${nomeDocente},</p>
+        `<p>Prezado(a) Professor(a) ${nomeDocenteSanitized},</p>
          <p>Com o objetivo de manter a organização e o bom andamento das disciplinas, enviamos abaixo um resumo de suas atividades com pendências em nosso sistema.</p>
          <p>Segue o detalhamento:</p>
          ${atividadesHtml}
          <p>A sua atenção a estes pontos é importante para o acompanhamento dos alunos. Agradecemos a sua colaboração para regularizar a situação.</p>
          <p>Caso já tenha realizado os ajustes, por favor, desconsidere esta notificação.</p>
          <p>Atenciosamente,<br>Equipe NED</p>`;
-
+      
+      console.log(`[handleNotificarDocentes] Tamanho estimado do corpo HTML para ${nomeDocenteSanitized}: ${corpoHtml.length} caracteres.`);
       if (await sendEmailWithNodemailer(info.email, "Notificação de Pendências em Atividades Acadêmicas", corpoHtml, senderEmail, appPassword, ccEmails)) {
         docentesNotificados++;
       }
     }
   }
-  if (totalDocentes > 0 && docentesNotificados === 0 && Object.keys(pendenciasPorDocente).some(docente => pendenciasPorDocente[docente].atividades.length > 0) ) {
-    return `Falha ao notificar ${totalDocentes} docente(s) com pendências. Verifique os logs.`;
+  if (totalDocentesAgrupados > 0 && docentesNotificados === 0 && Object.values(pendenciasPorDocente).some(doc => doc.atividades.length > 0) ) {
+    return `Falha ao notificar ${totalDocentesAgrupados} docente(s) com pendências. Verifique os logs.`;
   }
-  return `${docentesNotificados}/${totalDocentes} docente(s) notificados sobre pendências.`;
+  return `${docentesNotificados}/${totalDocentesAgrupados} docente(s) notificados sobre pendências.`;
 }
 
 async function handleNotificarCoordenadores(dados: any[], senderEmail: string, appPassword: string): Promise<string> {
@@ -252,59 +275,63 @@ async function handleNotificarCoordenadores(dados: any[], senderEmail: string, a
   const pendenciasPorCoordenador: PendenciasPorCoordenador = {};
 
   for (const item of dados) {
-    const nomeCoordenador = item[COLUNAS.COORDENADOR];
-    const emailCoordenador = item[COLUNAS.EMAIL_COORDENADOR];
-    const nomeCurso = item[COLUNAS.CURSO];
-    const nomeDocente = item[COLUNAS.DOCENTE];
+    const originalNomeCoordenador = item[COLUNAS.COORDENADOR];
+    const emailCoordenador = item[COLUNAS.EMAIL_COORDENADOR]; // Email não sanitizado
+    const originalNomeCurso = item[COLUNAS.CURSO];
+    const originalNomeDocente = item[COLUNAS.DOCENTE];
 
-    if (!nomeCoordenador || !emailCoordenador || !nomeCurso || !nomeDocente) {
+    if (!originalNomeCoordenador || !emailCoordenador || !originalNomeCurso || !originalNomeDocente) {
       console.log(`[handleNotificarCoordenadores] Item ignorado por falta de dados: ${JSON.stringify(item)}`);
       continue;
     }
 
     if (!pendenciasPorCoordenador[emailCoordenador]) {
-      pendenciasPorCoordenador[emailCoordenador] = { nome: nomeCoordenador, cursos: {} };
+      // Usar nome original para a chave, sanitizar para exibição
+      pendenciasPorCoordenador[emailCoordenador] = { nome: originalNomeCoordenador, cursos: {} };
     }
-    if (!pendenciasPorCoordenador[emailCoordenador].cursos[nomeCurso]) {
-      pendenciasPorCoordenador[emailCoordenador].cursos[nomeCurso] = {};
+    if (!pendenciasPorCoordenador[emailCoordenador].cursos[originalNomeCurso]) {
+      pendenciasPorCoordenador[emailCoordenador].cursos[originalNomeCurso] = {};
     }
-    if (!pendenciasPorCoordenador[emailCoordenador].cursos[nomeCurso][nomeDocente]) {
-      pendenciasPorCoordenador[emailCoordenador].cursos[nomeCurso][nomeDocente] = [];
+    if (!pendenciasPorCoordenador[emailCoordenador].cursos[originalNomeCurso][originalNomeDocente]) {
+      pendenciasPorCoordenador[emailCoordenador].cursos[originalNomeCurso][originalNomeDocente] = [];
     }
     if (item[COLUNAS.IS_PENDENTE] === true) {
-      pendenciasPorCoordenador[emailCoordenador].cursos[nomeCurso][nomeDocente].push(item);
+      pendenciasPorCoordenador[emailCoordenador].cursos[originalNomeCurso][originalNomeDocente].push(item);
     }
   }
   
   let coordenadoresNotificados = 0;
-  const totalCoordenadores = Object.keys(pendenciasPorCoordenador).length;
-  console.log(`[handleNotificarCoordenadores] Total de coordenadores para notificar: ${totalCoordenadores}`);
+  const totalCoordenadoresAgrupados = Object.keys(pendenciasPorCoordenador).length;
+  console.log(`[handleNotificarCoordenadores] Total de coordenadores para notificar: ${totalCoordenadoresAgrupados}`);
 
   for (const emailCoordenador in pendenciasPorCoordenador) {
     const infoCoordenador = pendenciasPorCoordenador[emailCoordenador];
+    const nomeCoordenadorSanitized = sanitizeHTML(infoCoordenador.nome);
     let corpoEmailHtmlParcial = ""; 
     let existemPendenciasParaEsteCoordenador = false;
 
-    for (const nomeCurso in infoCoordenador.cursos) {
+    for (const originalNomeCurso in infoCoordenador.cursos) {
+      const nomeCursoSanitized = sanitizeHTML(originalNomeCurso);
       let corpoCursoHtml = "";
       let existemPendenciasNesteCurso = false;
-      const docentesDoCurso = infoCoordenador.cursos[nomeCurso];
+      const docentesDoCurso = infoCoordenador.cursos[originalNomeCurso];
 
-      for (const nomeDocente in docentesDoCurso) {
-        const atividadesDoDocente = docentesDoCurso[nomeDocente];
+      for (const originalNomeDocente in docentesDoCurso) {
+        const nomeDocenteSanitized = sanitizeHTML(originalNomeDocente);
+        const atividadesDoDocente = docentesDoCurso[originalNomeDocente];
         if (atividadesDoDocente.length > 0) { 
           if (!existemPendenciasNesteCurso) { 
-            corpoCursoHtml += `<hr><p><b>RESUMO DO CURSO: ${nomeCurso}</b></p>`;
+            corpoCursoHtml += `<hr><p><b>RESUMO DO CURSO: ${nomeCursoSanitized}</b></p>`;
             existemPendenciasNesteCurso = true;
             existemPendenciasParaEsteCoordenador = true;
           }
-          corpoCursoHtml += `<p><b>&nbsp;&nbsp;• Docente:</b> ${nomeDocente}</p>`;
+          corpoCursoHtml += `<p><b>&nbsp;&nbsp;• Docente:</b> ${nomeDocenteSanitized}</p>`;
           atividadesDoDocente.forEach(item => {
             corpoCursoHtml += 
               `<p>
-                &nbsp;&nbsp;&nbsp;&nbsp;- Disciplina: ${item[COLUNAS.DISCIPLINA]}<br>
-                &nbsp;&nbsp;&nbsp;&nbsp;- Item pendente: ${item[COLUNAS.ATIVIDADE]}<br>
-                &nbsp;&nbsp;&nbsp;&nbsp;- Situação: ${item[COLUNAS.STATUS_CALCULADO]}
+                &nbsp;&nbsp;&nbsp;&nbsp;- Disciplina: ${sanitizeHTML(item[COLUNAS.DISCIPLINA])}<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;- Item pendente: ${sanitizeHTML(item[COLUNAS.ATIVIDADE])}<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;- Situação: ${sanitizeHTML(item[COLUNAS.STATUS_CALCULADO])}
               </p>`;
           });
         }
@@ -316,7 +343,7 @@ async function handleNotificarCoordenadores(dados: any[], senderEmail: string, a
 
     if (existemPendenciasParaEsteCoordenador) {
       const cabecalhoEmail = 
-        `<p>Olá, Coordenador(a) ${infoCoordenador.nome}, tudo bem?</p>
+        `<p>Olá, Coordenador(a) ${nomeCoordenadorSanitized}, tudo bem?</p>
          <p>Para te auxiliar no acompanhamento acadêmico, preparamos um resumo dos pontos que merecem atenção em seus cursos esta semana.</p>`;
       const rodapeEmail =
         `<hr><p>Agradecemos se puder conversar com os docentes para entender e auxiliar na regularização das pendências.</p>
@@ -324,16 +351,19 @@ async function handleNotificarCoordenadores(dados: any[], senderEmail: string, a
          <p>Um abraço,<br>Equipe NED</p>`;
       
       const corpoEmailCompleto = cabecalhoEmail + corpoEmailHtmlParcial + rodapeEmail;
+
+      // Log do tamanho do HTML antes de enviar
+      console.log(`[handleNotificarCoordenadores] Email para ${emailCoordenador} (${nomeCoordenadorSanitized}). Tamanho estimado do corpo HTML: ${corpoEmailCompleto.length} caracteres.`);
       
       if (await sendEmailWithNodemailer(emailCoordenador, "Acompanhamento de pendências dos cursos", corpoEmailCompleto, senderEmail, appPassword, ccEmails)) {
         coordenadoresNotificados++;
       }
     }
   }
-  if (totalCoordenadores > 0 && coordenadoresNotificados === 0 && Object.keys(pendenciasPorCoordenador).some(coord => Object.values(pendenciasPorCoordenador[coord].cursos).some(curso => Object.values(curso).some(docente => docente.length > 0)) ) ) {
-    return `Falha ao notificar ${totalCoordenadores} coordenador(es) com pendências. Verifique os logs.`;
+  if (totalCoordenadoresAgrupados > 0 && coordenadoresNotificados === 0 && Object.values(pendenciasPorCoordenador).some(coord => Object.values(coord.cursos).some(curso => Object.values(curso).some(docente => docente.length > 0)) ) ) {
+    return `Falha ao notificar ${totalCoordenadoresAgrupados} coordenador(es) com pendências. Verifique os logs.`;
   }
-  return `${coordenadoresNotificados}/${totalCoordenadores} coordenador(es) notificados sobre pendências.`;
+  return `${coordenadoresNotificados}/${totalCoordenadoresAgrupados} coordenador(es) notificados sobre pendências.`;
 }
 
 const handler: Handler = async (event: HandlerEvent, context: HandlerContext) => {

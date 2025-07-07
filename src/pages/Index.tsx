@@ -298,7 +298,7 @@ export default function Index() {
     };
    
     const handleNotification = async (action: string) => {
-        const toastDuration = 40000;
+        const toastDuration = 3000;
         // A progressBarStyle não é mais necessária aqui, pois será controlada pelo CSS do pseudo-elemento
 
         if (filteredData.length === 0) {
