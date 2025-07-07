@@ -74,14 +74,10 @@ async function sendEmailWithNodemailer(to: string, subject: string, htmlBody: st
     },
   });
 
-  // Adicionar um sufixo único ao assunto para evitar problemas de agrupamento/corte por clientes de e-mail
-  const uniqueSuffix = `${Date.now().toString().slice(-5)}-${Math.random().toString(36).substring(2, 7)}`;
-  const uniqueSubject = `${subject} (Ref: ${uniqueSuffix})`;
-
   const mailOptions: nodemailer.SendMailOptions = {
     from: senderEmail,
     to: to, 
-    subject: uniqueSubject, // Usar o assunto único
+    subject: subject, // Usar o assunto original
     html: htmlBody,
   };
 
@@ -91,7 +87,7 @@ async function sendEmailWithNodemailer(to: string, subject: string, htmlBody: st
 
   try {
     await transporter.sendMail(mailOptions);
-    console.log(`Email sent successfully to ${to} with subject "${uniqueSubject}"` + (mailOptions.cc ? ` and CC to ${Array.isArray(mailOptions.cc) ? mailOptions.cc.join(', ') : mailOptions.cc}` : ""));
+    console.log(`Email sent successfully to ${to} with subject "${subject}"` + (mailOptions.cc ? ` and CC to ${Array.isArray(mailOptions.cc) ? mailOptions.cc.join(', ') : mailOptions.cc}` : ""));
     return true;
   } catch (error) {
     console.error(`Failed to send email to ${to}:`, error);
