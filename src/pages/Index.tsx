@@ -298,7 +298,7 @@ export default function Index() {
     };
    
     const handleNotification = async (action: string) => {
-        const toastDuration = 3000;
+        const toastDuration = 40000;
         // A progressBarStyle não é mais necessária aqui, pois será controlada pelo CSS do pseudo-elemento
 
         if (filteredData.length === 0) {
@@ -406,26 +406,27 @@ export default function Index() {
                 .toast-progress-error::after, 
                 .toast-progress-success::after {
                   content: '';
-                  position: absolute; /* Tenta posicionar em relação ao ancestral posicionado mais próximo ou ao viewport */
+                  position: absolute; 
                   bottom: 0;
                   left: 0;
-                  height: 3px; /* Altura da barra ajustada - experimente 2px ou 3px */
+                  height: 2px; /* Altura da barra ajustada para 2px */
                   width: 100%; 
                   background-color: rgba(255, 255, 255, 0.7); 
-                  box-shadow: 0 0 5px 1px rgba(255, 255, 255, 0.3); /* Glow ajustado */
+                  box-shadow: 0 0 4px 1px rgba(255, 255, 255, 0.25); /* Glow sutilmente ajustado */
                   transform-origin: left; 
                   animation-name: sonner-progress-bar-animation;
                   animation-timing-function: linear;
                   animation-fill-mode: forwards;
-                  animation-duration: var(--toast-duration, 4s); 
+                  /* Faz a barra terminar 0.2s antes do toast para uma transição mais suave */
+                  animation-duration: calc(var(--toast-duration, 4s) - 0.2s); 
                 }
                 .toast-progress-error::after {
                   background-color: rgba(220, 53, 69, 0.8); 
-                  box-shadow: 0 0 5px 1px rgba(220, 53, 69, 0.4); /* Glow ajustado */
+                  box-shadow: 0 0 4px 1px rgba(220, 53, 69, 0.35); /* Glow sutilmente ajustado */
                 }
                 .toast-progress-success::after {
                   background-color: rgba(25, 135, 84, 0.8); 
-                  box-shadow: 0 0 5px 1px rgba(25, 135, 84, 0.4); /* Glow ajustado */
+                  box-shadow: 0 0 4px 1px rgba(25, 135, 84, 0.35); /* Glow sutilmente ajustado */
                 }
                 
                 :root { 
