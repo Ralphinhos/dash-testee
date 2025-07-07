@@ -388,7 +388,6 @@ export default function Index() {
     return (
         <div className="flex h-screen bg-[#0f172a] font-sans overflow-hidden">
             <style>{`
-                /* TODO O BLOCO CSS DA BARRA DE PROGRESSO E CUSTOMIZAÇÃO DE TOAST FOI COMENTADO PARA TESTE
                 @keyframes sonner-progress-bar-animation {
                   from {
                     transform: scaleX(1);
@@ -398,35 +397,37 @@ export default function Index() {
                   }
                 }
                 .custom-toast-progress {
-                  /* position: relative; */ /* REMOVIDO PARA TESTE DE EMPILHAMENTO */
-                  /* overflow: hidden; */ /* Comentado temporariamente para testar o empilhamento */
+                  /* Esta classe é aplicada ao elemento <li> do toast. */
+                  /* NÃO adicionar position: relative aqui, pois quebra o empilhamento da Sonner. */
+                  /* A Sonner pode já fornecer um contexto de posicionamento adequado, ou o ::after se ajustará ao viewport se não. */
+                  /* overflow: hidden; foi removido pois também poderia causar problemas com o ::after */
                 }
                 .custom-toast-progress::after, 
                 .toast-progress-error::after, 
                 .toast-progress-success::after {
                   content: '';
-                  position: absolute;
+                  position: absolute; /* Tenta posicionar em relação ao ancestral posicionado mais próximo ou ao viewport */
                   bottom: 0;
                   left: 0;
-                  height: 4px; /* Altura da barra */
-                  width: 100%; /* Começa em 100% */
-                  background-color: rgba(255, 255, 255, 0.7); /* Cor padrão (branca com opacidade) */
-                  box-shadow: 0 0 6px 1px rgba(255, 255, 255, 0.4); /* Glow padrão */
-                  transform-origin: left; /* Animação da esquerda para a direita */
+                  height: 3px; /* Altura da barra ajustada - experimente 2px ou 3px */
+                  width: 100%; 
+                  background-color: rgba(255, 255, 255, 0.7); 
+                  box-shadow: 0 0 5px 1px rgba(255, 255, 255, 0.3); /* Glow ajustado */
+                  transform-origin: left; 
                   animation-name: sonner-progress-bar-animation;
                   animation-timing-function: linear;
                   animation-fill-mode: forwards;
-                  animation-duration: var(--toast-duration, 4s); /* Usa variável CSS com fallback */
+                  animation-duration: var(--toast-duration, 4s); 
                 }
                 .toast-progress-error::after {
-                  background-color: rgba(220, 53, 69, 0.8); /* Vermelho para erro */
-                  box-shadow: 0 0 6px 1px rgba(220, 53, 69, 0.5); /* Glow vermelho */
+                  background-color: rgba(220, 53, 69, 0.8); 
+                  box-shadow: 0 0 5px 1px rgba(220, 53, 69, 0.4); /* Glow ajustado */
                 }
                 .toast-progress-success::after {
-                  background-color: rgba(25, 135, 84, 0.8); /* Verde para sucesso */
-                  box-shadow: 0 0 6px 1px rgba(25, 135, 84, 0.5); /* Glow verde */
+                  background-color: rgba(25, 135, 84, 0.8); 
+                  box-shadow: 0 0 5px 1px rgba(25, 135, 84, 0.4); /* Glow ajustado */
                 }
-                */
+                
                 :root { 
                     --scrollbar-thumb: #475569; 
                     --scrollbar-track: transparent; 
