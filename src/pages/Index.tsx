@@ -388,6 +388,7 @@ export default function Index() {
     return (
         <div className="flex h-screen bg-[#0f172a] font-sans overflow-hidden">
             <style>{`
+                /* TODO O BLOCO CSS DA BARRA DE PROGRESSO E CUSTOMIZAÇÃO DE TOAST FOI COMENTADO PARA TESTE
                 @keyframes sonner-progress-bar-animation {
                   from {
                     transform: scaleX(1);
@@ -397,7 +398,7 @@ export default function Index() {
                   }
                 }
                 .custom-toast-progress {
-                  position: relative;
+                  /* position: relative; */ /* REMOVIDO PARA TESTE DE EMPILHAMENTO */
                   /* overflow: hidden; */ /* Comentado temporariamente para testar o empilhamento */
                 }
                 .custom-toast-progress::after, 
@@ -425,6 +426,7 @@ export default function Index() {
                   background-color: rgba(25, 135, 84, 0.8); /* Verde para sucesso */
                   box-shadow: 0 0 6px 1px rgba(25, 135, 84, 0.5); /* Glow verde */
                 }
+                */
                 :root { 
                     --scrollbar-thumb: #475569; 
                     --scrollbar-track: transparent; 
